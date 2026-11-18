@@ -79,6 +79,114 @@ let keeping_item (ctx : Ctx.ctx) (span : Error.span) ~(spine_str : string)
       Printf.sprintf "(%s & .p onto %s) with .p at %s" spine_str target_str
         (Resolve.point_str c.f_paper)
 
+(* The squash of a flap that ends at its target line (BEP-0057): the layers
+   that hinges on the target line join to the flap hold it. [st] carries the
+   axis on both layers of the flap, as the creases [cid_a] and [cid_b];
+   [in_flap] holds the pieces of the flap, which all move. The spine opens
+   and both pieces of the axis fold as valleys (BEP-0061); each hinge on the
+   target line between the flap and a layer that stays keeps its fold or
+   opens, and the stacking check decides between them. [f'] is where the
+   far end [f] of the spine lands. *)
+let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
+    ~(f : Geom.point) ~(f' : Geom.point) ~(target_line : Geom.line)
+    ~(spine_cid : int) ~(cid_a : int) ~(cid_b : int) ~(in_flap : int -> bool)
+    ~(target_str : string) (span : Error.span) : unit =
+  let faces = Fold_state.faces st in
+  let nf = Array.length faces in
+  let tip = Array.init nf in_flap in
+  let hinges = Fold_state.hinges st in
+  let on_target i =
+    let ta, tb = Fold_state.hinge_table_segment st i in
+    Geom.side_of_line target_line ta = 0 && Geom.side_of_line target_line tb = 0
+  in
+  let role =
+    Array.mapi
+      (fun i (h : Fold_state.hinge) ->
+        let a = tip.(h.Fold_state.fa) and b = tip.(h.Fold_state.fb) in
+        let cid = h.Fold_state.crease_id in
+        if a && b && (cid = spine_cid || cid = cid_a || cid = cid_b) then
+          Collapse.Fold
+        else if a <> b && on_target i then Collapse.Try
+        else Collapse.Keep)
+      hinges
+  in
+  if not (Array.exists (fun r -> r = Collapse.Try) role) then
+    Error.fail span
+      (Printf.sprintf "the flap has no material beyond %s; nothing holds the squash"
+         target_str);
+  let names =
+    Array.mapi
+      (fun i (h : Fold_state.hinge) ->
+        if role.(i) <> Collapse.Fold then None
+        else if h.Fold_state.crease_id = cid_a then Some 0
+        else if h.Fold_state.crease_id = cid_b then Some 1
+        else None)
+      hinges
+  in
+  (* a point of the axis's ray: the middle between the spine's far end and
+     where it lands *)
+  let two = Num.of_int 2 in
+  let on_axis =
+    { Geom.x = Num.div (Num.add f.Geom.x f'.Geom.x) two;
+      y = Num.div (Num.add f.Geom.y f'.Geom.y) two }
+  in
+  let clockwise i =
+    let c = centroid (Fold_state.table_polygon_ccw st i) in
+    Num.sign
+      (Collapse.cross (o.Geom.x, o.Geom.y) (on_axis.Geom.x, on_axis.Geom.y)
+         (c.Geom.x, c.Geom.y))
+    < 0
+  in
+  let sgs =
+    Collapse.geoms_of st
+      ~sec:(Array.map (fun t -> if t then 1 else 0) tip)
+      ~tip ~names ~role ~nelem:2
+      ~side:(fun _ a b ->
+        match (clockwise a, clockwise b) with
+        | true, false -> Some (a, b)
+        | false, true -> Some (b, a)
+        | _ -> None)
+      ~faces ~nf
+  in
+  let states =
+    match sgs with
+    | Error _ -> []
+    | Ok sgs ->
+        List.concat_map
+          (fun sg ->
+            match Collapse.pipeline_solve sg ~valley:[| true; true |] ~over:[] with
+            | Ok states -> states
+            | Error _ -> [])
+          sgs
+        |> Collapse.rank_by_outline st ~state:Fun.id
+  in
+  let far_on_target =
+    let ta, tb =
+      Fold_state.hinge_table_segment st
+        (Option.get
+           (List.find_opt
+              (fun i -> role.(i) = Collapse.Try)
+              (List.init (Array.length hinges) Fun.id)))
+    in
+    if Geom.point_equal ta o then tb else ta
+  in
+  let rays = [ (o, f); (o, on_axis); (o, far_on_target) ] in
+  let chosen = match states with [ s ] -> Some s | _ -> None in
+  Ctx.record_write ctx (Trace.Flatten { point = o })
+    (List.map
+       (fun s ->
+         { Trace.state = Some s;
+           detail = Trace.fan ~pre:st ~post:s ~point:o ~rays ~emergent:None;
+           removed = None;
+           chosen = (match chosen with Some c -> c == s | None -> false) })
+       states);
+  match states with
+  | [ s ] -> ctx.state := s
+  | [] -> Error.fail span Collapse.e_selfint
+  | many ->
+      Error.fail span
+        (Printf.sprintf "squash is ambiguous: %d realizations" (List.length many))
+
 let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     (target : Ast.align_object) (span : Error.span) : unit =
   let spine_str = Resolve.lstr spine_lo in
@@ -378,7 +486,8 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     | segs -> List.map (cand target_cid) segs
   in
   (* the stayer: the sector of the anchor beyond the target line, away from
-     the spine, named by a table point inside it *)
+     the spine, named by a table point inside it; None where the flap ends
+     at the target line *)
   let stayer =
     let away = -Geom.side_of_line target_line f in
     let faces2 = Fold_state.faces st2 in
@@ -393,21 +502,22 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
         else find (i + 1)
       else find (i + 1)
     in
-    match find 0 with
-    | Some p -> p
-    | None ->
-        Error.fail span
-          (Printf.sprintf "the flap has no material beyond %s; nothing holds the squash"
-             target_str)
+    find 0
   in
-  let spine_elem = [ cand c.cid c.seg ] in
-  ignore
-    (Flatten_solve.solve ctx ~into:None ~verb:"squash"
-       ~elem_cands:[ spine_elem; axis_elem cid_a; axis_elem cid_b; target_elem ]
-       ~o ~elem_names:[ spine_str; "the axis"; "the axis"; target_str ]
-       ~over:[] ~anchor:(Some anchor_polys)
-       ~staying:(Some (Collapse.Points [ stayer ]))
-       ~toward:None span);
+  let spine_elem = [ cand ~letter:Ast.MvValley c.cid c.seg ] in
+  (match stayer with
+  | Some stayer ->
+      ignore
+        (Flatten_solve.solve ctx ~into:None ~verb:"squash"
+           ~elem_cands:[ spine_elem; axis_elem cid_a; axis_elem cid_b; target_elem ]
+           ~o ~elem_names:[ spine_str; "the axis"; "the axis"; target_str ]
+           ~over:[] ~anchor:(Some anchor_polys)
+           ~staying:(Some (Collapse.Points [ stayer ]))
+           ~toward:None span)
+  | None ->
+      own_hinges ctx st2 ~o ~f ~f' ~target_line ~spine_cid:c.cid ~cid_a ~cid_b
+        ~in_flap:(fun i -> in_anchor i || within lower_polys st2 i)
+        ~target_str span);
   (* one crease on both layers from here on: `--s` is the whole axis, and
      `--s & .p` the piece of it on the layer of `.p` *)
   ctx.state := Fold_state.merge_crease !(ctx.state) ~from:cid_b ~into:cid_a;

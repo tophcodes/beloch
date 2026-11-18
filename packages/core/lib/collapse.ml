@@ -18,8 +18,6 @@ let e_selfint = "assignment forces self-intersection"
 let e_contra = "contradictory `over`"
 let e_dup_ray = "duplicate ray in collapse"
 let e_ambig k = Printf.sprintf "ambiguous stacking (%d orders)" k
-let e_out_of_paper =
-  "collapse folds a flap off the paper (no seating keeps it in the sheet)"
 let e_stayer_collinear = "collinear leading creases don't pick a stayer"
 let e_stayer_dead = "no realization keeps the staying flap still"
 let e_unaligned = "collapse through unaligned layers"
@@ -823,9 +821,9 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
           | [] -> Error e_contra
           | l -> Ok l))
 
-(* The convex hull of every table polygon of [g]: the outline a collapse of
-   [g] keeps its realizations within (BEP-0046). The last hull is kept,
-   since every realization of one collapse is tested against the same [g]. *)
+(* The convex hull of every table polygon of [g]: the outline that ranks the
+   states a fan folds [g] to (BEP-0058). The last hull is kept, since every
+   state of one fan is tested against the same [g]. *)
 let hull_cache : (Fold_state.t * Geom.point array) option ref = ref None
 
 let table_hull (g : Fold_state.t) : Geom.point array =
@@ -850,34 +848,33 @@ let in_bounds (hull : Geom.point array) (gg : Fold_state.t) : bool =
   done;
   !ok
 
-(* pool the per-sector runs: any in-bounds realization wins ([Ok] pool); an empty
-   pool surfaces [e_contra] > [e_out_of_paper] > [e_stayer_dead]. Shared by the
-   single-valley [collapse_runs] and the pattern-sharing path. *)
+(* The outline ranks the states a fan folds [g] to and removes none
+   (BEP-0058): those whose faces lie inside the outline of [g] where there
+   are any, else all of them. [state] reads the state out of an element. *)
+let rank_by_outline (g : Fold_state.t) ~(state : 'a -> Fold_state.t)
+    (rs : 'a list) : 'a list =
+  let hull = table_hull g in
+  match List.filter (fun r -> in_bounds hull (state r)) rs with
+  | [] -> rs
+  | inside -> inside
+
+(* pool the per-sector runs: every state of every run ([Ok] pool); an empty
+   pool surfaces [e_contra] > [e_unaligned] > [e_anchor_stays] >
+   [e_stayer_dead]. Shared by the single-valley [collapse_runs] and the
+   pattern-sharing path. *)
 let pool_of_runs
-    (results :
-      [ `Err of string | `Run of (Fold_state.t, string) result list ] list) :
+    (results : [ `Err of string | `Run of Fold_state.t list ] list) :
     (Fold_state.t list, string) result =
   let pool =
-    List.concat_map
-      (function
-        | `Run rs ->
-            List.filter_map (function Ok gg -> Some gg | Error _ -> None) rs
-        | `Err _ -> [])
-      results
+    List.concat_map (function `Run rs -> rs | `Err _ -> []) results
   in
   match pool with
   | _ :: _ -> Ok pool
   | [] ->
       let errs =
-        List.concat_map
-          (function
-            | `Err e -> [ e ]
-            | `Run rs ->
-                List.filter_map (function Error e -> Some e | Ok _ -> None) rs)
-          results
+        List.filter_map (function `Err e -> Some e | `Run _ -> None) results
       in
       if List.mem e_contra errs then Error e_contra
-      else if List.mem e_out_of_paper errs then Error e_out_of_paper
       else if List.mem e_unaligned errs then Error e_unaligned
       else if List.mem e_anchor_stays errs then Error e_anchor_stays
       else Error e_stayer_dead
@@ -899,10 +896,9 @@ let fan_setup ?anchor (g : Fold_state.t) (es : elem list) ~(stayer : stayer) =
       | Error e -> Error e
       | Ok sectors -> Ok (o, rays, sur, faces, nf, anchor, sectors))
 
-(* The states of every way the fan folds with stayer sector [s0], for the
-   letters [valley], each held to the outline of [g]. *)
-let runs_of_sector (g : Fold_state.t) sgs ~(valley : bool array)
-    ~(over : (int * int) list) =
+(* The states of every way the fan folds with one stayer sector, for the
+   letters [valley]. *)
+let runs_of_sector sgs ~(valley : bool array) ~(over : (int * int) list) =
   match sgs with
   | Error e -> [ `Err e ]
   | Ok sgs ->
@@ -910,18 +906,12 @@ let runs_of_sector (g : Fold_state.t) sgs ~(valley : bool array)
         (fun sg ->
           match pipeline_solve sg ~valley ~over with
           | Error e -> `Err e
-          | Ok states ->
-              `Run
-                (List.map
-                   (fun st ->
-                     if in_bounds (table_hull g) st then Ok st
-                     else Error e_out_of_paper)
-                   states))
+          | Ok states -> `Run states)
         sgs
 
 (* run the pipeline once per admissible stayer sector (rotating that sector to
-   0) and each way the fan folds there, pooling every in-bounds anchored
-   realization. Runs are not deduplicated against each other, since two
+   0) and each way the fan folds there, pooling every anchored realization
+   and ranking the pool by the outline of [g]. Runs are not deduplicated against each other, since two
    admissible sectors are two different stayers and so two physically
    different folds; the layer orders of one run differ in the side of at
    least one pair. *)
@@ -936,20 +926,23 @@ let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
       else
         let es = Array.of_list es in
         let valley = Array.map (fun e -> e.valley) es in
-        pool_of_runs
-          (List.concat_map
-             (fun s0 ->
-               runs_of_sector g ~valley ~over
-                 (mk_sector_geoms g ~o ~rays:(rotate_rays rays s0) ~es ~faces
-                    ~nf ~anchor))
-             sectors)
+        Result.map
+          (rank_by_outline g ~state:Fun.id)
+          (pool_of_runs
+             (List.concat_map
+                (fun s0 ->
+                  runs_of_sector ~valley ~over
+                    (mk_sector_geoms g ~o ~rays:(rotate_rays rays s0) ~es
+                       ~faces ~nf ~anchor))
+                sectors))
 
 (* The many-pattern entry: solve a whole batch of patterns over ONE fixed
    vertex geometry, sharing the sector geometry (placements, overlap set)
    across every pattern instead of rebuilding it per pattern. [es] carries
    the geometry (its own valley is ignored); [patterns.(p)] is the letter of
    each element, in [es] order. Returns one result per pattern,
-   parallel to [patterns]. Maekawa's parity applies where the anchor
+   parallel to [patterns], not ranked by the outline: the caller ranks the
+   states of all its patterns together. Maekawa's parity applies where the anchor
    surrounds the vertex. *)
 let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
     (es : elem list) ~(over : (int * int) list) ~(stayer : stayer)
@@ -977,7 +970,7 @@ let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
           else
             let valley = Array.of_list pat in
             pool_of_runs
-              (List.concat_map (runs_of_sector g ~valley ~over) sgs))
+              (List.concat_map (runs_of_sector ~valley ~over) sgs))
         patterns
 
 (* The tip of the fan on [g] for each admissible stayer sector (BEP-0037):

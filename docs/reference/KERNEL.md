@@ -41,9 +41,9 @@ boundary is more than one loop has a hole and is refused.
 Three operations read the sheet and nothing else of its shape. Clipping a line
 to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
-the outline. A collapse keeps the realizations whose faces lie on the table
-inside the convex hull of every table polygon of the state before the collapse
-([[BEP-0046]]).
+the outline. A fan keeps the states whose faces lie on the table inside
+the convex hull of every table polygon of the state before it, where there
+are any, and every state where there are none ([[BEP-0058]]).
 
 ## State
 
@@ -308,7 +308,7 @@ valley fold reach.
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
-there are any ([[BEP-0056]]), then those with the fewest mountains on the rays the
+there are any (`Collapse.rank_by_outline`, [[BEP-0058]]), then those with the fewest mountains on the rays the
 program gave. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
@@ -333,7 +333,16 @@ passes its letter ([[BEP-0061]]). Of the states the fan folds flat in,
 the squash keeps those whose flanks both fold as valleys; with one flank a
 mountain the same creases fold a swivel fold, which the explicit fan reaches
 with letters. The stayer is a point of the anchor's material beyond the
-target's line, away from the spine. With a target point, the target's
+target's line, away from the spine. Where the anchor has no such
+material, `Squash.own_hinges` folds the squash without the solver
+([[BEP-0057]]): the tip is every piece of the two flaps at the spine, the
+hinges of the spine and of the axis change, each hinge on the target's
+line between the tip and a face outside it keeps or changes, and
+`Collapse.geoms_of` and `Collapse.pipeline_solve` give the states as for a
+fan. More than one state fails with `` squash is ambiguous: <n>
+realizations ``. The fan passes the spine with the letter valley too: the
+spine opens and takes no letter, and a free letter would count each state
+once per letter. With a target point, the target's
 crease is the one named crease whose paper line passes through the vertex
 and the target on the anchor's layer, materialized for the fan. Once the fan has folded, the two pieces
 become one crease, the one the output clause binds: `--s` is the whole axis,
@@ -482,10 +491,10 @@ the stayer (Sectors, below).
    leading pair's arc and dies here; only the near segment remains. A
    single-combination statement has no alternative to fall back on, so a
    mis-ordered leading pair there is *not* caught this way; it runs the
-   full pipeline and dies later as an ordinary `` collapse folds a flap off
-   the paper (no seating keeps it in the sheet) ``, the same failure any
-   other infeasible fold produces (see
-   `packages/core/tests/cases/collapse/flatten-order-load-bearing.bel`).
+   full pipeline and folds the states its stayer admits, past the outline
+   of the sheet where none stays inside ([[BEP-0058]]). In
+   `packages/core/tests/cases/collapse/flatten-order-load-bearing.bel` two
+   combinations fold such states, and the statement fails with check 14.
    For each surviving combination, at each admissible stayer sector
    (above), the tip is found first: the anchor's faces outside the stayer's
    wedge and every face joined to them by hinges outside that wedge. A face
@@ -500,13 +509,16 @@ the stayer (Sectors, below).
    anchor does not surround O, then, per pattern, Maekawa itself where it
    does, self-intersection, and `over`. A failing pattern contributes one
    of `` Maekawa violated by the stated assignment `` / `` assignment
-   forces self-intersection `` / `` collapse folds a flap off the paper (no
-   seating keeps it in the sheet) `` / `` contradictory `over` `` to a
+   forces self-intersection `` / `` contradictory `over` `` to a
    failure pool; a succeeding one becomes a **realization**, deduped
    against the others by observable stacking signature (two attempts that
    place and stack every face identically count once). If literally nothing
    survives across every combination and every admissible sector, that is
    check 13, `` no realization keeps the staying flap still ``.
+   The outline then ranks the realizations of all combinations together
+   (`Collapse.rank_by_outline`): those inside the convex hull of the state
+   before the flatten where there are any, else all of them
+   ([[BEP-0058]]).
 3. **Segment-choice ambiguity** (check 14). If **more than one** segment
    combination independently produced a non-empty realization pool, the
    statement stops here: `` <name> is ambiguous at the vertex; select a
@@ -522,9 +534,7 @@ the stayer (Sectors, below).
      outranks an `OppositeRay` one: S is the `LineNew` pool if it is
      non-empty, the `OppositeRay` pool otherwise. A lone `LineNew` survivor
      decides even if several `OppositeRay` realizations also close.
-   - \|S\| = 0 → infeasible, checked in priority order:
-     `` collapse folds a flap off the paper (no seating keeps it in the
-     sheet) `` if any candidate failed that way; else whichever of
+   - \|S\| = 0 → infeasible, checked in priority order: whichever of
      `` collapse through unaligned layers ``, `` the anchor flap has no
      material outside the staying sector ``, `` collinear leading creases
      don't pick a stayer ``, `` no realization

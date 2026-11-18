@@ -500,6 +500,18 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           (combo, r, e))
       combos
   in
+  (* the outline ranks the states of the statement, those of every
+     combination together, before any other stage sees them (BEP-0058) *)
+  let combo_runs =
+    let ranked =
+      Collapse.rank_by_outline pre_st
+        ~state:(fun (st, _, _, _) -> st)
+        (List.concat_map (fun (_, r, _) -> r) combo_runs)
+    in
+    List.map
+      (fun (combo, r, e) -> (combo, List.filter (fun x -> List.memq x ranked) r, e))
+      combo_runs
+  in
   let surviving = List.filter (fun (_, r, _) -> r <> []) combo_runs in
   (* the candidate states and the stage of the selection that removed each
      (docs/reference/FOLD.md, "The trace"), recorded once, when a state lands or the
@@ -577,16 +589,13 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   (try
   match deciding with
   | [] ->
-      (* spec step 6: out-of-paper trumps everything; otherwise the
-         odd/even cases report differently: the odd case collapses
+      (* the odd and the even case report differently: the odd case collapses
          every closure failure into one message (364660f's original
          differentiation, preserved verbatim); the even case surfaces
          the pool's own dominant kernel error instead, since there is
          no derived-crease framing to fall back on. *)
       let pool = error_pool in
-      if List.mem Collapse.e_out_of_paper pool then
-        Error.fail span Collapse.e_out_of_paper
-      else (
+      (
         match
           (* the tip and stayer diagnoses outrank the generic "derived
              crease does not close": a layer of the tip without the rays,

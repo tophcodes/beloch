@@ -1,0 +1,34 @@
+@author "Claude (Anthropic)"
+
+; The preliminary fold as Randlett folds it [randlett1961art, p. 69]: the
+; square folded in half twice, the top flap squashed, the model turned
+; over and the other flap squashed. The first squash is held by the layers
+; the flap is hinged to (BEP-0057). After it the second flap runs flat
+; across --bd into the first square, and that half holds its squash
+; (BEP-0038). The base has its folded edges on --bd, as the base of
+; preliminary-reverse.bel has.
+
+paper square
+fold (map .d onto .b) as --ac
+fold (map .a onto .c) as --bd
+squash (--ac & --ab onto --bd) as --s1
+flip
+squash (--ac & --bc onto --bd) as --s2
+flip
+
+.o = --ac * --bd
+.sr = --ab * --s1
+.sl = --da * --s1
+.br = --bc * --s2
+.bl = --cd * --s2
+
+; assert steps = 6
+; assert faces = 8
+
+; the four corners of the paper meet, and the side corners meet in pairs
+; assert .a = .b
+; assert .a = .c
+; assert .a = .d
+; assert .o = (1/2, 1/2)
+; assert .sr = .br
+; assert .sl = .bl

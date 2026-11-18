@@ -3,7 +3,7 @@
 ; (staying <flap>) overrides the leading-element convention. Same incenter
 ; rabbit ear as flatten-rabbit-ear-toward-a.bel, but the leading pair is
 ; SWAPPED to (--eb .b)(--ea .a) — an order whose <180 arc is a small folding
-; sector, not the stayer, so the bare convention seats a flap off the paper
+; sector, not the stayer, so the bare convention folds the ear past the sheet
 ; (see flatten-order-load-bearing.bel). Naming the stationary strip material
 ; with (staying .d) restores the correct stayer regardless of element order;
 ; (toward .a) then picks the a-side mirror, exactly as the convention-ordered
