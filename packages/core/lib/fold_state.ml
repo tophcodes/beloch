@@ -1621,6 +1621,7 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     Array.length (Geom.clip_convex_halfplane axis (-move_side) table) >= 3
   in
   let shared = new_shared () in
+  let tip_faces = List.filter (fun i -> tip.(i)) (List.init n Fun.id) in
   (* [i] below [j], for two faces of the tip that overlap; the rank answers
      only for overlapping faces (rem-linear-extension) *)
   let ov = Hashtbl.create 64 in
@@ -1634,41 +1635,129 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
         b
   in
   let below_overlapping i j = g.rank.(i) < g.rank.(j) && overlap i j in
-  (* the layers of the tip, bottom to top *)
-  let layers =
-    List.filter (fun i -> tip.(i)) (List.init n Fun.id)
-    |> List.sort (fun i j -> compare g.rank.(i) g.rank.(j))
+  (* An opening parts the tip into a lower and an upper half where every
+     hinge joining the two is folded and lies on one table line, the
+     spine's, which reaches beyond the axis (ADR 0043), and no face of the
+     upper half lies below a face of the lower half it overlaps. Per spine
+     line, the faces joined by the tip's other hinges move together; the
+     lower halves are the sets of such groups that hold every group below
+     one of their own. *)
+  let spine_lines =
+    List.fold_left
+      (fun acc hi ->
+        if
+          Num.sign g.hinges.(hi).angle <> 0 && reaches_beyond hi
+          && not (List.exists (fun l -> Geom.same_line l (line_of hi)) acc)
+        then line_of hi :: acc
+        else acc)
+      [] internal
+    |> List.rev
   in
-  (* An opening lies between two neighboring layers of the tip where every
-     hinge joining a layer below to a layer above is folded and lies on one
-     table line, the spine's, which reaches beyond the axis (ADR 0043). *)
-  let openings =
-    List.filter_map
-      (fun k ->
-        let below = Array.make n false in
-        List.iteri (fun p i -> if p < k then below.(i) <- true) layers;
-        let crossing =
-          List.filter
-            (fun hi -> below.(g.hinges.(hi).fa) <> below.(g.hinges.(hi).fb))
-            internal
-        in
-        match crossing with
-        | [] -> None
-        | h0 :: _ ->
+  let halves_on line =
+    let on_spine hi =
+      Num.sign g.hinges.(hi).angle <> 0 && Geom.same_line line (line_of hi)
+    in
+    let group = Array.init n Fun.id in
+    let rec root i = if group.(i) = i then i else root group.(i) in
+    List.iter
+      (fun hi ->
+        if not (on_spine hi) then
+          let a = root g.hinges.(hi).fa and b = root g.hinges.(hi).fb in
+          if a <> b then group.(a) <- b)
+      internal;
+    let members r = List.filter (fun i -> root i = r) tip_faces in
+    let below_of groups =
+      List.map
+        (fun r ->
+          ( r,
+            List.filter
+              (fun r' ->
+                r' <> r
+                && List.exists
+                     (fun i -> List.exists (fun j -> below_overlapping j i) (members r'))
+                     (members r))
+              groups ))
+        groups
+    in
+    (* groups that lie below each other, through other groups or directly,
+       part only together: they become one group *)
+    let groups0 = List.sort_uniq compare (List.map root tip_faces) in
+    let below0 = below_of groups0 in
+    let reaches r =
+      let seen = Hashtbl.create 8 in
+      let rec go r =
+        List.iter
+          (fun r' ->
+            if not (Hashtbl.mem seen r') then begin
+              Hashtbl.replace seen r' ();
+              go r'
+            end)
+          (List.assoc r below0)
+      in
+      go r;
+      seen
+    in
+    let reach = List.map (fun r -> (r, reaches r)) groups0 in
+    List.iter
+      (fun r ->
+        List.iter
+          (fun r' ->
             if
-              List.for_all
-                (fun hi ->
-                  Num.sign g.hinges.(hi).angle <> 0
-                  && Geom.same_line (line_of h0) (line_of hi))
-                crossing
-              && List.exists reaches_beyond crossing
+              r < r'
+              && Hashtbl.mem (List.assoc r reach) r'
+              && Hashtbl.mem (List.assoc r' reach) r
             then
-              Some
-                ( crossing,
-                  Array.init n (fun i -> tip.(i) && below.(i)),
-                  Array.init n (fun i -> tip.(i) && not below.(i)) )
-            else None)
-      (List.init (max 0 (List.length layers - 1)) (fun k -> k + 1))
+              let a = root r and b = root r' in
+              if a <> b then group.(a) <- b)
+          groups0)
+      groups0;
+    let groups = List.sort_uniq compare (List.map root tip_faces) in
+    let below_group = below_of groups in
+    (* the groups with every group below one of them first, so that a group
+       is decided after the groups below it *)
+    let order =
+      let rec go placed rest =
+        match
+          List.find_opt
+            (fun r -> List.for_all (fun r' -> List.mem r' placed) (List.assoc r below_group))
+            rest
+        with
+        | Some r -> go (r :: placed) (List.filter (( <> ) r) rest)
+        | None -> List.rev placed @ rest
+      in
+      go [] groups
+    in
+    (* every set of groups that holds the groups below each of its own,
+       other than none and all *)
+    let rec downsets chosen = function
+      | [] -> [ chosen ]
+      | r :: rest ->
+          let without = downsets chosen rest in
+          if List.for_all (fun r' -> List.mem r' chosen) (List.assoc r below_group)
+          then without @ downsets (r :: chosen) rest
+          else without
+    in
+    downsets [] order
+    |> List.filter (fun d -> d <> [] && List.length d < List.length groups)
+    |> List.filter_map (fun d ->
+           let below = Array.init n (fun i -> tip.(i) && List.mem (root i) d) in
+           let crossing =
+             List.filter
+               (fun hi -> below.(g.hinges.(hi).fa) <> below.(g.hinges.(hi).fb))
+               internal
+           in
+           if crossing <> [] && List.exists reaches_beyond crossing then
+             Some
+               ( crossing,
+                 below,
+                 Array.init n (fun i -> tip.(i) && not below.(i)) )
+           else None)
+  in
+  let count a = Array.fold_left (fun k b -> if b then k + 1 else k) 0 a in
+  let openings =
+    List.concat_map halves_on spine_lines
+    |> List.sort_uniq (fun (_, lo1, _) (_, lo2, _) ->
+           compare (count lo1, lo1) (count lo2, lo2))
   in
   let attempt (crossing, lower, upper) =
     let body half =
@@ -1680,11 +1769,10 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     in
     let blo = body lower and bup = body upper in
     if blo = [] || bup = [] then [ tried (Some (blo, bup)) No_body ]
+    else if
+      List.exists (fun i -> List.exists (fun j -> below_overlapping i j) blo) bup
+    then [ tried (Some (blo, bup)) Interleaved ]
     else
-      let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
-      let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
-      if not (hi blo < lo bup) then [ tried (Some (blo, bup)) Interleaved ]
-      else
       (* the layers of a body that no layer of it overlaps from the side
          facing the opening: the block lies directly on each of them. The
          rank picks the one the splice and the trace name; the sides read
