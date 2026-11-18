@@ -80,7 +80,7 @@ that checks the two preliminary-base routes against each other.
 
 ## Layer order
 
-`Fold_state.t` stores $\lambda$ ([[BEP-0060]]): for every two faces
+`Fold_state.t` stores $\lambda$ ([[ADR-0069]]): for every two faces
 whose table polygons overlap in positive area (`Geom.convex_overlap`;
 touching is no overlap), which of the two lies above. Two faces that do not
 overlap have no entry. `Fold_state.above` and `Fold_state.rel` read one

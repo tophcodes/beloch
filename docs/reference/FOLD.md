@@ -9,7 +9,7 @@ tableOfContents:
 `beloch fold FILE.bel` writes one JSON document in the FOLD format
 [@foldformat], extended with fields under the `beloch:` prefix as FOLD's
 custom-property rule allows. FOLD is the exchange format the origami tools
-read ([[BEP-0029]]); the extension carries what the model and the language know
+read ([[ADR-0065]]); the extension carries what the model and the language know
 and FOLD has no field for. This document is the contract of the file: what
 it represents, and which fields it carries.
 
@@ -102,7 +102,7 @@ What the language knows about a state and FOLD cannot say:
 - `beloch:source_line`, on each folded frame: the source line of the
   statement that produced the frame.
 - `beloch:statements`: one entry per executed statement in the order the
-  statements run, a sourcemap from the program to the frames ([[BEP-0030]]). Each
+  statements run, a sourcemap from the program to the frames ([[ADR-0066]]). Each
   entry carries the `kind` that says which axis it moves, its `source_line`
   and its `span`, the `frame_index` of the frame it reads against, and its
   `parent`. `fold` and `mark` are the writes: the paper moved, or it was
@@ -133,7 +133,7 @@ What the language knows about a state and FOLD cannot say:
   after the last statement of the program or of a `def` body belongs to a
   state, and its target is null; `frame_index` names that state. The keys
   `author`, `design` and `source` belong to the program as a whole
-  ([[BEP-0051]]), and their target is the string `"program"`; their
+  ([[ADR-0068]]), and their target is the string `"program"`; their
   `frame_index` is 0. `args` holds the
   arguments in order, each an object with its `span` and one of `text`,
   `number`, `word`, `point` (with `paper` and `table` coordinates), `line`

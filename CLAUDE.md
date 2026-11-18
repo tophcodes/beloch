@@ -64,7 +64,7 @@ Inside the devshell (`nix develop`, or direnv):
   `packages/render-2d`, `packages/runtime` and `packages/www`, the type
   check (`tsc`) of `packages/render-2d` and `packages/runtime`, the prose
   lint at level error, and the check that every program states its credits
-  (BEP-0051). Run it after the last edit and before every push.
+  (ADR-0068). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README
   drawings against their programs, the script tests (`bun test scripts`) and
   the site build.

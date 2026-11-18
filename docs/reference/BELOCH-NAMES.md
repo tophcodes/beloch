@@ -192,7 +192,7 @@ export { --c as --cb } $b
 **In the output.** An application has an entry of its own in
 `beloch:statements`, naming the definition, and the entries of its body
 follow it, each naming the application as its parent; a body statement
-is logged once per application that runs it ([[BEP-0030]]). A crease
+is logged once per application that runs it ([[ADR-0066]]). A crease
 scored under a kept instance carries the instance's name before its own,
 `a.c` for `--c` of `$a`, and `o.in.pq` through a nested application; under
 a bare `apply` or a temp instance it is unnamed. `beloch:named_points` and

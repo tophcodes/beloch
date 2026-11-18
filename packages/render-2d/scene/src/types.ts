@@ -40,7 +40,7 @@ export interface Step {
 export type StatementKind = "fold" | "mark" | "bind" | "apply";
 
 // beloch:statements — one entry per executed statement, execution order,
-// the statements of an apply's body flat after the apply (BEP-0030). A mark
+// the statements of an apply's body flat after the apply (ADR-0066). A mark
 // entry embeds its OWN mark geometry as recorded at that statement (not a
 // beloch:marks lookup — a mark that later graduates into a real crease is
 // dropped from beloch:marks, but its Statement.mark here is unaffected).

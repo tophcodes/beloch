@@ -741,7 +741,7 @@ let test_beloch_statements () =
     "kept_marks grows through the mark run, then both graduate at the fold"
     [ 1; 2; 0 ] (List.map kept_count_of stmts)
 
-(* BEP-0030: the log is flat. An apply has its own entry ahead of its body,
+(* ADR-0066: the log is flat. An apply has its own entry ahead of its body,
    and every statement of the body, bindings included, follows it with the
    apply as its parent, once per execution. *)
 let test_beloch_statements_flat () =
