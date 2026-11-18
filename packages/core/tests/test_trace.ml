@@ -383,7 +383,7 @@ let test_flatten_even () =
         (c |> member "frame" |> member "faces_vertices" <> `Null);
       if not (selected c) then
         Alcotest.(check bool) "removed by a stage of the selection" true
-          (List.mem (removed c) [ Some "toward"; Some "mountains"; Some "top" ]))
+          (List.mem (removed c) [ Some "toward"; Some "top" ]))
     cs
 
 let test_flatten_ambiguous () =
@@ -399,7 +399,7 @@ let test_flatten_odd () =
     fold_traced
       "paper square\nmark (map .a onto .c) as --diag\nmark (through .a .c) as --ray\n\
        mark (map --ab onto --diag) as --l1\nmark (map --da onto --diag) as --l2\n\
-       flatten (--l1) (--l2) (--ray) (toward .d)\n"
+       flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (toward .d)\n"
   in
   Alcotest.(check bool) "the program succeeds" false failed;
   let cs = candidates (only_write json) in

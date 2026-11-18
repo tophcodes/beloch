@@ -1585,8 +1585,8 @@ region, so a layer that the tip leaves in place keeps its faces whole.
 Motions, candidate states and letters are as above, with the regions in
 place of the wedges. The order of two faces outside $T$ that one lay above
 in every column stays as it was. The convex hull of the state before the
-write ranks the candidate states as above, and the rest of $\sigma$ is the
-fewest mountains on the rays the program names.
+write ranks the candidate states as above, and the write is undefined
+when more than one is left.
 :::
 
 ::: {.term #term-fan name="fan, ray"}
@@ -1649,7 +1649,7 @@ mark (map --da onto --bc) as --v
 flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
-::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. The three with three mountains are removed; the three with one mountain each remain, and without `toward` the program fails as ambiguous ([#open-flatten-selection])." views="candidates" at="vertex"}
+::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. Without a letter or `toward` the program fails as ambiguous ([#open-flatten-selection])." views="candidates" at="vertex"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -1658,25 +1658,26 @@ mark (map --ab onto --cd) as --h
 flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b)
 :::
 
-::: {.figure #fig-flatten-toward caption="The same vertex with `toward .c`: of the three states with one mountain, two put less of the material toward `.c` on top than the third, which remains." views="candidates" at="vertex"}
+::: {.figure #fig-flatten-letters caption="The same vertex with the rays to `--bc` and to `.c` as valleys: one state has both letters, and it remains." views="candidates" at="vertex"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 @label vertex
-flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b) (toward .c)
+flatten (--h & --bc valley) (--ac & .c valley) (--h & --da) (--bd & .b)
 :::
 
 ::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-selection"}
 [#def-flatten] leaves $\sigma$ to the program, as [#def-construction] does
-for the candidates of a construction. The language's `toward` is three rules in
+for the candidates of a construction. The language's `toward` is two rules in
 sequence: the candidate whose moved material lies toward the named point,
-among those the ones with the fewest mountains on the given rays, among
-those the one whose material toward the point lies on top. The first is a
-selection in the sense of [#def-selection]; the other two are conventions that
-pick a folder's habit out of several states that are all flat folded. Whether
-they belong in the model as named selections, or the language should ask for
-a constraint instead when several states remain, is not decided.
+among those the one whose material toward the point lies on top. The first
+is a selection in the sense of [#def-selection]; the second is a convention
+that picks a folder's habit out of several states that are all flat folded.
+An item of the program is a condition on the set of states and never a
+ranking ([[BEP-0061]]), so both rules are to go. Which condition names the
+side of an emergent ray, where letters and the stayer leave two mirror
+states, is not decided.
 :::
 
 ::: {.definition #def-squash name="squash" uses="def-write def-flatten def-flap def-letter" defines="term-vertex"}

@@ -8,8 +8,6 @@ type removal =
   | By_bodies
   | By_interleaved
   | By_crossing
-  | By_opposite
-  | By_mountains
   | By_top
 
 type segment = Geom.point * Geom.point
@@ -143,8 +141,6 @@ let removal_json = function
         | By_bodies -> "bodies"
         | By_interleaved -> "interleaved"
         | By_crossing -> "crossing"
-        | By_opposite -> "opposite"
-        | By_mountains -> "mountains"
         | By_top -> "top")
 
 let stage_name = function

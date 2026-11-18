@@ -476,17 +476,20 @@ marked crease (`` collapse folds along existing creases; <operand> is not
 a material crease ``) are errors. The checks a flatten runs, with every
 message, stand in the kernel's tables ([[reference/kernel#fan]]).
 
-**Selection.** Where several states remain, `toward .p` selects in three
-steps ([[reference/model#open-flatten-selection|open-flatten-selection]]): the
-states whose moved material lies toward `.p`, among them those with the
-fewest mountains on the rays the program gave, among those the one whose material
-toward `.p` lies on top. A point on the line of a crease through the
+**Selection.** The value of a flatten is the one state its rays,
+letters, `over` items and stayer leave ([[BEP-0061]]). Where several
+remain, `toward .p` selects in two steps
+([[reference/model#open-flatten-selection|open-flatten-selection]]): the
+states whose moved material lies toward `.p`, among them the one whose
+material toward `.p` lies on top. A point on the line of a crease through the
 vertex names no side (`` `toward` does not pick a side — the point is
 collinear with a crease through the vertex ``, hint `` aim it off the
-creases ``). Without `toward`, only the mountain count runs, and more than
-one state left is an error (`` flatten is ambiguous: <n> realizations ``,
-hint `` add (toward .p) to pick the fold direction ``); states that hold
-different wedges still are one too (`` flatten is ambiguous: its
+creases ``). Without `toward`, more than one state left is an error
+(`` flatten is ambiguous: <n> realizations ``, hint `` add (toward .p) to
+pick the fold direction ``). An odd fan closes on an emergent ray on a new
+line or on the far side of a given ray, and the states of both count
+alike, so their stayers can differ; states that hold different wedges
+still are an error too (`` flatten is ambiguous: its
 candidates hold different sectors still ``, hint `` add (staying .p) with
 .p in the sector that stays ``). An `over` no state satisfies is
 `` contradictory `over` ``.
@@ -520,7 +523,7 @@ flatten (--ea) (--ec) (--eb)
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--ea) (--ec) (--eb) (toward .b)      ; .b lies on the line of --eb
+flatten (--ea & .a) (--ec & .c) (--eb & .b) (staying .d) (toward .b)  ; .b on --eb
 
 ; expect error "does not pick a side"
 ```
@@ -570,9 +573,8 @@ piece from a piece that stays or from a moving piece of another region.
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
-remove its states ([[BEP-0058]]). Among those, the states with the fewest mountains on
-the rays the program gave are kept, and more than one state left is an
-error (`` flatten is ambiguous: <n> realizations ``).
+remove its states ([[BEP-0058]]). More than one state left is an error
+(`` flatten is ambiguous: <n> realizations ``).
 
 ```{.bel .frag}
 fold (map .a onto .c) as --bd

@@ -1863,7 +1863,8 @@ let test_output_into_flatten_emergent () =
   let fd =
     folded
       (ear_prelude
-     ^ "flatten (--ea) (--ec) (--eb) (toward .a) into --spine\n")
+     ^ "flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (toward .a)\n\
+       \        into --spine\n")
   in
   let cid = List.assoc "spine" fd.Eval.named_line_cids in
   Alcotest.(check bool) "the emergent crease is --spine's own" true
@@ -1884,7 +1885,8 @@ let test_output_into_flatten_off_the_line () =
       ignore
         (folded
            (ear_prelude
-          ^ "flatten (--ea) (--ec) (--eb) (toward .a) into --diag\n")))
+          ^ "flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d)\n\
+            \        (toward .a) into --diag\n")))
 
 (* An even ray count closes the vertex on its own, so the flatten scores no
    new crease and `into` has nothing to add. *)

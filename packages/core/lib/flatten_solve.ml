@@ -296,14 +296,13 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                rest)
     | None, _ -> true
   in
-  (* run one combination: pool every (state, tier, emergent-binding) that
+  (* run one combination: pool every (state, emergent-binding) that
      a candidate x M/V-pattern attempt closed, and every failure message.
      [given_fars] is this combination's given rays' far tips (the emergent
      scan excludes them). *)
   let run_combo combo (stayer : Collapse.stayer) =
     let local_real :
         (Fold_state.t
-        * [ `Tier1 | `Tier2 ]
         * (int * Geom.line) option
         * (Trace.segment list * Trace.segment option))
         list ref =
@@ -320,7 +319,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     let given_cuts =
       List.map (fun (cid, a, b, _) -> ray_cut cid (far_at_o a b)) combo
     in
-    let try_patterns ?sectors (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
+    let try_patterns ?sectors (st' : Fold_state.t)
         (emergent : (int * Geom.line) option)
         (emergent_seg : Trace.segment option)
         (all_rays :
@@ -341,7 +340,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           | Ok sts ->
               List.iter
                 (fun s -> local_real :=
-                    (s, tier, emergent, (given_rays, emergent_seg))
+                    (s, emergent, (given_rays, emergent_seg))
                     :: !local_real)
                 sts
           | Error msg -> local_err := msg :: !local_err)
@@ -354,12 +353,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
        | [] -> local_err := Flatten.e_infeasible :: !local_err
        | cands ->
            List.iter
-             (fun (line, ray_pt, tag) ->
-               let tier : [ `Tier1 | `Tier2 ] =
-                 match tag with
-                 | `LineNew -> `Tier1
-                 | `OppositeRay -> `Tier2
-               in
+             (fun (line, ray_pt, _) ->
                (* score this candidate ray with the given rays on a local
                   copy of the pre-flatten state, then scan every crease ray
                   now sitting at O on the candidate's side of the
@@ -422,7 +416,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                    let emergent_ray = (cid, o, far, Ast.MvFree) in
                    let all_rays = emergent_ray :: combo in
                    let run ?sectors st' =
-                     try_patterns ?sectors st' tier (Some (cid, line))
+                     try_patterns ?sectors st' (Some (cid, line))
                        (Some (o, far)) all_rays
                    in
                    let es_geom =
@@ -464,11 +458,11 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           tip alone. A fan that fails before its tip is defined is solved
           on the state as it stands, which reports that failure. *)
        match tip_groups (score_rays given_cuts under_fan) elems_geom stayer with
-       | [] -> try_patterns pre_st `Tier1 None None combo
+       | [] -> try_patterns pre_st None None combo
        | groups ->
            List.iter
              (fun (ps, ss) ->
-               try_patterns ~sectors:ss (score_rays given_cuts ps) `Tier1 None
+               try_patterns ~sectors:ss (score_rays given_cuts ps) None
                  None combo)
              groups);
     (!local_real, !local_err, given_fars)
@@ -505,7 +499,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let combo_runs =
     let ranked =
       Collapse.rank_by_outline pre_st
-        ~state:(fun (st, _, _, _) -> st)
+        ~state:(fun (st, _, _) -> st)
         (List.concat_map (fun (_, r, _) -> r) combo_runs)
     in
     List.map
@@ -531,7 +525,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       traced := true;
       Ctx.record_write ctx (Trace.Flatten { point = o })
         (List.map
-           (fun ((st, _, _, (rays, emergent)) as r) ->
+           (fun ((st, _, (rays, emergent)) as r) ->
              { Trace.state = Some st;
                detail = Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent;
                removed = List.assq_opt r !removed;
@@ -548,12 +542,11 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (Printf.sprintf "%s is ambiguous at the vertex" multiseg)
   | _ -> ());
   (* the winning combination (or the leading one when none survive, so the
-     selection code's [rays]/[given_fars] are well-defined for the
-     error-reporting path). *)
+     selection code's [given_fars] are well-defined for the error-reporting
+     path). *)
   let winner_combo =
     match surviving with (c, _, _) :: _ -> c | [] -> List.hd combos
   in
-  let rays = winner_combo in
   let given_fars =
     List.map
       (fun (a, b, c, _) -> Collapse.far_of o (elem_of (a, b, c, true)))
@@ -563,9 +556,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     match surviving with (_, r, _) :: _ -> r | [] -> []
   in
   let error_pool = List.concat_map (fun (_, _, e) -> e) combo_runs in
-  let tier1, tier2 = List.partition (fun (_, t, _, _) -> t = `Tier1) realizations in
-  let deciding = if tier1 <> [] then tier1 else tier2 in
-  if tier1 <> [] then remove Trace.By_opposite ~kept:tier1 tier2;
+  let deciding = realizations in
   (* records the emergent crease's (id, line) here so the name (if
      any) binds to it instead of the given rays; None if no candidate
      ray was materialized (even case) or left unbound. *)
@@ -575,7 +566,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      the check must compare it against material in the same frame, so it
      runs before the collapsed state replaces it. With no emergent ray there
      is nothing for `into` to add. *)
-  let land_realization ((st, _, emergent, _) as r) =
+  let land_realization ((st, emergent, _) as r) =
     trace (Some r);
     (match (into, emergent) with
     | Some (_, check_axis), Some (_, line) -> check_axis line
@@ -631,7 +622,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     when (* the fan fixes its stayer before any selection stage runs (ADR
             0048): states with different stayers leave the statement
             ambiguous *)
-         let stayer_of (st, _, _, (rays, emergent)) =
+         let stayer_of (st, _, (rays, emergent)) =
            match
              Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent
            with
@@ -652,18 +643,12 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       Error.fail ~hint:"add (staying .p) with .p in the sector that stays" span
         (verb ^ " is ambiguous: its candidates hold different sectors still")
   | many ->
-      (* |deciding| > 1: three-stage selection, derived empirically against
-         the fish mirror pair and the swivel golden:
+      (* |deciding| > 1: without (toward) the statement is ambiguous;
+         with it, two stages pick a state:
          1. POSITION stage: placements depend only on ray LINES, so
             realizations group into position classes by moved-material
             centroid; (toward) picks the class by centroid dot.
-         2. MIN-MOUNTAIN CANON: within the class, keep only the
-            realizations with the fewest derived mountains among the
-            USER-GIVEN creases (a freshly-materialized emergent [cid] is
-            not a given [cid], so it is excluded automatically; a
-            collinear-reuse emergent (the fish diagonal) IS a given
-            [cid] and counts, per the rule doc's fish derivation).
-         3. DIPOLE stage: if several remain, maximize
+         2. DIPOLE stage: if several remain, maximize
             {m S(R) = Σ_faces area · height ·
             ((table_centroid − O)·(toward − O)) }, the height of a face
             being the number of faces it lies above less the number it
@@ -688,63 +673,24 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         let denom = Num.mul (Num.of_int 3) !a2 in
         ({ Geom.x = Num.div !cx denom; y = Num.div !cy denom }, area)
       in
-      (* stage-2 canon: derived (never stored) M/V per hinge:
-         [Fold_state.mv] reads rank + orientation, so two stackings of
-         one pattern can differ. A given [cid] is a mountain iff some
-         FOLDED hinge of that [cid] derives M. *)
-      let given_cids =
-        List.sort_uniq compare (List.map (fun (c, _, _, _) -> c) rays)
-      in
-      let given_mountains (st, _, _, _) : int =
-        List.length
-          (List.filter
-             (fun cid ->
-               let hs = Fold_state.hinges st in
-               let m = ref false in
-               Array.iteri
-                 (fun i (h : Fold_state.hinge) ->
-                   if
-                     h.Fold_state.crease_id = cid
-                     && Num.sign h.Fold_state.angle <> 0
-                     && Fold_state.mv st i = Fold_state.M
-                   then m := true)
-                 hs;
-               !m)
-             given_cids)
-      in
-      let min_mountain_filter rs =
-        let counted = List.map (fun r -> (given_mountains r, r)) rs in
-        let m = List.fold_left (fun acc (c, _) -> min acc c) max_int counted in
-        let kept =
-          List.filter_map (fun (c, r) -> if c = m then Some r else None) counted
-        in
-        remove Trace.By_mountains ~kept rs;
-        kept
-      in
       let commit = land_realization in
       (match toward with
       | None -> (
-          (* no class to pick without (toward); the min-mountain canon
-             is toward-independent, so it may still single out THE
-             least-forced realization: only a post-canon surplus is a
-             genuine ambiguity (spec: "no (toward) while |S| > 1 after
-             stage 2"). A verb without a `toward` item gets no hint. *)
-          match min_mountain_filter many with
-          | [ r ] -> commit r
-          | kept ->
-              let hint =
-                if verb = "flatten" then
-                  Some "add (toward .p) to pick the fold direction"
-                else None
-              in
-              Error.fail ?hint span
-                (Printf.sprintf "%s is ambiguous: %d realizations" verb
-                   (List.length kept)))
+          (* without (toward) nothing picks among the states. A verb
+             without a `toward` item gets no hint. *)
+          let hint =
+            if verb = "flatten" then
+              Some "add (toward .p) to pick the fold direction"
+            else None
+          in
+          Error.fail ?hint span
+            (Printf.sprintf "%s is ambiguous: %d realizations" verb
+               (List.length many)))
       | Some toward_pt ->
           let st_pre = !(ctx.state) in
           (* stage 1: moved-material centroid per realization; a pure
              function of table placement, shared within a class. *)
-          let centroid_of (st_post, _, _, _) : Geom.point =
+          let centroid_of (st_post, _, _) : Geom.point =
             let faces = Fold_state.faces st_post in
             let nf = Array.length faces in
             let sx = ref Num.zero and sy = ref Num.zero and sa = ref Num.zero in
@@ -810,12 +756,11 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               by_centroid
           in
           remove Trace.By_toward ~kept:winners many;
-          (* stage 2 *)
-          (match min_mountain_filter winners with
-          | [] -> assert false (* filter of a non-empty list *)
+          (match winners with
+          | [] -> assert false (* [many] is non-empty, so a class wins *)
           | [ r ] -> commit r
           | kept ->
-              (* stage 3, but first the symmetry-axis guard (rule doc
+              (* stage 2, but first the symmetry-axis guard (rule doc
                  §Ties): the dipole's null direction is NOT the
                  geometric mirror axis, so an on-axis toward would get
                  a strict-but-arbitrary [argmax]; if the given-ray
@@ -839,7 +784,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
                   Flatten.e_toward_ambiguous
               else
-                let dipole (st, _, _, _) : Num.t =
+                let dipole (st, _, _) : Num.t =
                   let faces = Fold_state.faces st in
                   let nf = Array.length faces in
                   (* the faces a face lies above, less those it lies below *)
