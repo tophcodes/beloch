@@ -106,8 +106,8 @@ other; the table maps them.
 - Axioms 1 to 4 have degree 1 and stay in the rationals; axiom 5 is the
   first that needs a square root, and axiom 7 the first that needs a cube
   root. In Justin's account axioms 1 to 4 give the dyadic rationals, 1 to 5
-  the field  1 to 6 the ruler-and-compass field  and 1 to 7 the
-  larger 0@justin1986, §8.1].
+  the field $K_1$, 1 to 6 the ruler-and-compass field $K_2$, and 1 to 7 the
+  larger $K_3$ [@justin1986, §8.1].
 
 ## Selection
 
