@@ -48,6 +48,7 @@ type annot_entry = {
 
 type free_info = {
   fi_t : Num.t;
+  fi_d : Q.t option;  (* the distance a `by` placed the point at, as written *)
   fi_p0 : Geom.point;  (* t = 0 endpoint (anchor) *)
   fi_p1 : Geom.point;  (* t = 1 endpoint *)
   fi_source_line : int;

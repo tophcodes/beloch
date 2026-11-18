@@ -1321,6 +1321,23 @@ let test_frame_unit () =
   Alcotest.(check string) "no declaration" "unit" (unit_of "paper square\n");
   Alcotest.(check string) "declared" "mm" (unit_of "unit mm\npaper square 150\n")
 
+(* A free point placed by a distance records that distance in beloch:free;
+   its fraction of the range is irrational when the range's length is. *)
+let test_free_by_distance () =
+  let free_of src =
+    let open Yojson.Safe.Util in
+    Beloch.fold_string ~filename:"t.bel" src |> member "beloch:free" |> member "p"
+  in
+  let open Yojson.Safe.Util in
+  let p =
+    free_of "paper square\nmark (through .b .d) as --bd\n.p = free on --bd from .b by 1/2\n"
+  in
+  Alcotest.(check string) "by: the distance" "1/2" (p |> member "d" |> to_string);
+  Alcotest.(check bool) "by: no fraction" true (p |> member "t" = `Null);
+  let p = free_of "paper square\n.p = free on --ab from .a at 1/4\n" in
+  Alcotest.(check string) "at: the fraction" "1/4" (p |> member "t" |> to_string);
+  Alcotest.(check bool) "at: no distance" true (p |> member "d" = `Null)
+
 let test_band_frame0 () =
   let src =
     "shape band(w h) {\n\
@@ -1519,6 +1536,8 @@ let () =
         [
           Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
           Alcotest.test_case "frame_unit" `Quick test_frame_unit;
+          Alcotest.test_case "a free point by a distance records the distance" `Quick
+            test_free_by_distance;
           Alcotest.test_case "a trimmed band: frame 0 is the trimmed sheet" `Quick
             test_band_frame0;
           Alcotest.test_case "every frame of the crane carries edges_faces" `Quick

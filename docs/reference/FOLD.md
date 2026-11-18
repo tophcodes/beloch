@@ -166,10 +166,13 @@ What the language knows about a state and FOLD cannot say:
   for a point; `line` is the mark's line, for the direction a renderer
   draws a tick in, and `intent` the letter the program wrote beside the
   mark.
-- `beloch:free`: every free point (`free on … from … at …`), keyed by its
+- `beloch:free`: every free point (`free on … from …`), keyed by its
   name, qualified inside a kept instance as in `beloch:edges`. An entry is
   `{"t", "endpoints", "source_line"}`: `t` is the exact rational as a
-  string, `"1/4"`, so a reader recovers it exactly, and `endpoints` the two
+  string, `"1/4"`, so a reader recovers it exactly. A point placed `by` a
+  distance carries `d`, the distance as written, in place of `t`: its
+  fraction of the range is irrational wherever the range's length is.
+  `endpoints` holds the two
   ends of the range in paper coordinates, rounded like `vertices_coords`,
   so a renderer can offer the point as a slider.
 - `beloch:faces_matrix`: each face's isometry as a matrix, the restriction of

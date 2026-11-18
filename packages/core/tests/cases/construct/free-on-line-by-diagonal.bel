@@ -1,0 +1,8 @@
+@author "Claude (Anthropic)"
+
+; a distance along the diagonal, whose length is irrational: the point is
+; exact, and so is the distance the output records for it
+paper square
+mark (through .b .d) as --bd
+.p = free on --bd from .b by 1/2
+; assert .p incident --bd

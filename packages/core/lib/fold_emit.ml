@@ -718,7 +718,11 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
            ( name,
              `Assoc
                [
-                 ("t", `String (Num.to_rational_string fi.Eval.fi_t));
+                 (* a `by` point's fraction is irrational where the range's
+                    length is, so it records the distance as written *)
+                 (match fi.Eval.fi_d with
+                 | Some d -> ("d", `String (Q.to_string d))
+                 | None -> ("t", `String (Num.to_rational_string fi.Eval.fi_t)));
                  ( "endpoints",
                    `List
                      [

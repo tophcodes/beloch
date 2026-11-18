@@ -17,6 +17,7 @@ type stmt_log_entry = Ctx.stmt_log_entry = {
 }
 type free_info = Ctx.free_info = {
   fi_t : Num.t;
+  fi_d : Q.t option;
   fi_p0 : Geom.point;
   fi_p1 : Geom.point;
   fi_source_line : int;
@@ -98,23 +99,24 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
     else if Geom.point_equal ax p1raw then (p1raw, p0raw)
     else Error.fail span "the anchor is not an endpoint of the line's material"
   in
-  let tv =
+  let tv, dq =
     match pos with
-    | None -> Num.div Num.one (Num.of_int 2)
+    | None -> (Num.div Num.one (Num.of_int 2), None)
     | Some (Ast.FreeAt t) ->
         let tv = Num.of_q (number_value ctx t) in
         if Num.sign tv < 0 || Num.compare tv Num.one > 0 then
           Error.fail span "t is out of range (must be between 0 and 1)";
-        tv
+        (tv, None)
     | Some (Ast.FreeBy d) ->
         (* the distance as a fraction of the range's length, which the
            kernel holds exactly (ADR-0012, 0013) *)
-        let d = Num.of_q (number_value ctx d) in
+        let dq = number_value ctx d in
+        let d = Num.of_q dq in
         let dx = Num.sub e1.Geom.x e0.Geom.x and dy = Num.sub e1.Geom.y e0.Geom.y in
         let len = Num.sqrt (Num.add (Num.mul dx dx) (Num.mul dy dy)) in
         if Num.compare d len > 0 then
           Error.fail span "the distance is longer than the line's material";
-        Num.div d len
+        (Num.div d len, Some dq)
   in
   let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
   let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
@@ -130,13 +132,13 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
   | Root ->
       ctx.free_points_rev <-
         (n,
-         { fi_t = tv; fi_p0 = e0; fi_p1 = e1;
+         { fi_t = tv; fi_d = dq; fi_p0 = e0; fi_p1 = e1;
            fi_source_line = (fst span).Lexing.pos_lnum })
         :: ctx.free_points_rev
   | InInstance i ->
       ctx.free_points_rev <-
         (i ^ "." ^ n,
-         { fi_t = tv; fi_p0 = e0; fi_p1 = e1;
+         { fi_t = tv; fi_d = dq; fi_p0 = e0; fi_p1 = e1;
            fi_source_line = (fst span).Lexing.pos_lnum })
         :: ctx.free_points_rev
   | Anon -> ())
