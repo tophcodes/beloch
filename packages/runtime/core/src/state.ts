@@ -1,6 +1,6 @@
 import type { FoldScene } from "@beloch/scene";
 
-// What a selection names. A crease is its bundle (ADR-0014), so the identity
+// What a selection names. A crease is its bundle (BEP-0014), so the identity
 // is the crease id and never one of its segments; a paper boundary has no id
 // to carry and is named by its edge ("ab"). A face and a vertex are the two
 // other things a reader can point at, carried by the index the document gives
@@ -39,7 +39,7 @@ export interface State {
   scene: FoldScene | null;
   // Where the stepper stands: 0 to writes.length. 0 is the sheet before any
   // statement ran; n means every write has been applied. A binding statement
-  // moves the program and not the paper (ADR 0026), so it is no stop here.
+  // moves the program and not the paper (BEP-0026), so it is no stop here.
   step: number;
   // The settled selection. A card lights several named entities at once and
   // the playground lights one; both are policies over this one list, and the

@@ -21,11 +21,11 @@ type stmt_log_entry = {
          [Fold_state.mark_graduates] against the just-folded state. *)
   sl_parent : int option;
       (* the entry of the [apply] this statement runs under, [None] at the
-         top level (ADR 0030) *)
+         top level (BEP-0030) *)
 }
 
 (* An annotation with its arguments read against the state the statement
-   after it starts from (ADR 0029). [an_target] is that statement's entry in
+   after it starts from (BEP-0029). [an_target] is that statement's entry in
    the log, [-1] while the statement has not run yet and for an annotation at
    the end of a statement list, which belongs to the state [an_frame_index]
    its last statement left. *)
@@ -414,7 +414,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
 
 (* A statement that moved the program and left the paper where it was: a
    point, a construction line, a bundle, a definition, an export, an apply
-   whose body folds nothing. The second axis counts these as well (ADR 0026),
+   whose body folds nothing. The second axis counts these as well (BEP-0026),
    so a reader of the program can be told what each statement
    binds. It reads against the frame already on screen and carries the marks
    the statement before it left dangling. *)

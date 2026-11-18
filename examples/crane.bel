@@ -3,10 +3,10 @@
 @source "[ida2020, Fig. 7.19]"
 
 ; The traditional crane, flat. The bird base is folded by two petal folds,
-; each one flatten of two fans (ADR 0055); it is the state Ida's steps 2-10
+; each one flatten of two fans (BEP-0055); it is the state Ida's steps 2-10
 ; reach by reverse folds [ida2020, Fig. 7.19]. Her steps 11-17 follow. Her
-; steps 18 and 19 open the wings, which is 3D and out of scope (ADR 0015).
-; Checked against her figures in docs/notes/2026-09-25-crane-oracle.md.
+; steps 18 and 19 open the wings, which is 3D and out of scope (BEP-0015).
+; Checked against her figures in records/notes/2026-09-25-crane-oracle.md.
 
 paper square
 

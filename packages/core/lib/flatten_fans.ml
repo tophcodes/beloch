@@ -1,5 +1,5 @@
 (** `flatten` over fan items: several vertices folded in one motion
-    (ADR 0055; docs/reference/KERNEL.md, Fans). *)
+    (BEP-0055; docs/reference/KERNEL.md, Fans). *)
 
 open Ctx
 
@@ -283,7 +283,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Error.fail fans.(j).Ast.fan_span "no ray of the fan starts at its vertex")
     given;
   (* the crease between two vertices: a ray of both fans, derived when the
-     program names it in neither (ADR 0055) *)
+     program names it in neither (BEP-0055) *)
   let derived_cid =
     lazy (match into with Some (cid, _) -> cid | None -> Fold_state.fresh_crease_id ())
   in
@@ -348,7 +348,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Some (List.map (fun f -> (Fold_state.faces pre_st).(f)) faces)
   in
   let v0 = verts.(0) in
-  (* the staying points, as table points on the anchor (ADR 0048) *)
+  (* the staying points, as table points on the anchor (BEP-0048) *)
   let staying =
     match staying_opt with
     | None ->
@@ -676,7 +676,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   (* every realization of every pattern, each with whether it keeps the
      paper inside the outline of the state before the flatten. The outline
      ranks the realizations here instead of removing them: a petal reaches
-     past the outline of the base it is folded from (ADR 0056). *)
+     past the outline of the base it is folded from (BEP-0056). *)
   let hull = Collapse.table_hull st in
   let results =
     List.map

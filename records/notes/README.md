@@ -1,0 +1,13 @@
+# Design journal
+
+Dated markdown files, one per work session where you *thought* about something.
+Not "what I did" (commits cover that) but "what I was thinking about and why":
+half-formed ideas, observations, the concrete failing example that forced a
+redesign. This reasoning evaporates fast and is exactly what the paper's
+motivation section will need.
+
+Filename: `YYYY-MM-DD.md` (multiple entries per day → append, or `-2` suffix).
+
+Keep it informal. Link to records (`[[ADR-0008]]`, `[[BEP-0037]]`, [[ADR-0062]]) and examples
+liberally. An entry stays as it was written; when it ends in a decision, the
+decision becomes an ADR or a BEP and the entry links to it.

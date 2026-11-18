@@ -43,7 +43,7 @@ to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
 the outline. A collapse keeps the realizations whose faces lie on the table
 inside the convex hull of every table polygon of the state before the collapse
-([[decision/0046]]).
+([[BEP-0046]]).
 
 ## State
 
@@ -80,7 +80,7 @@ that checks the two preliminary-base routes against each other.
 
 ## Layer order
 
-`Fold_state.t` stores $\lambda$ ([[decision/0060]]): for every two faces
+`Fold_state.t` stores $\lambda$ ([[BEP-0060]]): for every two faces
 whose table polygons overlap in positive area (`Geom.convex_overlap`;
 touching is no overlap), which of the two lies above. Two faces that do not
 overlap have no entry. `Fold_state.above` and `Fold_state.rel` read one
@@ -136,7 +136,7 @@ staying faces keep their side, and two faces of one moved block exchange
 sides. A block placed `Top` lies above every staying face it lands on, and
 a block placed `Bottom` below them. A block placed `Over` or `Under` faces
 lies directly on each of them, and the three conditions of
-[[decision/0059]] decide its other new pairs. A face that `subdivide` cuts
+[[BEP-0059]] decide its other new pairs. A face that `subdivide` cuts
 passes its sides on to its pieces.
 
 `Fold_state.orders` works in two steps. It first relates the sides it has to
@@ -243,7 +243,7 @@ layer of the tip; otherwise into a new crease, or into the crease `into`
 names.
 
 `Collapse.mk_sector_geoms` gives each hinge of the tip on a ray a role
-([[decision/0044]]). A flat hinge of a ray's crease folds. A folded hinge of a ray's
+([[BEP-0044]]). A flat hinge of a ray's crease folds. A folded hinge of a ray's
 crease keeps or opens, and a hinge of another crease on a ray keeps or
 changes; the kernel tries every combination of these, so the work doubles
 with each of them. For each combination it moves every face by the
@@ -271,7 +271,7 @@ four fans.
 ### Fans
 
 `Flatten_fans.run` folds a `flatten` of several fan items
-([[decision/0055]]). It resolves each ray item to a line: a line operand to
+([[BEP-0055]]). It resolves each ray item to a line: a line operand to
 its material segments, a construction to the line `Axiom.select` keeps,
 under a fresh crease id. A fan with `at` has its vertex at the table
 position of that point; a fan without it, at the one point every ray item
@@ -308,7 +308,7 @@ valley fold reach.
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
-there are any ([[decision/0056]]), then those with the fewest mountains on the rays the
+there are any ([[BEP-0056]]), then those with the fewest mountains on the rays the
 program gave. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
@@ -329,7 +329,7 @@ ray, so that the fan has four elements, the spine, the two pieces of the
 axis and the target's crease on the anchor's layer, and an even count seeks
 no emergent ray. The fan passes the two pieces of the axis, the flanks of
 the opened spine, with the letter valley, as a letter item of `flatten`
-passes its letter ([[decision/0061]]). Of the states the fan folds flat in,
+passes its letter ([[BEP-0061]]). Of the states the fan folds flat in,
 the squash keeps those whose flanks both fold as valleys; with one flank a
 mountain the same creases fold a swivel fold, which the explicit fan reaches
 with letters. The stayer is a point of the anchor's material beyond the
@@ -388,7 +388,7 @@ count floor, the boundary check, duplicate rays and Kawasaki closure are
 properties of which lines and directions are given, not of which are marked
 mountain or valley. Check 11 runs here only where the anchor surrounds O on
 the paper. Elsewhere its test, whether some combination of the hinges the
-fan may change closes the paper paths ([[decision/0044]]), runs per admissible
+fan may change closes the paper paths ([[BEP-0044]]), runs per admissible
 stayer sector after checks 16 and 6, and a fan that fails it reports
 `` no realization keeps the staying flap still ``. A candidate that fails any of them fails for **every**
 Maekawa pattern tried against it, and checks 7–11 have no per-pattern
@@ -415,7 +415,7 @@ the numbers above keep their meaning.
 | 15 | (`on` given) no face of the named flap lies under the vertex | `the on flap does not lie under the vertex` | |
 | 16 | the anchor has no face outside the stayer's wedge, so the tip is empty | `the anchor flap has no material outside the staying sector` | |
 
-Four checks concern the stayer ([[decision/0048]]). A candidate fan that fails 17,
+Four checks concern the stayer ([[BEP-0048]]). A candidate fan that fails 17,
 18 or 19 contributes no states, and the message surfaces when no candidate
 fan contributes any.
 
@@ -582,7 +582,7 @@ needs it:
    $S(R) = \sum_{\text{faces}} \text{area} \cdot h_f \cdot ((c_f - O) \cdot (p - O))$,
    with $c_f$ the table centroid of the face and $h_f$ the number of faces
    it lies above less the number of faces it lies below
-   ([[decision/0060]]): the material toward $p$ comes to lie on top. Mirror realizations score
+   ([[BEP-0060]]): the material toward $p$ comes to lie on top. Mirror realizations score
    the same value with opposite sign, so any $p$ off the axis decides. A
    guard runs first: when the set of ray directions is invariant under the
    reflection across the line through O and $p$, or $p$ is O, the sides are
@@ -692,7 +692,7 @@ reader of the file sees.
 
 ## Annotations
 
-An annotation never changes the geometry ([[decision/0029]]), and the kernel holds to
+An annotation never changes the geometry ([[BEP-0029]]), and the kernel holds to
 that in two places. `Parse.parse` runs `Annotation.check`, which needs no
 state. The evaluator reads an annotation's arguments with
 `Annotation.resolve` when it reaches the annotation, and keeps the result

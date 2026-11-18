@@ -737,7 +737,7 @@ let test_parse_flatten_toward_item () =
      overs=[] staying=- toward=.s"
     (shape1 "flatten (--a & .p) (--b & .q valley) (--c & .r mountain) (toward .s)")
 
-(* ADR 0055: fan items, with a construction as a ray, `at` and `as` *)
+(* BEP-0055: fan items, with a construction as a ray, `at` and `as` *)
 let test_parse_flatten_fan_items () =
   Alcotest.(check string)
     "two fans beside the statement's own items"
@@ -858,7 +858,7 @@ let test_items_any_order_flatten () =
 
 (* axiom, prose spelling, align spelling, the alignment list the prose form
    fixes. The two spellings agree as multisets, which is what recognition
-   reads (ADR 0031). *)
+   reads (BEP-0031). *)
 let construction_pairs =
   [
     ( "axiom 1",
@@ -1087,7 +1087,7 @@ let test_err_placed_fold_rejects_mountain () =
       parse_stmts ~filename:"t.bel"
         "paper square\nfold (through .m .n) (mountain) (over .p)\n")
 
-(* `up to` names the flap a placed fold moves (ADR 0036) *)
+(* `up to` names the flap a placed fold moves (BEP-0036) *)
 let test_placed_fold_takes_up_to () =
   ignore
     (parse_stmts ~filename:"t.bel"

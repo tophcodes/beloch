@@ -1,5 +1,5 @@
--- The id links of ADR 0054 in the rendered PDFs. pandoc reads
--- `[[decision/0032]]` and `[[reference/model#def-sheet|the sheet]]` as
+-- The id links of ADR-0054 and ADR-0062 in the rendered PDFs. pandoc reads
+-- `[[ADR-0032]]` and `[[reference/model#def-sheet|the sheet]]` as
 -- links of class `wikilink` when it runs with
 -- `--from markdown+wikilinks_title_after_pipe`; this filter resolves the
 -- target against _build/id-links.json, written by scripts/id-links.ts. An
@@ -7,7 +7,7 @@
 -- internal link; everything else becomes the absolute URL of the page on the
 -- site, or of the file in the repository when the site does not serve it. A
 -- link with no text after the pipe gets the same default text the site
--- gives it: "ADR NNNN" for a decision, the anchor's label, or the page's
+-- gives it: the id for a record (`ADR-0032`), the anchor's label, or the page's
 -- title. A target that resolves to nothing stops the render, naming it.
 --
 -- Known limit: pandoc numbers a heading's own id by its rules, which drop a
@@ -46,8 +46,7 @@ end
 
 local function default_text(doc, anchor)
   if anchor then return doc.anchors[anchor] or anchor end
-  local n = doc.id:match("^decision/(%d%d%d%d)$")
-  if n then return "ADR " .. n end
+  if doc.id:match("^%u%u%u%-%d%d%d%d$") then return doc.id end
   return doc.title
 end
 
@@ -57,17 +56,26 @@ function Link(el)
   -- `[[id\|text]]`, the form a table cell needs, reaches the filter with the
   -- backslash left on the target.
   local target = el.target:gsub("\\$", "")
-  local kind, stem, anchor = target:match("^(%a+)/([^#%s]+)#(%S+)$")
-  if not kind then
-    kind, stem = target:match("^(%a+)/([^#%s]+)$")
+  local id, anchor
+  local prefix, number, rest = target:match("^(%a%a%a)%-(%d%d%d%d)(.*)$")
+  local kind = prefix and prefix:upper()
+  if (kind == "ADR" or kind == "BEP") and (rest == "" or rest:match("^#%S+$")) then
+    id = kind .. "-" .. number
+    anchor = rest ~= "" and rest:sub(2) or nil
+  else
+    local stem
+    kind, stem, anchor = target:match("^(%a+)/([^#%s]+)#(%S+)$")
+    if not kind then
+      kind, stem = target:match("^(%a+)/([^#%s]+)$")
+    end
+    if not kind then
+      error("[[" .. target .. "]] is no id; a link names kind/stem or a record such as ADR-0032, with #anchor after it")
+    end
+    id = (kind .. "/" .. stem):lower()
   end
-  if not kind then
-    error("[[" .. target .. "]] is no id; a link names kind/stem, with #anchor after it")
-  end
-  local id = (kind .. "/" .. stem):lower()
   local doc = idx.documents[id]
   if not doc then
-    error("[[" .. target .. "]] names no document; there is no " .. id .. " under docs/")
+    error("[[" .. target .. "]] names no document; there is no " .. id .. " under docs/ or records/")
   end
   if anchor and not doc.anchors[anchor] then
     error("[[" .. target .. "]] names no anchor; " .. doc.path .. " has no #" .. anchor)

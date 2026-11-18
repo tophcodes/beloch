@@ -30,9 +30,9 @@ states it passes through; its result is the last state.
 
 `beloch fold` evaluates a program and writes the path it took as one FOLD
 document: the crease pattern and the folded state after every step
-([[reference/fold]], [[decision/0007]]). The constructions of the axioms
+([[reference/fold]], [[ADR-0007]]). The constructions of the axioms
 locate where a crease could go and change nothing; the verbs `mark` and
-`fold` act on the sheet ([[decision/0011]]), the law stated under Reads and
+`fold` act on the sheet ([[BEP-0011]]), the law stated under Reads and
 writes below.
 
 ## Sheets
@@ -103,7 +103,7 @@ folded is no crease of the new sheet. The body's states belong to no
 program's path: a program that opens a shape starts at the trimmed sheet.
 
 **Exports.** A trim may list the names it exports, in braces after the flap
-operand ([[decision/0047]]). An entry is a name of the body with its sigil,
+operand ([[BEP-0047]]). An entry is a name of the body with its sigil,
 optionally `as` a landing name with its sigil, as in `export`, and takes no
 `!`: the trimmed sheet
 starts with no names, so a landing name may be one the body used off the
@@ -158,11 +158,11 @@ none. A file without a declaration takes the unit of the file that loads
 it, and a loaded file with another unit has its numbers converted exactly,
 each of these units being a rational multiple of the millimeter. Beloch
 does not load files yet, so these two rules wait for the import
-([[decision/0046]]).
+([[BEP-0046]]).
 
 ## Reads and writes
 
-One law organizes the surface syntax ([[decision/0011]]): an
+One law organizes the surface syntax ([[BEP-0011]]): an
 operation that changes the state is a keyword verb, sequenced in program
 order; an operation that only computes something from the current state is
 an operator, a bracket, or a construction, and may appear anywhere a value
@@ -229,7 +229,7 @@ range starts.
 $P_0 + t\,(P_1 - P_0)$ for $t \in [0, 1]$. `by d` places it at the
 distance $d$ from the start, measured along the line, for
 $0 \le d \le |P_1 - P_0|$; the point is exact whatever $d$ is, since the
-kernel holds the length of the range exactly ([[decision/0012]], 0013). Without
+kernel holds the length of the range exactly ([[ADR-0012]], 0013). Without
 either, the point is the midpoint.
 
 ```
@@ -276,7 +276,7 @@ placement a menu of four entries.
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a
 line is wanted by projection to its table line, which exists while its
-segments are collinear ([[decision/0014]]) and is an error once a fold has bent it.
+segments are collinear ([[BEP-0014]]) and is an error once a fold has bent it.
 A line stands nowhere a crease is wanted: it has no material until a
 `mark` scores it. The check needs no geometry, so a program's sorts can be
 verified before it is evaluated.
@@ -293,7 +293,7 @@ the predicates of a program write the same FOLD graph.
 
 The rule binds the decisions and leaves the representation of numbers
 free. Exact arithmetic over the real algebraic numbers is one way to meet
-it ([[decision/0012]], [[decision/0013]]); interval arithmetic with an exact
+it ([[ADR-0012]], [[ADR-0013]]); interval arithmetic with an exact
 fallback where an interval leaves a predicate open is another. The
 constructions bound how irrational a coordinate gets: axioms 1 to 4 keep
 rational inputs rational, axiom 5 brings square roots, extensions of

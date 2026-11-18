@@ -52,7 +52,7 @@ error naming its alignments.
 
 A construction holds what determines the line: its alignments and its
 `heading`. What determines the fold, `toward`, `moving` and the placement,
-are items of the statement that reads the construction ([[decision/0031]]). A
+are items of the statement that reads the construction ([[BEP-0031]]). A
 binding takes the side items as a write does, `--k = (map --v onto --h)
 (toward .b)`, so a bound line is selected the way a fold along it would
 be. A construction inside an expression takes no selection; it is bound
@@ -80,7 +80,7 @@ decided and waits for the first two-fold construction the kernel can solve.
 
 The axioms carry the numbers of Justin's table [@justin1986, §8.1], which
 orders the seven operations by algebraic power: the number of an axiom is
-the rung of the number ladder its construction needs ([[decision/0012]]).
+the rung of the number ladder its construction needs ([[ADR-0012]]).
 Two other schemes are in use and line up with neither Justin's nor each
 other; the table maps them.
 

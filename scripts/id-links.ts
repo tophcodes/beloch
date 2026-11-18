@@ -1,7 +1,8 @@
-// The id links between documents (ADR 0054). A link `[[kind/stem]]`,
-// `[[kind/stem#anchor]]` or `[[kind/stem|text]]` names a document under
-// docs/ by the directory it lives in and its file stem, case-folded; a
-// decision's stem is its number. In a table cell the pipe before the text is
+// The id links between documents (ADR-0054, ADR-0062). A link `[[kind/stem]]`,
+// `[[kind/stem#anchor]]` or `[[kind/stem|text]]` names a page under docs/ or
+// a journal entry under records/ by its directory and its file stem,
+// case-folded; `[[ADR-0032]]` or `[[BEP-0037]]` names a record by the id its
+// file name starts with. In a table cell the pipe before the text is
 // escaped, `[[kind/stem\|text]]`, so the table keeps its columns. The index
 // built here maps every document to the page the site serves it on, or to
 // its file on GitHub when the site does not serve it, and lists the anchors
@@ -11,7 +12,7 @@
 // `bun scripts/id-links.ts` writes the index to _build/id-links.json for
 // scripts/id-links.lua, which resolves the links in the PDFs;
 // packages/www/src/lib/remark-id-links.ts builds the index in process.
-// `bun scripts/id-links.ts --check` reports every link under docs/ that
+// `bun scripts/id-links.ts --check` reports every link under docs/ and records/ that
 // names no document or no anchor, with file and line, and exits 1 on the
 // first.
 
@@ -45,6 +46,10 @@ export type Link = { raw: string; target: string; text: string | null; line: num
 export type Resolved = { url: string; text: string; document: Document; anchor: string | null };
 
 const DOCS = "docs";
+const RECORDS = "records";
+
+// A record of ADR-0062 is named by its kind and number, `ADR-0032` or `BEP-0037`.
+const RECORD_ID = /^(ADR|BEP)-(\d{4})/i;
 const CONTENT = join("packages", "www", "src", "content", "docs");
 
 // Files the check does not read.
@@ -58,6 +63,11 @@ function walk(dir: string): string[] {
 		else if (entry.name.endsWith(".md")) out.push(path);
 	}
 	return out.sort();
+}
+
+// Every Markdown file of both trees: the pages under docs/, the records under records/.
+function sources(root: string): string[] {
+	return [DOCS, RECORDS].flatMap((tree) => walk(join(root, tree)));
 }
 
 // The slug Astro gives a heading (github-slugger): lower case, punctuation
@@ -91,12 +101,12 @@ function frontmatterTitle(lines: string[]): string | null {
 }
 
 export function idOf(path: string): string {
-	const rel = relative(DOCS, path).split(sep);
-	const kind = rel[0]!;
+	const rel = path.split(sep);
+	const kind = rel[1]!;
 	const stem = rel[rel.length - 1]!.replace(/\.md$/, "");
-	if (kind === "decision") {
-		const m = /^(\d{4})/.exec(stem);
-		if (m) return `${kind}/${m[1]}`;
+	if (rel[0] === RECORDS) {
+		const m = RECORD_ID.exec(stem);
+		if (m) return `${m[1]!.toUpperCase()}-${m[2]}`;
 	}
 	return `${kind}/${stem.toLowerCase()}`;
 }
@@ -163,7 +173,7 @@ export function indexDocument(source: string, path: string, site: string | null)
 export function buildIndex(root: string): Index {
 	const pages = sitePaths(root);
 	const documents: Record<string, Document> = {};
-	for (const abs of walk(join(root, DOCS))) {
+	for (const abs of sources(root)) {
 		const path = relative(root, abs);
 		const doc = indexDocument(readFileSync(abs, "utf8"), path, pages.get(path) ?? null);
 		const other = documents[doc.id];
@@ -232,6 +242,8 @@ export function findLinks(source: string): Link[] {
 }
 
 export function parseTarget(target: string): { id: string; anchor: string | null } | null {
+	const r = /^(ADR|BEP)-(\d{4})(?:#(\S+))?$/i.exec(target);
+	if (r) return { id: `${r[1]!.toUpperCase()}-${r[2]}`, anchor: r[3] ?? null };
 	const m = /^([a-z]+)\/([^#\s]+)(?:#(\S+))?$/i.exec(target);
 	if (!m) return null;
 	return { id: `${m[1]!.toLowerCase()}/${m[2]!.toLowerCase()}`, anchor: m[3] ?? null };
@@ -239,16 +251,15 @@ export function parseTarget(target: string): { id: string; anchor: string | null
 
 export function defaultText(document: Document, anchor: string | null): string {
 	if (anchor !== null) return document.anchors[anchor] ?? anchor;
-	const d = /^decision\/(\d{4})$/.exec(document.id);
-	if (d) return `ADR ${d[1]}`;
+	if (RECORD_ID.test(document.id)) return document.id;
 	return document.title;
 }
 
 export function resolve(index: Index, link: Pick<Link, "target" | "text">): Resolved | { error: string } {
 	const parsed = parseTarget(link.target);
-	if (!parsed) return { error: `[[${link.target}]] is no id; a link names kind/stem, with #anchor after it` };
+	if (!parsed) return { error: `[[${link.target}]] is no id; a link names kind/stem or a record such as ADR-0032, with #anchor after it` };
 	const document = index.documents[parsed.id];
-	if (!document) return { error: `[[${link.target}]] names no document; there is no ${parsed.id} under docs/` };
+	if (!document) return { error: `[[${link.target}]] names no document; there is no ${parsed.id} under docs/ or records/` };
 	if (parsed.anchor !== null && !(parsed.anchor in document.anchors)) {
 		return { error: `[[${link.target}]] names no anchor; ${document.path} has no #${parsed.anchor}` };
 	}
@@ -261,7 +272,7 @@ export type Finding = { path: string; line: number; raw: string; error: string }
 
 export function checkDocuments(root: string, index = buildIndex(root)): Finding[] {
 	const findings: Finding[] = [];
-	for (const abs of walk(join(root, DOCS))) {
+	for (const abs of sources(root)) {
 		const path = relative(root, abs);
 		if (UNCHECKED.has(path)) continue;
 		for (const link of findLinks(readFileSync(abs, "utf8"))) {
@@ -283,7 +294,7 @@ if (import.meta.main) {
 			console.error(`${findings.length} id link(s) resolve to nothing`);
 			process.exit(1);
 		}
-		console.log(`every id link under docs/ resolves (${Object.keys(index.documents).length} documents)`);
+		console.log(`every id link under docs/ and records/ resolves (${Object.keys(index.documents).length} documents)`);
 	} else {
 		const flag = args.indexOf("--out");
 		const out = flag >= 0 ? args[flag + 1]! : join(root, "_build", "id-links.json");

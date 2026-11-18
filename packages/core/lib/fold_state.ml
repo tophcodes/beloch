@@ -2027,7 +2027,7 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
   let below_overlapping i j = side g i j < 0 in
   (* An opening parts the tip into a lower and an upper half where every
      hinge joining the two is folded and lies on one table line, the
-     spine's, which reaches beyond the axis (ADR 0043), and no face of the
+     spine's, which reaches beyond the axis (BEP-0043), and no face of the
      upper half lies below a face of the lower half it overlaps. Per spine
      line, the faces joined by the tip's other hinges move together; the
      lower halves are the sets of such groups that hold every group below
@@ -2426,7 +2426,7 @@ let crease_paper_axis (g : t) (cid : int) :
 (* Component id per face: F-adjacency (hinges with angle 0) union-find. Two
    faces separated only by a flat (angle 0) hinge are the same flap; the
    instant that hinge folds (angle -> ±1) the flap splits there, exactly and
-   only there (ADR 0017). Recomputed from the current hinge-angle set on
+   only there (BEP-0017). Recomputed from the current hinge-angle set on
    every call: no incremental cache, so a future `unfold` (which merges
    clusters) needs no extra bookkeeping. O(faces + hinges) per call. *)
 let coplanar_clusters (g : t) : int array =
@@ -2745,7 +2745,7 @@ let paper_segment_pieces (g : t) ((pa, pb) : Geom.point * Geom.point) :
               Some (Isometry.apply_point iso (at lo), Isometry.apply_point iso (at hi)))
       (List.init (Array.length g.faces) Fun.id)
 
-(* The bundle of the mark [cid] on the table (ADR 0033): its extent, one
+(* The bundle of the mark [cid] on the table (BEP-0033): its extent, one
    piece per face it crosses, and a point mark as its point. *)
 let mark_material_segments (g : t) (cid : int) : (Geom.point * Geom.point) list =
   Array.to_list g.marks

@@ -91,7 +91,7 @@ export default defineConfig({
 		'/tutorials/layers/': '/kernel/',
 	},
 	markdown: {
-		// remark-id-links turns `[[decision/0032]]` and the other id links of ADR
+		// remark-id-links turns `[[ADR-0032]]` and the other id links of ADR
 		// 0054 into links before any other plugin reads the text.
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.

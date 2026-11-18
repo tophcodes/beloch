@@ -1,11 +1,11 @@
 (** `squash`: the fan of a squash fold from the bare alignment of its spine
-    (docs/reference/KERNEL.md, Fan; ADR 0038). The spine is a folded hinge
+    (docs/reference/KERNEL.md, Fan; BEP-0038). The spine is a folded hinge
     on the named crease, its vertex the end of it inside the paper, and the
     axis the bisector through the vertex that lays the spine on the target
     on the flap's side. The axis is scored on both layers of the flap, and
     the fan runs through [Flatten_solve.solve] with the spine, the two
     pieces of the axis and the crease on the target line as its elements
-    (ADR 0044). *)
+    (BEP-0044). *)
 
 open Ctx
 
@@ -351,7 +351,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     (cid, s.Fold_state.ta, s.Fold_state.tb, letter)
   in
   (* the two pieces of the axis are the flanks of the opened spine, and a
-     squash folds both as valleys (ADR 0061): each element carries the
+     squash folds both as valleys (BEP-0061): each element carries the
      letter as a letter item of `flatten` carries it *)
   let axis_elem cid =
     match List.filter at_o (Fold_state.crease_segments st2 cid) with

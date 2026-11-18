@@ -2,9 +2,11 @@
 
 Beloch writes origami folding sequences as programs over the Huzita-Justin
 axioms. It evaluates `.bel` source into one FOLD file with the folded state after
-every step; crease patterns and YR-style folding diagrams are renderings of it. Architecture decisions live in `docs/decision/` (ADRs); read those
-before proposing anything structural. Design journal in `docs/notes/`, dead ends in
-`docs/notes/antipatterns.md`. The contracts live in `docs/reference/`: `MODEL.md` what a
+every step; crease patterns and YR-style folding diagrams are renderings of it. `records/` holds what the project keeps
+for itself (`records/README.md`): ADRs in `records/adr/` decide how Beloch is
+built, BEPs in `records/bep/` decide what a program means, and the design
+journal is `records/notes/`. Read the ADRs and BEPs before proposing anything
+structural. The contracts live in `docs/reference/`: `MODEL.md` what a
 program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,
 binding no other implementation: `KERNEL.md` what `packages/core` realizes,
 `CLI.md` the `beloch` command.
@@ -14,9 +16,8 @@ binding no other implementation: `KERNEL.md` what `packages/core` realizes,
 Per-slice design documents are not kept in the working tree. They were
 point-in-time records of how one slice was built, they went stale as the code
 moved on, and code comments pointing into them taught readers things that had
-stopped being true. What a slice decided belongs in an ADR, what it contracts
-in `docs/reference/`, and what it is worth remembering about a dead end in
-`docs/notes/antipatterns.md`. The documents themselves stay in the Git history;
+stopped being true. What a slice decided belongs in an ADR or a BEP, what it
+contracts in `docs/reference/`, and a dead end in an abandoned record. The documents themselves stay in the Git history;
 `git log --diff-filter=D --stat -- docs/superpowers/specs` finds them.
 
 A skill that writes a spec or a plan to `docs/superpowers/` writes it to the
@@ -31,8 +32,8 @@ to.
 - Before starting on an issue, look it up on the board. If it is closed or its
   Status is Done, stop and ask. Otherwise set its Status to In Progress.
 - A new issue starts from a template in `.github/ISSUE_TEMPLATE/`
-  (`gh issue create --template build|design|docs`), names the ADR it follows
-  from in its first line, and goes on the board with a Topic and one `kind:`
+  (`gh issue create --template build|design|docs`), names the ADR or BEP it
+  follows from in its first line, and goes on the board with a Topic and one `kind:`
   label.
 - A pull request body names its issue with `Closes #n` when the pull request
   finishes it and `Refs #n` when it contributes to it, and the pull request
@@ -63,7 +64,7 @@ Inside the devshell (`nix develop`, or direnv):
   `packages/render-2d`, `packages/runtime` and `packages/www`, the type
   check (`tsc`) of `packages/render-2d` and `packages/runtime`, the prose
   lint at level error, and the check that every program states its credits
-  (ADR 0051). Run it after the last edit and before every push.
+  (BEP-0051). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README
   drawings against their programs, the script tests (`bun test scripts`) and
   the site build.

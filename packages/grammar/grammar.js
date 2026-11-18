@@ -21,7 +21,7 @@ module.exports = grammar({
 
   rules: {
     // a binding of a construction takes `(toward …)` and `(moving …)` items
-    // after it, as a write does (ADR 0031)
+    // after it, as a write does (BEP-0031)
     source_file: $ => repeat(choice(
       $.write_statement, $.definition_head, $.application, $.construction, $.selection_item, $.anchor_item, $._group, $._token,
     )),
@@ -107,7 +107,7 @@ module.exports = grammar({
     flatten_element: $ => seq('(', $._operand, optional($._mv), ')'),
 
     // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
-    // the rays of one vertex of a flatten (ADR 0055)
+    // the rays of one vertex of a flatten (BEP-0055)
     fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
       repeat1(choice($.construction, $.flatten_element)),
       optional(seq('as', $.point)), ')'),
@@ -154,7 +154,7 @@ module.exports = grammar({
 
     // a construction: the canonical `align` over its alignments and its
     // `heading`, or one of the prose spellings that desugar to the same
-    // alignments (ADR 0031):
+    // alignments (BEP-0031):
     // `(align (.a onto .c))`, `(map .a onto .c)`, `(through .a .b)`,
     // `(perp --l through .p)`
     construction: $ => prec(1, seq('(', choice(

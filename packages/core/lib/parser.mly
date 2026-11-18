@@ -2,7 +2,7 @@
 open Ast
 
 (* A prose construction: the alignments its spelling fixes, in the order the
-   spelling fixes them, over no named fold line (ADR 0031). An `align` writes
+   spelling fixes them, over no named fold line (BEP-0031). An `align` writes
    its own order; the two agree as sets, which is what recognition reads. *)
 let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list) :
     construction =
@@ -75,12 +75,12 @@ let shape_def ~(name : string) ~(name_span : Error.span)
     sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_exports = exports;
     sd_span = span }
 
-(* `staying` names points since ADR 0048; a flap names no sector *)
+(* `staying` names points since BEP-0048; a flap names no sector *)
 let staying_flap (span : Error.span) : 'a =
   Error.fail ~hint:"list the points: (staying .p .q)" span
     "staying takes points on the anchor, which name the sector that stays"
 
-(* `toward` inside a construction, the spelling before ADR 0031 *)
+(* `toward` inside a construction, the spelling before BEP-0031 *)
 let toward_inside (span : Error.span) : 'a =
   Error.fail ~hint:"write it as an item of the write: (toward .p)" span
     "toward selects the fold, not the line; it is an item of the write"
@@ -283,7 +283,7 @@ item_body:
   | FAN items fan_as                    { Ast.RiFan (None, $2, $3, $loc) }
   | FAN AT point_operand items fan_as   { Ast.RiFan (Some $3, $4, $5, $loc) }
 
-(* the name `(fan … as .p)` binds to the vertex (ADR 0055) *)
+(* the name `(fan … as .p)` binds to the vertex (BEP-0055) *)
 fan_as:
   |          { None }
   | AS POINT { Some ($2, $loc($2)) }
@@ -315,7 +315,7 @@ flap_arg:
   | flap_operand  { FlapSpec $1 }
 
 (* A construction: the canonical `align` over its parts, or one of the seven
-   prose spellings, which desugar to the same record (ADR 0031). A `toward`
+   prose spellings, which desugar to the same record (BEP-0031). A `toward`
    in either place is the spelling before that record and is refused with
    its new place. *)
 construction_body:

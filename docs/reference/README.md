@@ -25,7 +25,8 @@ Division of artifacts:
 
 - **`docs/reference/`**: *what* the language is, and how the reference implementation
   realizes it. Durable source of truth.
-- **`docs/decision/`** (ADRs): *why* a choice was made. Point-in-time.
+- **`records/adr/`** and **`records/bep/`** (ADRs, BEPs): *why* a choice was
+  made. Point-in-time; a BEP names the sections of this tree it changed.
 - **Design documents** (per slice, disposable): *how* a slice is built. They
   are obsolete once the slice has landed and the documents here reflect it,
   and they are not kept in the working tree; the Git history holds them.

@@ -1,4 +1,4 @@
-// The id links of ADR 0054 on the site: `[[decision/0032]]`,
+// The id links of ADR-0054 and ADR-0062 on the site: `[[ADR-0032]]`,
 // `[[reference/model#def-sheet]]` and `[[guide/first-folds|the guide]]` in
 // prose become links. The index of documents and anchors is built from the
 // checkout once per process by scripts/id-links.ts, which also carries the

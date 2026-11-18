@@ -8,7 +8,7 @@ tableOfContents:
 
 Every error is a compile error: a program that breaks a rule is rejected
 as a whole, and no output is written for it. A rejected program is
-reported as a span, a message and an optional hint ([[decision/0028]]).
+reported as a span, a message and an optional hint ([[ADR-0028]]).
 The message states what is wrong in the terms of the program as written,
 and the hint states one thing the author can write instead; an error
 without a useful suggestion has no hint. This page states how an error is
@@ -226,7 +226,7 @@ takes two points apart. An extent is written onto one flap when `on`
 names it, and it stays on that flap: an extent that would cross a folded
 crease to reach its endpoint is an error. Without `on`, the mark writes a
 piece onto every flap under the extent, each clipped to its flap, and no
-extent crosses a crease ([[decision/0036]], [[reference/beloch-writes#mark]]).
+extent crosses a crease ([[BEP-0036]], [[reference/beloch-writes#mark]]).
 
 ```{.bel .frag}
 mark (through .a .c) (between .a .b)
