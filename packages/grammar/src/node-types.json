@@ -356,6 +356,53 @@
     }
   },
   {
+    "type": "emergent_item",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "crease",
+          "named": true
+        },
+        {
+          "type": "crease_bracket",
+          "named": true
+        },
+        {
+          "type": "flap_bracket",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "instance",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "operator",
+          "named": true
+        },
+        {
+          "type": "point",
+          "named": true
+        },
+        {
+          "type": "point_bracket",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "extent_item",
     "named": true,
     "fields": {},
@@ -923,6 +970,10 @@
           "named": true
         },
         {
+          "type": "emergent_item",
+          "named": true
+        },
+        {
           "type": "extent_item",
           "named": true
         },
@@ -1030,6 +1081,10 @@
     "named": false
   },
   {
+    "type": "beside",
+    "named": false
+  },
+  {
     "type": "between",
     "named": false
   },
@@ -1056,6 +1111,10 @@
   },
   {
     "type": "down",
+    "named": false
+  },
+  {
+    "type": "emergent",
     "named": false
   },
   {

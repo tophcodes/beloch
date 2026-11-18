@@ -95,6 +95,7 @@ module.exports = grammar({
       $.order_item,
       $.alignment_item,
       $.stayer_item,
+      $.emergent_item,
       $.selection_item,
     ),
 
@@ -155,6 +156,9 @@ module.exports = grammar({
 
     // `(staying .a)`
     stayer_item: $ => seq('(', 'staying', $._operand, ')'),
+
+    // `(emergent beside .a)`: the wedge the emergent ray of an odd fan lies in
+    emergent_item: $ => seq('(', 'emergent', 'beside', $._operand, ')'),
 
     // `(toward .q)`, or `(--v toward .q)` naming what goes toward it
     selection_item: $ => prec(1, seq('(', optional($._operand), 'toward', $._operand, ')')),

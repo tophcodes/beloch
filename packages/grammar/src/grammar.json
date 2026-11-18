@@ -527,6 +527,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "emergent_item"
+        },
+        {
+          "type": "SYMBOL",
           "name": "selection_item"
         }
       ]
@@ -998,6 +1002,31 @@
         {
           "type": "STRING",
           "value": "staying"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_operand"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "emergent_item": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "STRING",
+          "value": "emergent"
+        },
+        {
+          "type": "STRING",
+          "value": "beside"
         },
         {
           "type": "SYMBOL",

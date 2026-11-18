@@ -31,6 +31,7 @@
 (order_item      "over" @order)
 (alignment_item  "onto" @alignment)
 (stayer_item     "staying" @stayer)
+(emergent_item   ["emergent" "beside"] @stayer)
 (selection_item  "toward" @selection)
 (output_clause   ["as" "into" "!"] @output)
 (definition_head "def" @keyword)
