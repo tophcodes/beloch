@@ -47,11 +47,15 @@ fold (map --[.e4 .d] onto --mid) (moving .e4)
 
 ; neck and tail, each opened in the middle
 .pn = free on --n1 & #[.sr .b] from .b at 1/4
+.pn3 = free on --n3 & #[.br .b] from .b at 1/4
 reverse (perp --n1 through .sr) (moving .b)
-  (--n1 & .pn mountain) as --neck
+  (--n1 & .pn mountain) (--n3 & .pn3 mountain)
+  as --neck
 .pt = free on --n2 & #[.sl .d] from .d at 1/4
+.pt4 = free on --n4 & #[.bl .d] from .d at 1/4
 reverse (perp --n2 through .sr) (moving .d)
-  (--n2 & .pt mountain) as --tail
+  (--n2 & .pt mountain) (--n4 & .pt4 mountain)
+  as --tail
 
 ; the head
 .hp = free on --bd & .b from .b at 1/4

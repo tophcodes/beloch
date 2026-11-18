@@ -1,0 +1,49 @@
+@author "Claude (Anthropic)"
+
+; The crane's neck without a letter, after the bird base by four reverse
+; folds and two valley folds. The state is the one the two petal folds of
+; crane-neck-openings-petal-route.bel reach, with another rank: the faces of
+; the other leg and of the body, which the neck does not overlap, stand at
+; other places in it. The neck opens at the same three places on both.
+
+paper square
+
+fold (map .a onto .c) as --bd           ; triangle
+reverse (map .b onto .c) as --h         ; preliminary base
+reverse (map .d onto .c) as --v
+
+.o = --h * --v                          ; the paper center
+--mid = (through .c .o)                 ; center line of the base
+
+.sr = --ab * --h                        ; the four side corners, reversed onto --mid
+reverse (map .sr onto --mid through .c) as --rsr
+.sl = --da * --v
+reverse (map .sl onto --mid through .c) as --rsl
+.br = --bc * --h
+reverse (map .br onto --mid through .c) as --rbr
+.bl = --cd * --v
+reverse (map .bl onto --mid through .c) as --rbl
+
+; the bird base: front and back flap folded down across the kite's width,
+; which leaves the legs .b and .d at the apex. `up to` names the center face of each
+; flap; the side corners reversed beneath it are hinged to it off the axis and
+; go with it
+fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf
+fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb
+
+; narrow the legs: each outer edge onto the center line, front layers as
+; valleys, back layers as mountains. Each `up to` names the face of the leg
+; that holds its anchor, the leg's tip and the paper center; without it the
+; front fold takes the back layers too.
+.e1 = (--rsr & .b) * --pf
+fold (map --rsr & .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
+.e2 = (--rsl & .d) * --pf
+fold (map --rsl & .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
+.e3 = (--rbr & .b) * --pb
+fold (map --rbr & .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
+.e4 = (--rbl & .d) * --pb
+fold (map --rbl & .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
+
+reverse (perp --n1 through .sr) (moving .b) as --neck
+
+; expect error "the tip opens at 3 places"
