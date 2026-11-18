@@ -166,3 +166,84 @@ let mv_patterns (constraints : Ast.mv_constraint list) : bool list list =
          let nv = List.length (List.filter (fun v -> v) lst) in
          let nm = n - nv in
          if abs (nm - nv) = 2 then Some lst else None)
+
+(* The error of a flatten that leaves several states, and its hint: the
+   items that would leave one ([BEP-0061]). [letters s] is the letter of
+   every given ray in the state [s], true for a valley, parallel to
+   [items]; an item spells a ray with a letter, and [None] stands for a ray
+   the program cannot letter, because it lettered it already or wrote no
+   item for it. Up to [max_listed] states
+   get an item each: the letter of one ray that no other state shares, or
+   the letters of two rays where one does not part it from the rest. A
+   state that no letter parts from another differs from it in its layers
+   only. Above [max_listed] the hint names the ray whose letter splits the
+   states most evenly. Ceiling: the pair search is quadratic in the rays
+   per state, which stays small for the fans a program writes. *)
+let max_listed = 4
+
+(* a ray item with its letter, as the program writes it *)
+let ray_item (name : string) (valley : bool) : string =
+  Printf.sprintf "(%s %s)" name (if valley then "valley" else "mountain")
+
+let suggest ~(verb : string) ~(items : (bool -> string) option list)
+    ~(letters : 'a -> bool list) (states : 'a list) : string * string =
+  let n = List.length states in
+  let message = Printf.sprintf "%s is ambiguous: %d realizations" verb n in
+  let item k l = (Option.get (List.nth items k)) l in
+  let ls = List.map letters states in
+  let ks =
+    List.filteri (fun _ k -> List.nth items k <> None)
+      (List.init (List.length items) Fun.id)
+  in
+  if n <= max_listed then begin
+    let parts i own =
+      let others = List.filteri (fun j _ -> j <> i) ls in
+      let apart sel = List.for_all (fun o -> not (sel o)) others in
+      match List.find_opt (fun k -> apart (fun o -> List.nth o k = List.nth own k)) ks with
+      | Some k -> Some (item k (List.nth own k))
+      | None ->
+          List.find_map
+            (fun k1 ->
+              List.find_map
+                (fun k2 ->
+                  if
+                    k1 < k2
+                    && apart (fun o ->
+                           List.nth o k1 = List.nth own k1
+                           && List.nth o k2 = List.nth own k2)
+                  then Some (item k1 (List.nth own k1) ^ " and " ^ item k2 (List.nth own k2))
+                  else None)
+                ks)
+            ks
+    in
+    let found = List.mapi parts ls in
+    let items = List.filter_map Fun.id found in
+    let layered = List.length (List.filter Option.is_none found) in
+    let listed =
+      if items = [] then []
+      else [ "each of these keeps one state: " ^ String.concat "; " items ]
+    in
+    let layers =
+      if layered = 0 then []
+      else
+        [ Printf.sprintf
+            "%d states differ in their layers only, which an (.p over .q) item \
+             orders"
+            layered ]
+    in
+    (message, String.concat "; " (listed @ layers))
+  end
+  else
+    let split k =
+      let v = List.length (List.filter (fun l -> List.nth l k) ls) in
+      (abs ((2 * v) - n), k, v)
+    in
+    match List.sort compare (List.map split ks) with
+    | (_, k, v) :: _ when v > 0 && v < n ->
+        ( message,
+          Printf.sprintf "add %s or %s: they keep %d and %d of the %d states"
+            (item k true) (item k false) v (n - v) n )
+    | _ ->
+        ( message,
+          "the states differ in their layers only, which an (.p over .q) item \
+           orders" )

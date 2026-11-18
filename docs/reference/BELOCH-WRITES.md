@@ -485,8 +485,16 @@ material toward `.p` lies on top. A point on the line of a crease through the
 vertex names no side (`` `toward` does not pick a side — the point is
 collinear with a crease through the vertex ``, hint `` aim it off the
 creases ``). Without `toward`, more than one state left is an error
-(`` flatten is ambiguous: <n> realizations ``, hint `` add (toward .p) to
-pick the fold direction ``). An odd fan closes on an emergent ray on a new
+(`` flatten is ambiguous: <n> realizations ``). Its hint names the items
+that would leave one state: for up to four states, for each state the
+letter of one ray that no other state shares, or the letters of two rays
+where one does not part it from the rest (`` each of these keeps one
+state: (--v & --ab mountain); (--h & --bc mountain); … ``); for more, the ray
+whose letter splits the states most evenly (`` add (--h & --bc valley)
+or (--h & --bc mountain): they keep 9 and 9 of the 18 states ``). States
+that no letter parts differ in their layers only, and an `over` item
+orders them. A ray of a fan that is a construction is named by where it
+stands in the program. An odd fan closes on an emergent ray on a new
 line or on the far side of a given ray, and the states of both count
 alike, so their stayers can differ; states that hold different wedges
 still are an error too (`` flatten is ambiguous: its
@@ -574,7 +582,8 @@ Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
 remove its states ([[BEP-0058]]). More than one state left is an error
-(`` flatten is ambiguous: <n> realizations ``).
+(`` flatten is ambiguous: <n> realizations ``), with the hint of a flatten
+of one fan.
 
 ```{.bel .frag}
 fold (map .a onto .c) as --bd

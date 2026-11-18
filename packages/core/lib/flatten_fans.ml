@@ -734,6 +734,14 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | Error _ -> acc)
       [] results
   in
+  (* the letters of the rays in each state, for the hint of an ambiguous
+     statement: a state carries the pattern it came from *)
+  let pattern_of =
+    List.concat
+      (List.map2
+         (fun pat res -> match res with Ok sts -> List.map (fun s -> (s, pat)) sts | Error _ -> [])
+         patterns results)
+  in
   let states = Collapse.rank_by_outline st ~state:Fun.id all in
   let errors = List.filter_map (function Error e -> Some e | Ok _ -> None) results in
   let segs =
@@ -773,8 +781,37 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | None -> "the fans do not fold flat together")
   | many ->
       trace None;
-      Error.fail span
-        (Printf.sprintf "flatten is ambiguous: %d realizations" (List.length many)));
+      (* each ray as the program could letter it, in the order of [rays]: the
+         rays of each fan item, then the derived crease, which no item names *)
+      let item (r : Ast.fan_ray) =
+        match r.Ast.fray with
+        | Ast.MLine lo -> Flatten.ray_item (Resolve.lstr lo)
+        | Ast.MConstruction _ ->
+            let p = fst r.Ast.fspan in
+            fun l ->
+              Printf.sprintf "%s on the ray at %d:%d"
+                (if l then "valley" else "mountain")
+                p.Lexing.pos_lnum (p.Lexing.pos_cnum - p.Lexing.pos_bol + 1)
+      in
+      let items =
+        List.concat
+          (Array.to_list
+             (Array.mapi
+                (fun j (f : Ast.fan) ->
+                  List.concat
+                    (List.map2
+                       (fun (r : Ast.fan_ray) op ->
+                         List.map
+                           (fun _ -> if r.Ast.fdir = Ast.MvFree then Some (item r) else None)
+                           (rays_at pre_st ~fan:j verts.(j) r op))
+                       f.Ast.fan_rays ops.(j))
+                  @ if !derived = None then [] else [ None ])
+                fans))
+      in
+      let message, hint =
+        Flatten.suggest ~verb:"flatten" ~items ~letters:(fun s -> List.assq s pattern_of) many
+      in
+      Error.fail ~hint span message);
   (* the vertices a fan binds, as the paper points of the anchor under them *)
   Array.iteri
     (fun j (f : Ast.fan) ->

@@ -417,6 +417,33 @@ let test_flatten_candidates_fish_vertex () =
 (* The pure Maekawa-consistent M/V pattern enumerator
    ([Flatten.mv_patterns]). n=4: valid (M,V) splits are (3,1)/(1,3), where
    |diff|=2, never (2,2)/(4,0)/(0,4). *)
+(* [Flatten.suggest]: up to four states, the letter that keeps each one
+   alone; above four, the letter that splits them most evenly *)
+let test_flatten_suggest_one_letter_each () =
+  let names = List.map (fun n -> Some (Flatten.ray_item n)) [ "--a"; "--b"; "--c" ] in
+  let states = [ [ true; true; false ]; [ true; false; true ]; [ false; true; true ] ] in
+  Alcotest.(check string) "one letter per state"
+    "flatten is ambiguous: 3 realizations; each of these keeps one state: \
+     (--c mountain); (--b mountain); (--a mountain)"
+    (let m, h = Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id states in
+     m ^ "; " ^ h)
+
+let test_flatten_suggest_pair_and_layers () =
+  let names = [ Some (Flatten.ray_item "--a"); Some (Flatten.ray_item "--b"); None ] in
+  let states = [ [ true; true; false ]; [ true; false; false ]; [ false; true; false ];
+                 [ true; true; false ] ] in
+  Alcotest.(check string) "a pair of letters, and states that differ in layers only"
+    "each of these keeps one state: (--b mountain); (--a mountain); 2 states \
+     differ in their layers only, which an (.p over .q) item orders"
+    (snd (Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id states))
+
+let test_flatten_suggest_split () =
+  let names = List.map (fun n -> Some (Flatten.ray_item n)) [ "--a"; "--b" ] in
+  let states = [ [ true; true ]; [ true; false ]; [ true; true ]; [ false; true ]; [ true; false ] ] in
+  Alcotest.(check string) "the most even split above four states"
+    "add (--b valley) or (--b mountain): they keep 3 and 2 of the 5 states"
+    (snd (Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id states))
+
 let test_flatten_mv_patterns_all_free () =
   Alcotest.(check int) "4 free rays -> 8 Maekawa patterns" 8
     (List.length (Flatten.mv_patterns [ Ast.MvFree; Ast.MvFree; Ast.MvFree; Ast.MvFree ]))
@@ -535,6 +562,12 @@ let () =
             `Quick test_flatten_derive_in_bounds;
           Alcotest.test_case "candidates: fish vertex (1 OppositeRay + 2 LineNew)"
             `Quick test_flatten_candidates_fish_vertex;
+          Alcotest.test_case "suggest: one letter per state" `Quick
+            test_flatten_suggest_one_letter_each;
+          Alcotest.test_case "suggest: layers only" `Quick
+            test_flatten_suggest_pair_and_layers;
+          Alcotest.test_case "suggest: split above four" `Quick
+            test_flatten_suggest_split;
           Alcotest.test_case "mv_patterns: 4 free -> 8" `Quick
             test_flatten_mv_patterns_all_free;
           Alcotest.test_case "mv_patterns: one pinned Mountain -> 4" `Quick
