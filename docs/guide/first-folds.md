@@ -316,7 +316,8 @@ center.
 
 ## Where to go from here
 
-[[guide/reading-the-crane]] continues this program into a
-traditional crane and introduces the rest of what it needs along the way.
+[[guide/reading-the-crane]] folds this base once more, by two squash
+folds, continues it into a traditional crane and introduces the rest of
+what it needs along the way.
 The [playground](/playground/) runs any program in the browser. The
 [[reference/beloch|language reference]] defines every statement this page used.
