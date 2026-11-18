@@ -409,9 +409,43 @@ let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
       | _, [] -> Error e_stayer_dead
       | _ -> Ok sectors)
 
+(* A height per face in which every two faces that overlap lie as in [g]:
+   the faces from the bottom up, of the faces free to come next the one
+   with the smallest index first. The stacking of a fan is a search over
+   orders of its units, and the order of the faces inside a unit, the
+   lowest hinge of an element and the units that keep their order are read
+   off this list. Ceiling: the list also orders faces that do not overlap,
+   by their index, and a state whose layers lie in a cycle has none, so no
+   flatten folds such a state or reaches one. The upgrade is a stacking
+   search over pairs of faces. *)
+let stacking (g : Fold_state.t) : int array =
+  let n = Array.length (Fold_state.faces g) in
+  let below = Array.make n 0 in
+  let over = Array.make n [] in
+  List.iter
+    (fun (i, j) ->
+      below.(i) <- below.(i) + 1;
+      over.(j) <- i :: over.(j))
+    (Fold_state.order g);
+  let height = Array.make n (-1) in
+  for h = 0 to n - 1 do
+    let next = ref (-1) in
+    for i = n - 1 downto 0 do
+      if height.(i) < 0 && below.(i) = 0 then next := i
+    done;
+    if !next < 0 then
+      invalid_arg
+        "Collapse.stacking: the layers of the state lie in a cycle, and a \
+         flatten stacks its faces in one list";
+    height.(!next) <- h;
+    List.iter (fun i -> below.(i) <- below.(i) - 1) over.(!next)
+  done;
+  height
+
 (* The faces of the anchor flap (ADR 0040). [Some polys]: the faces lying in
    those paper polygons, the faces of the flap `on` names before the state was
-   scored further. [None]: the topmost flap under the table point [o]. *)
+   scored further. [None]: the flap of a face under the table point [o] that
+   no other face under [o] lies above. *)
 let anchor_faces (g : Fold_state.t) (o : Geom.point)
     (anchor : Geom.point array list option) : bool array =
   let faces = Fold_state.faces g in
@@ -431,12 +465,11 @@ let anchor_faces (g : Fold_state.t) (o : Geom.point)
           List.exists (fun poly -> Geom.in_convex_polygon poly c) polys)
         faces
   | None ->
-      let rank = Fold_state.rank g in
       let top = ref (-1) in
       for i = 0 to nf - 1 do
         if
           Geom.in_convex_polygon (Fold_state.table_polygon_ccw g i) o
-          && (!top < 0 || rank.(i) > rank.(!top))
+          && (!top < 0 || Fold_state.above g i !top)
         then top := i
       done;
       let cl = Fold_state.coplanar_clusters g in
@@ -694,17 +727,14 @@ let stacking_units (g : Fold_state.t) ~(n : int) ~(sec : int array)
       unit;
     let nu = !next in
     (* order between stationary units, from the faces that overlap *)
-    let g_rank = Fold_state.rank g in
     let stationary i = not tip.(i) in
-    let tps = Array.init nf (Fold_state.table_polygon_ccw g) in
     let above = Array.make_matrix nu nu false in
     for i = 0 to nf - 1 do
       for j = 0 to nf - 1 do
         let ui = unit.(i) and uj = unit.(j) in
         if
           stationary i && stationary j && ui <> uj && (ui >= n || uj >= n)
-          && g_rank.(i) > g_rank.(j)
-          && Geom.convex_overlap tps.(i) tps.(j)
+          && Fold_state.above g i j
         then above.(ui).(uj) <- true
       done
     done;
@@ -774,7 +804,7 @@ let geoms_of ?(prune = false) (g : Fold_state.t) ~(n : int) ~(sec : int array)
     ~(nelem : int) ~(side : int -> int -> int -> (int * int) option)
     ~(faces : Geom.point array array) ~(nf : int) :
     (sector_geom list, string) result =
-  let g_rank = Fold_state.rank g in
+  let g_rank = stacking g in
   let old_hinges = Fold_state.hinges g in
   let nh = Array.length old_hinges in
   let touches_tip (h : Fold_state.hinge) =

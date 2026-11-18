@@ -22,7 +22,7 @@ type hinge = {
 }
 (** Crease between adjacent faces [fa] and [fb]. [angle] = dihedral/π. The
     sign does not affect a flat placement (±π half-turns coincide); M/V is
-    derived from the rank, never stored. *)
+    derived from the layer order, never stored. *)
 
 type mark_geom = MSeg of Geom.point * Geom.point | MPoint of Geom.point
 
@@ -45,7 +45,8 @@ type violation =
       (** root or a hinge's face index out of range, or fa = [fb]. A check on
           the representation; the model has no statement behind it. *)
   | Bad_rank
-      (** rank is not a permutation of 0..n-1
+      (** the stacking given to [make] or [with_rank] is not a permutation
+          of 0..n-1
           @see <https://belochlang.org/model/#rem-linear-extension>
             realizes the linear-extension remark *)
   | Bad_angle of int
@@ -89,10 +90,16 @@ type violation =
       (** the block lands on more classes of faces whose side nothing
           decides than the kernel searches *)
   | Layer_cycle
-      (** the sides a placed block takes form a cycle across regions, which
-          a rank cannot hold
-          @see <https://belochlang.org/model/#rem-linear-extension>
-            realizes the linear-extension remark *)
+      (** three faces that share a region of the table lie in a cycle, or a
+          placed block lies directly on two faces that put one face on both
+          of its sides
+          @see <https://belochlang.org/model/#cond-order>
+            realizes the order condition *)
+  | Bad_order of int * int
+      (** the pairs given to [with_order] name faces [i] and [j] twice, name
+          them though they do not overlap, or leave them out though they do
+          @see <https://belochlang.org/model/#def-flat-state>
+            realizes the domain of the layer order *)
 
 val violation_to_string : violation -> string
 
@@ -105,8 +112,12 @@ val make :
   rank:int array ->
   unit ->
   (t, violation) result
-(** The constructor: [geometry], then [with_rank]. [rank].(i) is face [i]'s stacking height (higher =
-    above), a permutation of 0..n-1. [base] is the root face's placement:
+(** The constructor: [geometry], then [with_rank]. [rank] gives the layer
+    order as a stacking: a permutation of 0..n-1 in which, of two faces that
+    overlap, the one with the higher entry lies above. The state keeps the
+    sides of the overlapping pairs and nothing else of [rank]; a state whose
+    layers lie in a cycle has no stacking and is built by [with_order].
+    [base] is the root face's placement:
     ONE whole-sheet rigid motion (default identity); needed because after a
     pleat (fold, then fold moving the previously-stationary side) no face
     keeps an identity placement, and [flip] moves everything. No per-face
@@ -115,7 +126,7 @@ val make :
     paper-space, fold-invariant array of reference/pinch records (default
     empty). The trailing [unit] anchors the two leading optional arguments
     : OCaml cannot erase omitted optionals followed only by labeled
-    arguments. Checks in order: structure (indices, rank, angle domain,
+    arguments. Checks in order: structure (indices, stacking, angle domain,
     line non-degeneracy), connectivity, hinge adjacency (half-plane +
     shared edge), cycle closure, then the non-crossing conditions
     (taco-tortilla, taco-taco) over the flat projection. Input arrays are
@@ -127,9 +138,9 @@ type geometry
 (** The part of a state that does not depend on its layer order: the faces,
     hinges, root and base, the placements derived from them, and whether
     connectivity, hinge adjacency and cycle closure hold. It memoizes the
-    crossing and collinear-overlap predicates the non-crossing checks read,
-    so validating many ranks over one geometry evaluates each predicate at
-    most once. *)
+    crossing, collinear-overlap and face-overlap predicates the checks
+    read, so validating many layer orders over one geometry evaluates each
+    predicate at most once. *)
 
 val geometry :
   ?base:Isometry3.t ->
@@ -138,30 +149,50 @@ val geometry :
   root:int ->
   unit ->
   (geometry, violation) result
-(** The half of [make] that reads no rank. Fails with the structure checks
+(** The half of [make] that reads no layer order. Fails with the structure checks
     on indices, angle domain and line non-degeneracy; a failure of
     connectivity, hinge adjacency or cycle closure stays in the value, and
-    [with_rank] reports it after its rank check. Input arrays are copied. *)
+    [with_rank] and [with_order] report it. Input arrays are copied. *)
 
 val with_rank :
   ?marks:mark array -> geometry -> rank:int array -> (t, violation) result
 (** The state of a [geometry] stacked by [rank]: checks that [rank] is a
     permutation of the faces, reports a violation the geometry holds, then
-    runs the non-crossing conditions. Returns what [make] returns on the
-    same arguments. *)
+    runs the taco-tortilla and taco-taco conditions. A stacking holds no
+    cycle, so the order condition needs no check. Returns what [make]
+    returns on the same arguments. *)
+
+val with_order :
+  ?marks:mark array -> geometry -> above:(int * int) list -> (t, violation) result
+(** The state of a [geometry] with the layer order [above]: a pair [(i, j)]
+    says that face [i] lies above face [j]. [above] names every pair of
+    faces that overlap on the table once, in either direction, and no other
+    pair; [Bad_order] otherwise. Reports a violation the geometry holds,
+    then runs the taco-tortilla and taco-taco conditions and the order
+    condition: no three faces that share a region lie in a cycle.
+    @see <https://belochlang.org/model/#def-flat-state> realizes the layer order
+    @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
 
 val faces : t -> face array
 val hinges : t -> hinge array
 val root : t -> int
 
-val rank : t -> int array
-(** Accessors return copies; [t] cannot be mutated from outside.
-    @see <https://belochlang.org/model/#rem-linear-extension>
-      realizes the linear extension of the layer relation *)
+(* Accessors return copies; [t] cannot be mutated from outside. *)
 
 val above : t -> int -> int -> bool
-(** [above g i j]: face i stacked strictly above face j (rank comparison:
-    meaningful for faces that overlap in the flat projection). *)
+(** [above g i j]: faces [i] and [j] overlap on the table and [i] lies above
+    [j]. [false] for two faces that do not overlap. *)
+
+val order : t -> (int * int) list
+(** The layer order: [(i, j)] for every two faces that overlap, [i] above
+    [j]. [with_order] on the state's geometry and this list gives the state
+    back.
+    @see <https://belochlang.org/model/#def-flat-state>
+      realizes the layer order of the flat folded state *)
+
+val same_order : t -> t -> bool
+(** Two states of the same number of faces overlap in the same pairs and
+    order each alike. *)
 
 val hinge_motion : hinge -> Isometry3.t
 (** The 3D motion a hinge applies in the sheet frame: identity when flat,
@@ -183,7 +214,7 @@ val face_up : t -> int -> bool
     of folds crossed from the root). *)
 
 val mv : t -> int -> assign
-(** Derived mountain/valley/flat of hinge [i], from placements + rank
+(** Derived mountain/valley/flat of hinge [i], from placements + layer order
     [hullzakharevich2023, §2.1]: valley iff the orientation-preserved side
     lies below its neighbor; [F] iff the hinge's angle is 0. Derived,
     never stored: it cannot contradict the geometry. *)
@@ -227,7 +258,7 @@ type rel = Above | Below | Apart
 (** Layer relation of two faces in the current table projection. *)
 
 val rel : t -> int -> int -> rel
-(** [rel g i j]: [Above]/[Below] by rank where [i] and [j]'s table polygons
+(** [rel g i j]: [Above]/[Below] where [i] and [j]'s table polygons
     strictly overlap ([Geom.convex_overlap]: touching is not overlap);
     [Apart] otherwise (including [i = j]).
     @see <https://belochlang.org/model/#def-flat-state>
@@ -322,13 +353,15 @@ val subdivide_paper_segment :
 type placement =
   | Top  (** outside: above every stationary layer in the footprint *)
   | Bottom  (** outside: below every stationary layer *)
-  | Over of int
-      (** immediately above the stationary child of this PARENT face *)
-  | Under of int  (** immediately below it *)
-(** Where a moved block lands in the rank after a fold. [Over]/[Under] name
-    a parent face of the state being folded; that face must keep a
-    stationary child to anchor on (any non-block parent, or a block parent
-    the axis cuts). *)
+  | Over of int list
+      (** directly on the stationary children of these PARENT faces, above
+          them *)
+  | Under of int list  (** directly on them, below them *)
+(** Where a moved block lands after a fold. [Over]/[Under] name parent faces
+    of the state being folded, the faces the block comes to lie on with
+    nothing in between; each must keep a stationary child to anchor on (any
+    non-block parent, or a block parent the axis cuts). One fold places
+    every block outside the stack or every block on faces. *)
 
 val fold_blocks_all :
   ?crease_id:int ->
@@ -343,12 +376,11 @@ val fold_blocks_all :
     each stationary face it lands on lies: from the placement, from the
     anchor where the face, the anchor and the block share a region, and
     from the faces over the creases of either. The sides nothing decides
-    are searched, and each combination that passes {!with_rank} is one
-    stacking. The rank of each is a topological sort of the overlapping
-    pairs, ties by the rank the splice gives, so a block can come apart in
-    the rank. The list is not empty. [Error v] is a [Taco_tortilla] where
-    the conditions put a face on both sides, [Too_many_undecided], or the
-    violation of the first combination tried when none passes. *)
+    are searched, and each combination that satisfies the non-crossing
+    conditions is one stacking. The list is not empty. [Error v] is a
+    [Taco_tortilla] or a [Layer_cycle] where the conditions put a face on
+    both sides, [Too_many_undecided], or the violation of the first
+    combination tried when none passes. *)
 
 val fold_blocks :
   ?crease_id:int ->
@@ -361,20 +393,21 @@ val fold_blocks :
 (** The general simple fold: every block's parents are cut by the TABLE-space
     [axis] and their [move_side] pieces reflected across it, in one graph
     transformation (one new angle-1 hinge per cut parent, carried hinges
-    re-attached, on-axis hinges with exactly one moving side toggled). Rank:
-    stationary faces keep their relative order; each block's movers, in
-    reversed parent-rank order (a half-turn reverses a stack), are spliced in
-    as one contiguous run at the block's placement; where every block lies
-    [Over] or [Under] a face, the stacking is the one {!fold_blocks_all}
-    finds, and the splice only breaks ties. Two blocks aimed at the same gap
-    from opposite sides each stay next to their own face. A block
+    re-attached, on-axis hinges with exactly one moving side toggled). Layer
+    order: two stationary faces that overlap lie as their parents did, and
+    two faces of one block the other way round, since a half-turn reverses
+    a stack. A block placed [Top] lies above every stationary face it lands
+    on and every block listed before it, a block placed [Bottom] below
+    them; where every block lies [Over] or [Under] faces, the stacking is
+    the one {!fold_blocks_all} finds. A block
     mask marks PARENT faces; a parent in no block is stationary even where
     it crosses the axis. Block masks must be disjoint: a parent claimed by
     several blocks goes to the first. [Error v] is the resulting state's invariant
     violation ([Taco_taco]/[Taco_tortilla] reject an impossible insertion),
     or [Several_stackings] where {!fold_blocks_all} finds several.
     [Invalid_argument] if an [Over]/[Under] face has no stationary child
-    (a block parent lying entirely on the moving side). A block parent cut
+    (a block parent lying entirely on the moving side), or if the fold
+    places one block outside the stack and another on faces. A block parent cut
     by the axis keeps its stationary remainder as that child, so a flap can
     be tucked under its own hinge layer. *)
 
@@ -395,9 +428,9 @@ val fold :
     old hinge lying entirely on [axis] with exactly one moving side toggles
     (a flat precrease upgrades to folded and keeps its [crease_id]; a folded
     hinge with no cut counterpart on the axis physically unfolds back to
-    angle 0). The rank is rebuilt in two blocks (
-    stationary faces keep their relative order, movers reverse theirs) with
-    movers stacked above for a valley fold, below for a mountain fold. The
+    angle 0). Stationary faces keep their order, movers reverse theirs, and
+    a mover lies above every stationary face it lands on for a valley fold,
+    below for a mountain fold. The
     root and [base] are chosen from a stationary child where one exists (its
     parent's placement is unchanged); only when every face moves is the base
     itself reflected across [axis]. *)
@@ -456,9 +489,8 @@ val reverse :
     and the upper block [Under] those of the upper body; outside: [Bottom]
     and [Top]. Every hinge across the opening keeps the order of its faces
     and so turns; every other hinge of the tip keeps its letter. Candidates
-    that agree on every overlapping pair are one state, ranked by the
-    candidate that keeps the tip closest to its hinge layers; exactly one
-    state is the result. [tip] must contain only
+    that agree on every overlapping pair are one state; exactly one state is
+    the result. [tip] must contain only
     parents with a piece on the moving side (the caller builds it so). It is
     [reverse_of_attempts] of [reverse_attempts]. *)
 
@@ -485,7 +517,8 @@ val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical
     centerline (an internal, cosmetic axis: which line is irrelevant, only
     the substantive effect matters), reverses the face array (observable: FOLD
-    emit enumerates faces by index) and the stack. The reflection is absorbed
+    emit enumerates faces by index) and turns every pair of the layer order
+    over. The reflection is absorbed
     into [base]: the ONE
     whole-sheet motion; no per-face isometry is stored. *)
 

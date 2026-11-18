@@ -632,8 +632,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       patterns
   in
   let same_state a b =
-    let ra = Fold_state.rank a and rb = Fold_state.rank b in
-    ra = rb
+    Fold_state.same_order a b
     && List.for_all
          (fun i ->
            Array.for_all2 Geom.point_equal (Fold_state.table_polygon a i)

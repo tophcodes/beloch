@@ -654,9 +654,11 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
             not a given [cid], so it is excluded automatically; a
             collinear-reuse emergent (the fish diagonal) IS a given
             [cid] and counts, per the rule doc's fish derivation).
-         3. RANK-DIPOLE stage: if several remain, maximize
-            {m S(R) = Σ_faces area · (rank − (nf−1)/2) ·
-            ((table_centroid − O)·(toward − O)) }: "the material lying
+         3. DIPOLE stage: if several remain, maximize
+            {m S(R) = Σ_faces area · height ·
+            ((table_centroid − O)·(toward − O)) }, the height of a face
+            being the number of faces it lies above less the number it
+            lies below: "the material lying
             toward p ends up on top." Mirror realizations score ±equal,
             so any off-axis toward decides; toward ON a reflective
             symmetry axis of the given rays is guarded explicitly. *)
@@ -830,10 +832,17 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               else
                 let dipole (st, _, _, _) : Num.t =
                   let faces = Fold_state.faces st in
-                  let rank = Fold_state.rank st in
                   let nf = Array.length faces in
-                  let center =
-                    Num.div (Num.of_int (nf - 1)) (Num.of_int 2)
+                  (* the faces a face lies above, less those it lies below *)
+                  let height f =
+                    let h = ref 0 in
+                    for g = 0 to nf - 1 do
+                      match Fold_state.rel st f g with
+                      | Fold_state.Above -> incr h
+                      | Fold_state.Below -> decr h
+                      | Fold_state.Apart -> ()
+                    done;
+                    !h
                   in
                   let acc = ref Num.zero in
                   for f = 0 to nf - 1 do
@@ -846,7 +855,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                       Num.add !acc
                         (Num.mul a_f
                            (Num.mul
-                              (Num.sub (Num.of_int rank.(f)) center)
+                              (Num.of_int (height f))
                               (dot_toward tc)))
                   done;
                   !acc

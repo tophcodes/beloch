@@ -232,7 +232,7 @@ let test_flatten_derive_e2e () =
                   not (List.exists (Geom.parallel l) given)))
   in
   Alcotest.(check bool)
-    "a genuinely-distinct emergent crease is incident to O" true emergent_exists
+    "a distinct emergent crease is incident to O" true emergent_exists
 
 (* --ear occupies the crease namespace exactly like the validate-mode bind:
    same dup-check proof, no dedicated Env/has_bundle accessor. *)
@@ -277,7 +277,7 @@ let test_flatten_tip () =
    toward-side material on top. `{toward .b}` and `{toward .d}` therefore
    produce the two MIRROR realizations: same placements (every paper point
    lands at the same table position!) but mirrored layer order, which is the
-   spec's whole point. The difference is observable in [Fold_state.rank], not in
+   spec's whole point. The difference is observable in [Fold_state.order], not in
    table positions. *)
 let fish_base_src toward =
   Printf.sprintf
@@ -293,15 +293,15 @@ let test_flatten_derive_opposite_ray_fish_base () =
     let fd =
       Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src toward))
     in
-    (Array.length (Fold_state.faces fd.Eval.state), Fold_state.rank fd.Eval.state)
+    (Array.length (Fold_state.faces fd.Eval.state), Fold_state.order fd.Eval.state)
   in
-  let nf_b, rank_b = result ".b" in
-  let nf_d, rank_d = result ".d" in
+  let nf_b, order_b = result ".b" in
+  let nf_d, order_d = result ".d" in
   Alcotest.(check int) "fish-base toward .b folds (6 faces)" 6 nf_b;
   Alcotest.(check int) "fish-base toward .d folds the same face count" 6 nf_d;
   Alcotest.(check bool)
     "toward .b and toward .d pick DIFFERENT realizations (mirror stackings)"
-    false (rank_b = rank_d)
+    false (order_b = order_d)
 
 (* toward ON the vertex's reflective symmetry axis (fish: the ac-diagonal,
    the given-ray direction set is invariant under reflection across it, b↔d)
@@ -441,7 +441,7 @@ let test_flatten_mv_patterns_beyond_maekawa () =
 (* A flat (angle 0) hinge is a tortilla: its two faces are one continuous
    sheet across the hinge segment. Where that segment lies collinear on a
    FOLDED hinge's crease (a taco), the sheet must stay on one side of the
-   taco's mouth: one face ranked inside [taco.fa, taco.fb] and the other
+   taco's mouth: one face lying between [taco.fa] and [taco.fb] and the other
    outside means paper passes through paper. Fixture: the two-ear fish base
    with BOTH ears {toward .d}; before the flat-hinge taco-tortilla check this
    emitted a ghost state (second wing seated under the stationary strip, its
@@ -461,10 +461,16 @@ let test_flatten_no_flat_hinge_splits_taco () =
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
   let st = fd.Eval.state in
   let hs = Fold_state.hinges st in
-  let rank = Fold_state.rank st in
+  let side x y =
+    match Fold_state.rel st x y with
+    | Fold_state.Above -> 1
+    | Fold_state.Below -> -1
+    | Fold_state.Apart -> 0
+  in
+  (* [c] overlaps [a] and [b] and lies between them *)
   let between a c b =
-    (rank.(a) < rank.(c) && rank.(c) < rank.(b))
-    || (rank.(b) < rank.(c) && rank.(c) < rank.(a))
+    let s = side c a and t = side c b in
+    s <> 0 && t <> 0 && s <> t
   in
   let m = Array.length hs in
   for i = 0 to m - 1 do

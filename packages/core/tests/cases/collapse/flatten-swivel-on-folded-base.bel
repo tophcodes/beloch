@@ -1,0 +1,24 @@
+@author "Claude (Anthropic)"
+
+; The fan of flatten-squash-on-folded-base.bel with --s a mountain, --t a
+; valley and the center line --ac & .a a valley: the two valleys lie apart,
+; and the rays fold a swivel fold (ADR 0061). These letters leave 2 states,
+; which differ in the side of two faces against two others. No item of the
+; fan picks between them, so the statement is ambiguous.
+
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+mark (align (--h onto --ac) (heading --h)) as --s
+mark (align (--h onto --bd) (heading --h)) as --t
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+.z = free on --cd from .c at 1/4
+.e = free on --da from .d at 1/4
+.f = free on --da from .a at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --da) (--s & --da mountain) (--t & --da valley) (--ac & .a valley) (on #[.f]) (staying .q)
+
+; expect error "flatten is ambiguous: 2 realizations"

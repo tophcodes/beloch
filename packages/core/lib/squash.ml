@@ -103,7 +103,6 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
            spine_str));
   let st = !(ctx.state) in
   let hs = Fold_state.hinges st in
-  let rank = Fold_state.rank st in
   (* the folded hinges among the segments *)
   let folded =
     List.filter_map
@@ -145,7 +144,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
           else (s.Fold_state.tb, s.Fold_state.ta, s.Fold_state.pa)
         in
         let fa, fb = s.Fold_state.faces in
-        let upper, lower = if rank.(fa) > rank.(fb) then (fa, fb) else (fb, fa) in
+        let upper, lower = if Fold_state.above st fa fb then (fa, fb) else (fb, fa) in
         let spine_line = Geom.line_through o f in
         let flap_point = centroid (Fold_state.table_polygon_ccw st upper) in
         let flap_side = Geom.side_of_line spine_line flap_point in
@@ -285,8 +284,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     with
     | Some s ->
         let fa, fb = s.Fold_state.faces in
-        let rank = Fold_state.rank st in
-        if rank.(fa) > rank.(fb) then (fa, fb) else (fb, fa)
+        if Fold_state.above st fa fb then (fa, fb) else (fb, fa)
     | None -> (c.upper, c.lower)
   in
   let polys_of fi =

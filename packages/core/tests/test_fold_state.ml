@@ -694,7 +694,7 @@ let test_fold_scoped_parity () =
   let quarter = Num.div Num.one (Num.of_int 4) in
   let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
   let top =
-    (* face with the highest rank among those overlapping face 0 *)
+    (* the top face among those overlapping face 0 *)
     let n = Array.length (Fold_state.faces g1) in
     let best = ref 0 in
     for i = 1 to n - 1 do
@@ -764,7 +764,7 @@ let test_fold_unfold_toggle () =
     (Fold_state.faces g2)
 
 (* A valley fold on a face-up sheet derives V, a mountain fold M; the letter
-   is read from rank and orientation, never stored. *)
+   is read from the layer order and orientation, never stored. *)
 let test_fold_derived_letters () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
@@ -1177,7 +1177,7 @@ let test_select_scope_parity () =
      interval) therefore never matches ANY face and always yields anchor=-1,
      which crashes on the out-of-range anchor. Judge candidacy
      by positive-area overlap with the open strip instead: all 4 faces
-     qualify here, so this reduces to "the highest-ranked face", but stays
+     qualify here, so this reduces to "the top face", but stays
      correct for a partial-overlap construction too. *)
   let top =
     let n = Array.length (Fold_state.faces g) in
@@ -1362,7 +1362,7 @@ let test_mark_axis_current_parity () =
 (* ---- placement ---- *)
 
 (* Two layers: f0 = [0,1]x[0,1] flat on the table, f1 = [1,2]x[0,1] folded
-   across x=1 onto it (rank 1, face-down). Fold f1's table-left piece
+   across x=1 onto it (above f0, face-down). Fold f1's table-left piece
    (x < 1/2) across x=1/2: the moved piece lands on table [1/2,1]. *)
 let two_layer () =
   mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
@@ -1411,8 +1411,8 @@ let find_by_box (g : Fold_state.t) xlo xhi ylo yhi : int =
 
 let three_halves = Num.of_q (Q.of_ints 3 2)
 
-(* Literal regression contract: this is the pinned face order and rank of
-   a valley (Top) fold of the two-layer state, and the
+(* Literal regression contract: this is the pinned face order and layer
+   order of a valley (Top) fold of the two-layer state, and the
    face order is observable in FOLD output. Mountain (Bottom) on this exact
    mask has no matching literal: it wraps the moved corner under the
    full-width, uncut base, which the taco-tortilla check correctly rejects
@@ -1438,7 +1438,11 @@ let test_fold_blocks_top_bottom_match_old_fold () =
   | Ok g' ->
       check_order "Top" g'
         [ (q 0, q 1); (q 1, three_halves); (three_halves, q 2) ];
-      Alcotest.(check (array int)) "Top: rank" [| 0; 1; 2 |] (Fold_state.rank g'));
+      (* all three faces cover table [1/2,1]: the remainder lies on the
+         base and the moved corner on both *)
+      Alcotest.(check (list (pair int int)))
+        "Top: 1 over 0, 2 over 0, 2 over 1" [ (1, 0); (2, 0); (2, 1) ]
+        (Fold_state.order g'));
   match
     Fold_state.fold_blocks ~blocks:[ (mask, Fold_state.Bottom) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
@@ -1450,7 +1454,7 @@ let test_fold_blocks_top_bottom_match_old_fold () =
 let test_fold_blocks_over_tucks () =
   let g = two_layer () in
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over 0) ] g
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 0 ]) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "Over 0: %s" (Fold_state.violation_to_string v)
@@ -1466,7 +1470,7 @@ let test_fold_blocks_over_tucks () =
 let test_fold_blocks_under_own_hinge () =
   let g = two_layer () in
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Under 1) ] g
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Under [ 1 ]) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "Under 1: %s" (Fold_state.violation_to_string v)
@@ -1483,8 +1487,8 @@ let test_fold_blocks_two_blocks_same_gap () =
   match
     Fold_state.fold_blocks
       ~blocks:
-        [ ([| true; false |], Fold_state.Over 0);
-          ([| false; true |], Fold_state.Under 1) ]
+        [ ([| true; false |], Fold_state.Over [ 0 ]);
+          ([| false; true |], Fold_state.Under [ 1 ]) ]
       g ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "two blocks: %s" (Fold_state.violation_to_string v)
@@ -1501,13 +1505,13 @@ let test_fold_blocks_two_blocks_same_gap () =
 let test_fold_blocks_placement_face_without_child () =
   let g = two_layer () in
   (match
-     Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over 1) ] g
+     Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 1 ]) ] g
        ~axis:vline_half ~move_side:(-1) ~prov:None
    with
   | Ok _ -> ()
   | Error v -> Alcotest.failf "Over 1 (self, cut): %s" (Fold_state.violation_to_string v));
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over 7) ] g
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 7 ]) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | exception Invalid_argument _ -> ()
@@ -1791,6 +1795,138 @@ let test_trim_join_edge () =
         assignments edges_faces
   | Error `Hole -> Alcotest.fail "an L has no hole"
 
+(* ---- layer order given as pairs ---- *)
+
+let geometry_of ?(root = 0) ~faces ~hinges () =
+  match Fold_state.geometry ~faces ~hinges ~root () with
+  | Ok geo -> geo
+  | Error v -> Alcotest.failf "geometry: %s" (Fold_state.violation_to_string v)
+
+let expect_order_error label pred geo above =
+  match Fold_state.with_order geo ~above with
+  | Ok _ -> Alcotest.fail (label ^ ": expected a violation, got Ok")
+  | Error v ->
+      Alcotest.(check bool)
+        (label ^ ": " ^ Fold_state.violation_to_string v)
+        true (pred v)
+
+(* The waterbomb base stacks its eight faces over one sector, so every two of
+   them overlap. Its layer order given back to [with_order] builds the same
+   state. *)
+let test_with_order_round_trip () =
+  let g =
+    mk ~faces:(wb_faces ()) ~hinges:(wb_hinges ())
+      ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |] ()
+  in
+  let geo = geometry_of ~faces:(wb_faces ()) ~hinges:(wb_hinges ()) () in
+  Alcotest.(check int) "28 overlapping pairs" 28
+    (List.length (Fold_state.order g));
+  match Fold_state.with_order geo ~above:(Fold_state.order g) with
+  | Error v -> Alcotest.failf "round trip: %s" (Fold_state.violation_to_string v)
+  | Ok g' -> Alcotest.(check bool) "same layer order" true (Fold_state.same_order g g')
+
+let test_with_order_bad_order () =
+  let folded =
+    geometry_of ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ()) ()
+  in
+  (* the two squares side by side: they touch along x=1 and do not overlap *)
+  let flat =
+    geometry_of ~faces:(single_fold_faces ())
+      ~hinges:[| mkh 0 1 (vline 1) (q 0) |] ()
+  in
+  let pair_01 = function Fold_state.Bad_order (0, 1) -> true | _ -> false in
+  expect_order_error "a pair given twice" pair_01 folded [ (1, 0); (0, 1) ];
+  expect_order_error "a pair that does not overlap" pair_01 flat [ (1, 0) ];
+  expect_order_error "an overlapping pair left out" pair_01 folded []
+
+(* The accordion stacks its three faces over table [0,1]x[0,1]. Stacked 0, 1,
+   2 from the bottom they fold flat; 1 over 0, 2 over 1 and 0 over 2 is a
+   cycle over that square. *)
+let test_with_order_layer_cycle () =
+  let geo =
+    geometry_of
+      ~faces:[| strip_face 0 1; strip_face 1 1; strip_face 2 1 |]
+      ~hinges:[| mkh 0 1 (vline 1) (q 1); mkh 1 2 (vline 2) (q 1) |]
+      ()
+  in
+  (match Fold_state.with_order geo ~above:[ (1, 0); (2, 1); (2, 0) ] with
+  | Ok _ -> ()
+  | Error v -> Alcotest.failf "stacked: %s" (Fold_state.violation_to_string v));
+  expect_order_error "cycle"
+    (function Fold_state.Layer_cycle -> true | _ -> false)
+    geo [ (1, 0); (2, 1); (0, 2) ]
+
+(* a point given in halves: [tw 13 0] is (13/2, 0) *)
+let tw x y : Geom.point =
+  { Geom.x = Num.of_q (Q.of_ints x 2); y = Num.of_q (Q.of_ints y 2) }
+
+(* The square twist on the sheet [0,8]x[0,8]. Face 0 is the central square
+   [3,5]x[3,5]. Faces 1 to 4 are the pleats on its sides; each pleat's two
+   creases leave the square's corners with slope 1/2 or 2 and run to the
+   sheet's edge. Faces 5 to 8 lie between two pleats each; they are the f1
+   to f4 of the figure. With the square's sides folded as valleys, every
+   corner face overlaps its two neighbors and lies over one and under the
+   other, around the square: a cycle. No stacking of the faces gives that
+   order, and [with_order] builds the state [hull2020, §6.5, Fig. 6.12]. *)
+let test_with_order_square_twist () =
+  let faces =
+    [| [| tw 6 6; tw 10 6; tw 10 10; tw 6 10 |];
+       [| tw 10 6; tw 6 6; tw 0 3; tw 0 1 |];
+       [| tw 10 10; tw 10 6; tw 13 0; tw 15 0 |];
+       [| tw 6 10; tw 10 10; tw 16 13; tw 16 15 |];
+       [| tw 6 6; tw 6 10; tw 3 16; tw 1 16 |];
+       [| tw 10 6; tw 0 1; tw 0 0; tw 13 0 |];
+       [| tw 10 10; tw 15 0; tw 16 0; tw 16 13 |];
+       [| tw 6 10; tw 16 15; tw 16 16; tw 3 16 |];
+       [| tw 6 6; tw 1 16; tw 0 16; tw 0 3 |] |]
+  in
+  let h fa fb p r = mkh fa fb (Geom.line_through p r) (q 1) in
+  let hinges =
+    [| h 0 1 (tw 6 6) (tw 10 6);
+       h 0 2 (tw 10 6) (tw 10 10);
+       h 0 3 (tw 10 10) (tw 6 10);
+       h 0 4 (tw 6 10) (tw 6 6);
+       h 1 5 (tw 10 6) (tw 0 1);
+       h 2 6 (tw 10 10) (tw 15 0);
+       h 3 7 (tw 6 10) (tw 16 15);
+       h 4 8 (tw 6 6) (tw 1 16);
+       h 5 2 (tw 10 6) (tw 13 0);
+       h 6 3 (tw 10 10) (tw 16 13);
+       h 7 4 (tw 6 10) (tw 3 16);
+       h 8 1 (tw 6 6) (tw 0 3) |]
+  in
+  let geo = geometry_of ~faces ~hinges () in
+  (* the 28 overlapping pairs; the four corner faces 5 to 8 overlap their
+     neighbors, and 5 and 7, 6 and 8 lie apart *)
+  let above =
+    [ (1, 0); (2, 0); (3, 0); (4, 0); (5, 0); (6, 0); (7, 0); (8, 0);
+      (2, 1); (3, 2); (4, 3); (1, 4);
+      (5, 1); (6, 2); (7, 3); (8, 4);
+      (2, 5); (3, 6); (4, 7); (1, 8);
+      (6, 1); (7, 2); (8, 3); (5, 4);
+      (6, 5); (7, 6); (8, 7); (5, 8) ]
+  in
+  match Fold_state.with_order geo ~above with
+  | Error v -> Alcotest.failf "square twist: %s" (Fold_state.violation_to_string v)
+  | Ok g ->
+      List.iter
+        (fun i ->
+          Alcotest.(check bool)
+            (Printf.sprintf "square side %d is a valley" i)
+            true
+            (Fold_state.mv g i = Fold_state.V))
+        [ 0; 1; 2; 3 ];
+      List.iter
+        (fun (i, j) ->
+          Alcotest.(check bool)
+            (Printf.sprintf "corner face %d lies above corner face %d" i j)
+            true (Fold_state.above g i j))
+        [ (6, 5); (7, 6); (8, 7); (5, 8) ];
+      Alcotest.(check bool) "the identity stacking gives another state" true
+        (match Fold_state.with_rank geo ~rank:(Array.init 9 Fun.id) with
+        | Error _ -> true
+        | Ok g' -> not (Fold_state.same_order g g'))
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "trim",
@@ -1855,6 +1991,11 @@ let () =
             test_waterbomb_bad_wrap_rejected;
           Alcotest.test_case "7-of-8 folded tears" `Quick
             test_waterbomb_tear_rejected ] );
+      ( "with-order",
+        [ Alcotest.test_case "round trip" `Quick test_with_order_round_trip;
+          Alcotest.test_case "bad order" `Quick test_with_order_bad_order;
+          Alcotest.test_case "layer cycle" `Quick test_with_order_layer_cycle;
+          Alcotest.test_case "square twist" `Quick test_with_order_square_twist ] );
       ( "task1-metadata",
         [ Alcotest.test_case "metadata carried" `Quick test_metadata_carried;
           Alcotest.test_case "mv total" `Quick test_mv_total;
