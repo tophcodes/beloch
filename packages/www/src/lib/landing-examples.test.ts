@@ -9,8 +9,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.BELOCH_REPO_ROOT ?? join(here, "..", "..", "..", "..");
 
 // These two programs are what a first-time visitor sees, so one that stops
-// parsing fails in front of every one of them. The crane takes about 13 s to
-// evaluate, so the test gets a minute.
+// parsing fails in front of every one of them. The crane takes about 3 s to
+// evaluate; the limit leaves room for a slower machine.
 test.each([
   ["landing hero", HERO_SRC],
   ["playground start", PLAYGROUND_SRC],
@@ -61,7 +61,7 @@ function stripProvenance(value: unknown): unknown {
 // line instead of a comment block. Comparing evaluated FOLD output (not source
 // text) is what lets the two files differ in comments while still guaranteeing
 // the display copy's statements stay identical in effect to the corpus's.
-// Evaluating the crane twice takes about 30 s.
+// Evaluating the crane twice takes about 6 s.
 test.each([
   ["landing hero", HERO_SRC, "examples/crane.bel"],
   ["playground start", PLAYGROUND_SRC, "packages/core/tests/cases/bases/bird-base.bel"],

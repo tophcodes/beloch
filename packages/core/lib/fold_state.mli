@@ -91,7 +91,7 @@ val make :
   rank:int array ->
   unit ->
   (t, violation) result
-(** The only constructor. [rank].(i) is face [i]'s stacking height (higher =
+(** The constructor: [geometry], then [with_rank]. [rank].(i) is face [i]'s stacking height (higher =
     above), a permutation of 0..n-1. [base] is the root face's placement:
     ONE whole-sheet rigid motion (default identity); needed because after a
     pleat (fold, then fold moving the previously-stationary side) no face
@@ -108,6 +108,33 @@ val make :
     copied.
     @see <https://belochlang.org/model/#def-flat-state> realizes the flat folded state
     @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
+
+type geometry
+(** The part of a state that does not depend on its layer order: the faces,
+    hinges, root and base, the placements derived from them, and whether
+    connectivity, hinge adjacency and cycle closure hold. It memoizes the
+    crossing and collinear-overlap predicates the non-crossing checks read,
+    so validating many ranks over one geometry evaluates each predicate at
+    most once. *)
+
+val geometry :
+  ?base:Isometry3.t ->
+  faces:face array ->
+  hinges:hinge array ->
+  root:int ->
+  unit ->
+  (geometry, violation) result
+(** The half of [make] that reads no rank. Fails with the structure checks
+    on indices, angle domain and line non-degeneracy; a failure of
+    connectivity, hinge adjacency or cycle closure stays in the value, and
+    [with_rank] reports it after its rank check. Input arrays are copied. *)
+
+val with_rank :
+  ?marks:mark array -> geometry -> rank:int array -> (t, violation) result
+(** The state of a [geometry] stacked by [rank]: checks that [rank] is a
+    permutation of the faces, reports a violation the geometry holds, then
+    runs the non-crossing conditions. Returns what [make] returns on the
+    same arguments. *)
 
 val faces : t -> face array
 val hinges : t -> hinge array

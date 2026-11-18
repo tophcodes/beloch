@@ -529,12 +529,9 @@ let maekawa_ok (valley : bool list) : bool =
    same construction. Returns, per distinct overlap signature, the face rank
    anchoring needs. *)
 type pipeline = {
-  root : int;  (* first face in the (rotated) stayer sector 0 *)
-  candidate_at :
-    root:int ->
-    base:Isometry3.t ->
-    int array ->
-    (Fold_state.t, Fold_state.violation) result;
+  candidate_at : int array -> (Fold_state.t, Fold_state.violation) result;
+      (* the state of the sector geometry stacked by a face rank, anchored on
+         its root face *)
   distinct : int array list;  (* face rank per distinct overlap signature *)
 }
 
@@ -560,7 +557,6 @@ type prune = {
 }
 
 type sector_geom = {
-  sg_g : Fold_state.t;
   sg_faces : Geom.point array array;
   sg_nf : int;
   sg_nt : int;  (* the units of the tip and its base lie below [sg_nt] *)
@@ -573,9 +569,12 @@ type sector_geom = {
          clockwise side of its ray, the unit across, and whether the face on
          the clockwise side ends face down *)
   sg_g_rank : int array;
-  sg_root : int;
   sg_marks : Fold_state.mark array;
   sg_new_hinges : Fold_state.hinge array;
+  sg_geometry : (Fold_state.geometry, Fold_state.violation) result Lazy.t;
+      (* the faces and new hinges placed from the root face where it lies
+         before the fold; every face rank a run validates is checked against
+         it *)
   mutable sg_overlaps : (int * int) list option;
   sg_prune : prune option;
       (* what the stacking reads off the placements before it ranks; [Some]
@@ -1061,10 +1060,14 @@ let geoms_of ?(prune = false) (g : Fold_state.t) ~(n : int) ~(sec : int array)
           else h)
         old_hinges
     in
-    { sg_g = g; sg_faces = faces; sg_nf = nf; sg_nt = nt; sg_motion = motion;
+    { sg_faces = faces; sg_nf = nf; sg_nt = nt; sg_motion = motion;
       sg_unit = unit; sg_nu = nu; sg_stat_cons = stat_cons;
-      sg_letters = letters; sg_g_rank = g_rank; sg_root = root;
+      sg_letters = letters; sg_g_rank = g_rank;
       sg_marks = Fold_state.marks g; sg_new_hinges = new_hinges;
+      sg_geometry =
+        lazy
+          (Fold_state.geometry ~base:(Fold_state.face_iso g root) ~faces
+             ~hinges:new_hinges ~root ());
       sg_overlaps = None; sg_prune = prune_of nu unit motion new_hinges }
   in
   let geoms =
@@ -1174,7 +1177,7 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
     ~(over : (int * int) list) : (pipeline, string) result =
   let nf = sg.sg_nf in
   let sec = sg.sg_unit in
-  let g_rank = sg.sg_g_rank and root = sg.sg_root in
+  let g_rank = sg.sg_g_rank in
   (* hinge constraints: a valley puts the unit across the ray above the unit
      on its clockwise side, as seen from that side's final face *)
   let constraints =
@@ -1242,15 +1245,15 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
     Array.iteri (fun h i -> rank.(i) <- h) idx;
     rank
   in
-  let candidate_at ~root ~base rank =
-    Fold_state.make ~base ~marks:sg.sg_marks ~faces:sg.sg_faces
-      ~hinges:sg.sg_new_hinges ~root ~rank ()
+  let candidate_at rank =
+    match Lazy.force sg.sg_geometry with
+    | Error v -> Error v
+    | Ok geo -> Fold_state.with_rank ~marks:sg.sg_marks geo ~rank
   in
-  let anchor_base = Fold_state.face_iso sg.sg_g root in
   let valid_srank =
     List.filter
       (fun srank ->
-        match candidate_at ~root ~base:anchor_base (build_face_rank srank) with
+        match candidate_at (build_face_rank srank) with
         | Ok _ -> true
         | Error _ -> false)
       stackings
@@ -1278,8 +1281,7 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
         | None ->
             let sample =
               match
-                candidate_at ~root ~base:anchor_base
-                  (build_face_rank (List.hd filtered))
+                candidate_at (build_face_rank (List.hd filtered))
               with
               | Ok c -> c
               | Error _ -> assert false
@@ -1312,7 +1314,7 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
             else (s, fr) :: acc)
           [] filtered
       in
-      Ok { root; candidate_at; distinct = List.map snd distinct }
+      Ok { candidate_at; distinct = List.map snd distinct }
     end
   end
 
@@ -1347,14 +1349,10 @@ let in_bounds (hull : Geom.point array) (gg : Fold_state.t) : bool =
    reversed-rank fallback (1a4f6d9) is gone: the stayer sector is placed by the
    identity by construction, so there is exactly one seat. Failing [in_bounds]
    is an honest [e_out_of_paper] for that realization, not a fallback trigger. *)
-let anchor_realization (g : Fold_state.t) ~(root : int)
-    ~(candidate_at :
-       root:int ->
-       base:Isometry3.t ->
-       int array ->
-       (Fold_state.t, Fold_state.violation) result) (fr : int array) :
-    (Fold_state.t, string) result =
-  match candidate_at ~root ~base:(Fold_state.face_iso g root) fr with
+let anchor_realization (g : Fold_state.t)
+    ~(candidate_at : int array -> (Fold_state.t, Fold_state.violation) result)
+    (fr : int array) : (Fold_state.t, string) result =
+  match candidate_at fr with
   | Ok gg when in_bounds (table_hull g) gg -> Ok gg
   | Ok _ -> Error e_out_of_paper
   | Error _ -> Error e_out_of_paper
@@ -1419,10 +1417,10 @@ let runs_of_sector (g : Fold_state.t) sgs ~(valley : bool array)
         (fun sg ->
           match pipeline_solve sg ~valley ~over with
           | Error e -> `Err e
-          | Ok { root; candidate_at; distinct } ->
+          | Ok { candidate_at; distinct } ->
               `Run
                 (List.map
-                   (fun fr -> anchor_realization g ~root ~candidate_at fr)
+                   (fun fr -> anchor_realization g ~candidate_at fr)
                    distinct))
         sgs
 
