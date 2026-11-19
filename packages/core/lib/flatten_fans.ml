@@ -14,6 +14,7 @@ type ray = {
   far : Geom.point;
   dir : Ast.mv_constraint;
   derived : bool;
+  item : string;  (* the ray item as the program wrote it *)
 }
 
 (* What a ray item names before its vertex is known: material segments of
@@ -50,6 +51,19 @@ let rec kept_points (ctx : Ctx.ctx) (lo : Ast.line_operand) : Geom.point list =
   | Ast.LFilter (b, _, _) -> kept_points ctx b
   | _ -> []
 
+(* Cut every crease the ray item names into the paper: a marked crease is cut
+   as it resolves, which renumbers the faces. *)
+let rec cut_named (ctx : Ctx.ctx) (lo : Ast.line_operand) : unit =
+  match lo with
+  | Ast.LNamed cr ->
+      ignore (Resolve.crease_of ctx cr ~slot:"a flatten ray" cr.Ast.cspan);
+      ignore (Resolve.material_cid ctx cr)
+  | Ast.LFilter (b, _, _) -> cut_named ctx b
+  | Ast.LUnion (los, _) -> List.iter (cut_named ctx) los
+  | Ast.LSelect _ -> ()
+
+(* The operand of a ray item, on the state after [cut_named] has run for
+   every item of the statement. *)
 let operand_of (ctx : Ctx.ctx) (r : Ast.fan_ray) : operand =
   match r.Ast.fray with
   | Ast.MConstruction c ->
@@ -59,16 +73,6 @@ let operand_of (ctx : Ctx.ctx) (r : Ast.fan_ray) : operand =
       in
       Line (Fold_state.fresh_crease_id (), line)
   | Ast.MLine lo -> (
-      let rec force (lo : Ast.line_operand) =
-        match lo with
-        | Ast.LNamed cr ->
-            ignore (Resolve.crease_of ctx cr ~slot:"a flatten ray" cr.Ast.cspan);
-            ignore (Resolve.material_cid ctx cr)
-        | Ast.LFilter (b, _, _) -> force b
-        | Ast.LUnion (los, _) -> List.iter force los
-        | Ast.LSelect _ -> ()
-      in
-      force lo;
       (* the extent of a mark that cuts no face from edge to edge: the
          segments the program marked, which the statement scores *)
       let marked cid =
@@ -171,7 +175,12 @@ let vertex_of (ctx : Ctx.ctx) (f : Ast.fan) (ops : operand list) : Geom.point =
    lies. *)
 let rays_at (st : Fold_state.t) ~(fan : int) (v : Geom.point)
     (r : Ast.fan_ray) (op : operand) : ray list =
-  let mk cid far = { cid; fan; far; dir = r.Ast.fdir; derived = false } in
+  let item =
+    match r.Ast.fray with
+    | Ast.MLine lo -> Resolve.lstr lo
+    | Ast.MConstruction _ -> "the construction ray"
+  in
+  let mk cid far = { cid; fan; far; dir = r.Ast.fdir; derived = false; item } in
   let dedup rays =
     List.fold_left
       (fun acc (ry : ray) ->
@@ -236,34 +245,28 @@ let rays_at (st : Fold_state.t) ~(fan : int) (v : Geom.point)
       let minus = { Geom.x = Num.sub v.Geom.x dx; y = Num.sub v.Geom.y dy } in
       List.filter_map (fun d -> Option.map (mk cid) (farthest d)) [ plus; minus ]
 
-(* The faces of [pre] that hold each face of [st], by the paper centroid. *)
-let parents (pre : Geom.point array array) (st : Fold_state.t) : int array =
-  Array.map
-    (fun f ->
-      let c = centroid f in
-      let found = ref (-1) in
-      Array.iteri
-        (fun j p -> if !found < 0 && Geom.in_convex_polygon p c then found := j)
-        pre;
-      !found)
-    (Fold_state.faces st)
-
 let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit) ~(fans : Ast.fan list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.point_operand list option)
-    ~(on_opt : Ast.flap_arg option) (span : Error.span) : unit =
+    ~on_opt:(_ : Ast.flap_arg option) (span : Error.span) : unit =
   let fans = Array.of_list fans in
   let m = Array.length fans in
   if m < 2 then
     Error.fail ~hint:"write the rays as items of the flatten" span
       "a flatten with one fan item folds one vertex; give its rays without \
        the fan";
-  (* the rays of every fan, at its vertex *)
+  (* the rays of every fan, at its vertex. Every named crease is cut first,
+     so that the segments of every operand index the faces of the state the
+     statement folds. *)
+  Array.iter
+    (fun f ->
+      List.iter
+        (fun (r : Ast.fan_ray) ->
+          match r.Ast.fray with Ast.MLine lo -> cut_named ctx lo | _ -> ())
+        f.Ast.fan_rays)
+    fans;
   let ops = Array.map (fun f -> List.map (operand_of ctx) f.Ast.fan_rays) fans in
-  (* read after the operands: a marked crease a ray names is cut into the
-     paper as it resolves, and the anchor, the stayer and the rays index the
-     faces of the state that holds it *)
   let pre_st = !(ctx.state) in
   let verts = Array.mapi (fun j f -> vertex_of ctx f ops.(j)) fans in
   let given =
@@ -295,7 +298,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     | false, false ->
         let cid = Lazy.force derived_cid in
         let d j k =
-          { cid; fan = j; far = verts.(k); dir = Ast.MvFree; derived = true }
+          { cid; fan = j; far = verts.(k); dir = Ast.MvFree; derived = true; item = "" }
         in
         given.(0) <- given.(0) @ [ d 0 1 ];
         given.(1) <- given.(1) @ [ d 1 0 ];
@@ -340,69 +343,113 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     | Some pr -> Some { pr with State.stmt = Ctx.stmt_index ctx }
     | None -> prov
   in
-  (* the anchor flap `on` names, as paper polygons *)
-  let anchor =
-    match on_opt with
-    | None -> None
-    | Some fa ->
-        let faces = Resolve.resolve_flap_cluster ctx fa span in
-        let under =
-          List.exists
-            (fun f ->
-              Array.exists
-                (Geom.in_convex_polygon (Fold_state.table_polygon_ccw pre_st f))
-                verts)
-            faces
-        in
-        if not under then
-          Error.fail span "the on flap does not lie under a vertex";
-        Some (List.map (fun f -> (Fold_state.faces pre_st).(f)) faces)
-  in
-  let v0 = verts.(0) in
-  (* the staying points, as table points on the anchor (BEP-0048) *)
-  let staying =
-    match staying_opt with
-    | None ->
-        Error.fail ~hint:"add (staying .p) with .p in the region that stays" span
-          "a flatten with several fans needs a staying item"
-    | Some pos ->
-        let on_anchor = Collapse.anchor_faces pre_st v0 anchor in
-        let faces = Fold_state.faces pre_st in
-        List.map
-          (fun po ->
-            let pp = Resolve.resolve_point ctx po in
-            let held = ref false in
-            Array.iteri
-              (fun i f ->
-                if on_anchor.(i) && Geom.in_convex_polygon f pp then held := true)
-              faces;
-            if not !held then
-              Error.fail ~hint:"name a point on the flap the fans fold" span
-                (Printf.sprintf "%s does not lie on the anchor"
-                   (Resolve.fstr (Ast.FlapPoint po)));
-            Fold_state.table_position pre_st pp)
-          pos
-  in
   let pre = Fold_state.faces pre_st in
-  (* the faces under the fans: those whose table image meets the anchor's *)
-  let under_fan =
-    let on_anchor = Collapse.anchor_faces pre_st v0 anchor in
-    let tp = Fold_state.table_polygon_ccw pre_st in
-    Array.init (Array.length pre) (fun i ->
-        let hit = ref false in
-        Array.iteri
-          (fun j a -> if a && not !hit then hit := Geom.convex_overlap (tp i) (tp j))
-          on_anchor;
-        !hit)
+  (* the paper point of each vertex: the point `at` names, or the one point
+     at which the pieces of every named crease pass over the table vertex *)
+  let pverts =
+    Array.mapi
+      (fun j v ->
+        let f = fans.(j) in
+        let per_op =
+          List.map
+            (function
+              | Segments (_, segs, _) -> Fan_paper.paper_points segs v
+              | Line _ -> [])
+            ops.(j)
+        in
+        match f.Ast.fan_at with
+        | Some po ->
+            let p = Resolve.resolve_point ctx po in
+            if
+              not
+                (List.for_all
+                   (fun l -> l = [] || List.exists (Geom.point_equal p) l)
+                   per_op)
+            then
+              Error.fail f.Ast.fan_span
+                (Printf.sprintf "the rays of the fan do not pass through %s"
+                   (Resolve.fstr (Ast.FlapPoint po)));
+            p
+        | None -> (
+            match Fan_paper.vertex f.Ast.fan_span per_op with
+            | Some p -> p
+            | None ->
+                Error.fail ~hint:"name the vertex: (fan at .p …)" f.Ast.fan_span
+                  "no ray of the fan names a crease, so no point of the paper \
+                   is its vertex"))
+      verts
+  in
+  (* The faces of [pre] a ray folds: the pieces of its crease on the paper
+     line from the vertex's paper point along the ray, for a named crease;
+     the faces a construction enters from that point, for a construction;
+     the faces the paper segment between the two vertices runs through, for
+     the derived crease. *)
+  let bundle (r : ray) =
+    let j = r.fan in
+    let v = verts.(j) and p = pverts.(j) in
+    if r.derived then
+      let q = pverts.(1 - j) in
+      let l = Geom.line_through p q in
+      List.filter
+        (fun i -> Fan_paper.overlaps p q (Geom.clip_line_to_convex l pre.(i)))
+        (List.init (Array.length pre) Fun.id)
+    else
+      match
+        List.find_opt
+          (function Segments (c, _, _) | Line (c, _) -> c = r.cid)
+          ops.(j)
+      with
+      | Some (Segments (_, segs, _)) -> (
+          let on_ray (s : Fold_state.crease_segment) =
+            Geom.side_of_line (Geom.line_through v r.far) s.Fold_state.ta = 0
+            && Geom.side_of_line (Geom.line_through v r.far) s.Fold_state.tb = 0
+            && Fan_paper.overlaps v r.far (Some (s.Fold_state.ta, s.Fold_state.tb))
+          in
+          let through_p (s : Fold_state.crease_segment) =
+            Geom.on_segment (s.Fold_state.ta, s.Fold_state.tb) v
+            && Geom.point_equal (Fan_paper.paper_on s v) p
+          in
+          match List.filter (fun s -> on_ray s && through_p s) segs with
+          | [] ->
+              Error.fail fans.(j).Ast.fan_span
+                (Printf.sprintf "%s passes through no point of the vertex" r.item)
+          | s0 :: _ when fst s0.Fold_state.faces < 0 ->
+              (* a mark that cuts no face: the statement scores it as it
+                 scores a construction *)
+              Fan_paper.line_faces pre_st ~v ~p ~far:r.far
+          | starts ->
+              (* every piece through the vertex, and the pieces on its paper
+                 line beyond it *)
+              let lines =
+                List.map (fun (s : Fold_state.crease_segment) ->
+                    Geom.line_through s.Fold_state.pa s.Fold_state.pb)
+                  starts
+              in
+              List.concat_map
+                (fun (s : Fold_state.crease_segment) ->
+                  if
+                    on_ray s
+                    && fst s.Fold_state.faces >= 0
+                    && List.exists
+                         (fun pl ->
+                           Geom.side_of_line pl s.Fold_state.pa = 0
+                           && Geom.side_of_line pl s.Fold_state.pb = 0)
+                         lines
+                  then [ fst s.Fold_state.faces; snd s.Fold_state.faces ]
+                  else [])
+                segs
+              |> List.sort_uniq compare)
+      | _ -> Fan_paper.line_faces pre_st ~v ~p ~far:r.far
   in
   (* score ray [k] on the faces of [st] whose parent before the flatten
      [need k] holds *)
   let score (need : int -> int -> bool) : Fold_state.t =
-    (* A face that holds two vertices or more inside it is cut along all its
-       rays at once: no ray cuts it from edge to edge alone. *)
+    (* A face that holds the paper points of two vertices or more inside it
+       is cut along all its rays at once: no ray cuts it from edge to edge
+       alone. *)
     let joint =
       let strictly_inside i v =
-        let poly = Fold_state.table_polygon_ccw pre_st i in
+        let poly = pre.(i) in
         let n = Array.length poly in
         Geom.in_convex_polygon poly v
         && not
@@ -412,7 +459,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       in
       Fold_state.subdivide_segments pre_st ~crease_prov:prov_of ~prov ~segments:(fun i ->
           let held =
-            Array.to_list verts |> List.filter (strictly_inside i) |> List.length
+            Array.to_list pverts |> List.filter (strictly_inside i) |> List.length
           in
           if held < 2 then []
           else
@@ -424,7 +471,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     let st = ref joint in
     Array.iteri
       (fun k (r : ray) ->
-        let par = parents pre !st in
+        let par = Fan_paper.parents pre !st in
         let v = verts.(r.fan) in
         st :=
           Fold_state.subdivide_fan !st ~o:v
@@ -489,123 +536,68 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          let s = sig_of i in
          if List.mem (-1) s then None else Some s))
   in
-  (* the region that holds every staying point, among the regions of the
-     anchor's faces *)
-  let stayer_of (cells : int list option array) (on_anchor : bool array) =
-    let holds s =
-      List.for_all
-        (fun p ->
-          List.for_all2
-            (fun k (j, v) ->
-              let n = Array.length fan_rays.(j) in
-              let a, _ = fan_rays.(j).(k) and b, _ = fan_rays.(j).((k + 1) mod n) in
-              Collapse.in_closed_sector v a b p)
-            s
-            (Array.to_list (Array.mapi (fun j v -> (j, v)) verts)))
-        staying
-    in
-    let found =
-      Array.to_list cells
-      |> List.mapi (fun i c -> (i, c))
-      |> List.filter_map (fun (i, c) ->
-             match c with Some s when on_anchor.(i) && holds s -> Some s | _ -> None)
-      |> List.sort_uniq compare
-    in
-    match found with
-    | [ s ] -> s
-    | [] -> Error.fail span Collapse.e_staying_none
-    | _ ->
-        Error.fail ?hint:(Collapse.hint_of Collapse.e_staying_several) span
-          Collapse.e_staying_several
-  in
-  (* The tip on [st]: the faces of the anchor outside the region that
-     stays, and every face joined to one of them by a hinge that was there
-     before the flatten, in the same region. A ray this statement scores
-     joins no faces. *)
-  let tip_on st (par : int array) (cells : int list option array) stayer
-      (on_anchor : bool array) =
-    let nf = Array.length cells in
-    let tip = Array.make nf false in
-    Array.iteri
-      (fun i a ->
-        if a then
-          match cells.(i) with
-          | Some s when s <> stayer -> tip.(i) <- true
-          | Some _ -> ()
-          | None -> Error.fail span Collapse.e_unaligned)
-      on_anchor;
-    let grown = ref true in
-    while !grown do
-      grown := false;
-      Array.iter
-        (fun (h : Fold_state.hinge) ->
-          let a = h.Fold_state.fa and b = h.Fold_state.fb in
-          let join x y =
-            if tip.(x) && (not tip.(y)) && par.(x) <> par.(y) && cells.(y) = cells.(x)
-            then begin
-              tip.(y) <- true;
-              grown := true
-            end
-          in
-          join a b;
-          join b a)
-        (Fold_state.hinges st)
-    done;
-    tip
-  in
   let on_ray st i k =
     let ta, tb = Fold_state.hinge_table_segment st i in
     let v = verts.(rays.(k).fan) in
     Geom.on_segment (v, rays.(k).far) ta && Geom.on_segment (v, rays.(k).far) tb
   in
-  (* 1. every ray on every layer under the fans, to read the tip off *)
-  let st_all = score (fun _ p -> under_fan.(p)) in
-  let par_all = parents pre st_all in
-  let _, cells_all = regions st_all in
-  let anchor_all = Collapse.anchor_faces st_all v0 anchor in
-  let stayer = stayer_of cells_all anchor_all in
-  let tip_all = tip_on st_all par_all cells_all stayer anchor_all in
-  (* 2. each ray on the faces where it parts a face of the tip from a face
-     of the same layer that stays, or two regions of the tip *)
-  let need = Array.make_matrix nr (Array.length pre) false in
-  Array.iteri
-    (fun i (h : Fold_state.hinge) ->
-      let a = h.Fold_state.fa and b = h.Fold_state.fb in
-      if
-        par_all.(a) = par_all.(b) && par_all.(a) >= 0
-        && (tip_all.(a) <> tip_all.(b)
-           || (tip_all.(a) && tip_all.(b) && cells_all.(a) <> cells_all.(b)))
-      then
-        for k = 0 to nr - 1 do
-          if on_ray st_all i k then need.(k).(par_all.(a)) <- true
-        done)
-    (Fold_state.hinges st_all);
-  let st = score (fun k p -> need.(k).(p)) in
-  let par = parents pre st in
-  let wedges, cells = regions st in
-  let on_anchor = Collapse.anchor_faces st v0 anchor in
-  let tip = tip_on st par cells stayer on_anchor in
-  if not (Array.exists Fun.id tip) then Error.fail span Collapse.e_anchor_stays;
+  let bfaces = Array.map bundle rays in
+  let st = score (fun k p -> List.mem p bfaces.(k)) in
+  let par = Fan_paper.parents pre st in
+  let wedges, _ = regions st in
+  let hinges0 = Fold_state.hinges st in
+  let in_bundle i k =
+    let h = hinges0.(i) in
+    on_ray st i k
+    && (List.mem par.(h.Fold_state.fa) bfaces.(k)
+       || List.mem par.(h.Fold_state.fb) bfaces.(k))
+  in
+  let ray_hinge i =
+    List.exists
+      (fun k -> hinges0.(i).Fold_state.crease_id = rays.(k).cid && in_bundle i k)
+      (List.init nr Fun.id)
+  in
   let faces = Fold_state.faces st in
   let nf = Array.length faces in
-  (* the regions, numbered with the one that stays as 0 *)
-  let ids =
-    stayer
-    :: (Array.to_list cells |> List.filter_map Fun.id
-       |> List.filter (( <> ) stayer)
-       |> List.sort_uniq compare)
+  (* the parts of the paper the hinges of the fans separate: the parts that
+     hold a staying point stay, and the rest is the tip *)
+  let part = Fan_paper.parts st ~cut:ray_hinge in
+  let staying_pts =
+    match staying_opt with
+    | None ->
+        Error.fail ~hint:"add (staying .p) with .p in the region that stays" span
+          "a flatten with several fans needs a staying item"
+    | Some pos -> List.map (Resolve.resolve_point ctx) pos
   in
+  let staying_parts =
+    List.filter_map
+      (fun i ->
+        if List.exists (Geom.in_convex_polygon faces.(i)) staying_pts then Some part.(i)
+        else None)
+      (List.init nf Fun.id)
+  in
+  let tip = Array.map (fun k -> not (List.mem k staying_parts)) part in
+  let on_anchor =
+    Array.init nf (fun i -> Array.exists (fun fs -> List.mem par.(i) fs) bfaces)
+  in
+  Option.iter (Error.fail span)
+    (Fan_paper.unfolded_layer ctx ~pre:pre_st ~st ~v:(Array.to_list verts)
+       ~parent:par ~tip ~fan_hinge:ray_hinge);
+  if not (Array.exists Fun.id tip) then Error.fail span Collapse.e_anchor_stays;
+  (* the parts of the tip, numbered from 1; 0 stays *)
   let sec =
+    let number = Hashtbl.create 8 in
     Array.map
-      (function
-        | None -> -1
-        | Some s ->
-            let rec find i = function
-              | [] -> assert false
-              | x :: rest -> if x = s then i else find (i + 1) rest
-            in
-            find 0 ids)
-      cells
+      (fun k ->
+        if List.mem k staying_parts then 0
+        else
+          match Hashtbl.find_opt number k with
+          | Some n -> n
+          | None ->
+              let n = Hashtbl.length number + 1 in
+              Hashtbl.add number k n;
+              n)
+      part
   in
   let hinges = Fold_state.hinges st in
   let nh = Array.length hinges in
@@ -615,7 +607,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         let found = ref None in
         Array.iteri
           (fun k (r : ray) ->
-            if !found = None && r.cid = hinges.(i).Fold_state.crease_id && on_ray st i k
+            if !found = None && r.cid = hinges.(i).Fold_state.crease_id && in_bundle i k
             then found := Some k)
           rays;
         !found)
@@ -623,7 +615,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let role =
     Array.init nh (fun i ->
         let h = hinges.(i) in
-        let on_any = List.exists (on_ray st i) (List.init nr Fun.id) in
+        let on_any = List.exists (in_bundle i) (List.init nr Fun.id) in
         if (not on_any) || not (touches_tip h) then Collapse.Keep
         else
           match names.(i) with
@@ -742,12 +734,12 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     Array.to_list (Array.map (fun (r : ray) -> (verts.(r.fan), r.far)) rays)
   in
   let trace chosen =
-    Ctx.record_write ctx (Trace.Flatten { point = v0 })
+    Ctx.record_write ctx (Trace.Flatten { point = verts.(0) })
       (List.map
          (fun s ->
            { Trace.state = Some s;
              detail =
-               Trace.fan ~pre:pre_st ~post:s ~point:v0 ~rays:segs
+               Trace.fan ~pre:pre_st ~post:s ~point:verts.(0) ~rays:segs
                  ~emergent:(Option.map (fun _ -> (verts.(0), verts.(1))) !derived);
              removed = None;
              chosen = (match chosen with Some c -> c == s | None -> false) })
@@ -806,32 +798,12 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Flatten.suggest ~verb:"flatten" ~items ~letters:(fun s -> List.assq s pattern_of) many
       in
       Error.fail ~hint span message);
-  (* the vertices a fan binds, as the paper points of the anchor under them *)
+  (* the vertices a fan binds, as their paper points *)
   Array.iteri
     (fun j (f : Ast.fan) ->
       match f.Ast.fan_as with
       | None -> ()
-      | Some (name, sp) ->
-          let v = verts.(j) in
-          let pre_anchor = Collapse.anchor_faces pre_st v0 anchor in
-          let p = ref None in
-          Array.iteri
-            (fun i a ->
-              if
-                !p = None && a
-                && Geom.in_convex_polygon (Fold_state.table_polygon_ccw pre_st i) v
-              then
-                p :=
-                  Some
-                    (Isometry.apply_point
-                       (Isometry.inverse (Fold_state.face_iso2 pre_st i))
-                       v))
-            pre_anchor;
-          match !p with
-          | Some pp -> Ctx.bind_point ctx name sp pp
-          | None ->
-              Error.fail sp
-                (Printf.sprintf "the anchor does not lie under the vertex of .%s" name))
+      | Some (name, sp) -> Ctx.bind_point ctx name sp pverts.(j))
     fans;
   bind_out
     (match !derived with

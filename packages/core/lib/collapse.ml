@@ -27,6 +27,15 @@ let e_staying_none = "no sector of the fan holds every staying point"
 let e_staying_several = "the staying points lie in more than one sector"
 let e_staying_off_anchor = "the staying sector holds no material of the anchor"
 
+(* The end of the error of a fan whose moving part holds a layer under the
+   vertex that no hinge of the fan folds (BEP-0079); the message names the
+   layer before it. *)
+let e_unfolded_layer = "no ray of the fan folds it"
+
+let is_layer_error (m : string) : bool =
+  let n = String.length e_unfolded_layer and l = String.length m in
+  l >= n && String.sub m (l - n) n = e_unfolded_layer
+
 (* the hint that goes with an error string above, where it has one (ADR-0028) *)
 let hint_of (m : string) : string option =
   if m = e_count then Some "use `fold` for n = 2"
@@ -687,7 +696,7 @@ let geoms_of (g : Fold_state.t) ~(sec : int array)
 (* The ways the fan folds on rays rotated so that sector 0 is the stayer
    ([geoms_of]). An element names every hinge of its crease on its ray, in
    every layer. *)
-let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
+let mk_sector_geoms ?tip_rule (g : Fold_state.t) ~(o : Geom.point)
     ~(rays : (Geom.point * elem) array) ~(es : elem array)
     ~(faces : Geom.point array array) ~(nf : int) ~(anchor : bool array) :
     (sector_geom list, string) result =
@@ -696,9 +705,20 @@ let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
     Array.init nf (fun i ->
         sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
   in
-  let tip = tip_of g ~sec ~anchor in
+  (* [tip_rule] gives the tip, the hinges of the fan, and the hinges that
+     pass through the vertex on the paper (BEP-0079), or the error of a fan
+     it cannot fold; without it the tip is the anchor's (BEP-0037) *)
+  match
+    match tip_rule with
+    | Some f -> f g sec
+    | None -> Ok (tip_of g ~sec ~anchor, (fun _ -> true), fun _ -> true)
+  with
+  | Error e -> Error e
+  | Ok (tip, in_bundle, at_vertex) ->
   if not (Array.exists Fun.id tip) then Error e_anchor_stays
   else if Array.exists2 (fun t s -> t && s < 0) tip sec then Error e_unaligned
+  else if not (Array.exists2 (fun t s -> (not t) && s = 0) tip sec) then
+    Error e_stayer_dead
   else
   let old_hinges = Fold_state.hinges g in
   let nh = Array.length old_hinges in
@@ -745,6 +765,7 @@ let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
                 if
                   !found = None && elem_ray.(k) = j
                   && e.cid = h.Fold_state.crease_id
+                  && in_bundle i
                 then found := Some k)
               es;
             !found)
@@ -752,7 +773,7 @@ let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
   let role =
     Array.init nh (fun i ->
         let h = old_hinges.(i) in
-        if on_ray.(i) = None || not (touches_tip h) then Keep
+        if on_ray.(i) = None || not (touches_tip h) || not (at_vertex i) then Keep
         else
           match names.(i) with
           | Some _ when Num.sign h.Fold_state.angle = 0 -> Fold
@@ -860,8 +881,9 @@ let rank_by_outline (g : Fold_state.t) ~(state : 'a -> Fold_state.t)
 
 (* pool the per-sector runs: every state of every run ([Ok] pool); an empty
    pool surfaces [e_contra] > [e_unaligned] > [e_anchor_stays] >
-   [e_stayer_dead]. Shared by the single-valley [collapse_runs] and the
-   pattern-sharing path. *)
+   [e_stayer_dead], below the layer error of a [tip_rule].
+   Shared by the single-valley [collapse_runs] and the pattern-sharing
+   path. *)
 let pool_of_runs
     (results : [ `Err of string | `Run of Fold_state.t list ] list) :
     (Fold_state.t list, string) result =
@@ -874,6 +896,9 @@ let pool_of_runs
       let errs =
         List.filter_map (function `Err e -> Some e | `Run _ -> None) results
       in
+      match List.find_opt is_layer_error errs with
+      | Some e -> Error e
+      | None ->
       if List.mem e_contra errs then Error e_contra
       else if List.mem e_unaligned errs then Error e_unaligned
       else if List.mem e_anchor_stays errs then Error e_anchor_stays
@@ -944,7 +969,7 @@ let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
    parallel to [patterns], not ranked by the outline: the caller ranks the
    states of all its patterns together. Maekawa's parity applies where the anchor
    surrounds the vertex. *)
-let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
+let collapse_all_patterns ?anchor ?sectors:only ?tip_rule (g : Fold_state.t)
     (es : elem list) ~(over : (int * int) list) ~(stayer : stayer)
     ~(patterns : bool list list) : (Fold_state.t list, string) result list =
   match fan_setup ?anchor g es ~stayer with
@@ -960,8 +985,8 @@ let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
       let sgs =
         List.map
           (fun s0 ->
-            mk_sector_geoms g ~o ~rays:(rotate_rays rays s0) ~es ~faces ~nf
-              ~anchor)
+            mk_sector_geoms ?tip_rule g ~o ~rays:(rotate_rays rays s0) ~es
+              ~faces ~nf ~anchor)
           sectors
       in
       List.map
@@ -972,23 +997,6 @@ let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
             pool_of_runs
               (List.concat_map (runs_of_sector ~valley ~over) sgs))
         patterns
-
-(* The tip of the fan on [g] for each admissible stayer sector (BEP-0037):
-   the sector, as [collapse_all_patterns ~sectors] takes it, and per face of
-   [g] whether the tip holds it. Empty when the fan fails before its tip is
-   defined; solving it then reports that failure. *)
-let tips ?anchor (g : Fold_state.t) (es : elem list) ~(stayer : stayer) :
-    (int * bool array) list =
-  match fan_setup ?anchor g es ~stayer with
-  | Error _ -> []
-  | Ok (o, rays, _, faces, nf, anchor, sectors) ->
-      let sec_on rays =
-        Array.init nf (fun i ->
-            sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
-      in
-      List.map
-        (fun s0 -> (s0, tip_of g ~sec:(sec_on (rotate_rays rays s0)) ~anchor))
-        sectors
 
 let collapse ?anchor (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer) :

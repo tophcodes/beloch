@@ -1,10 +1,14 @@
 @author "Claude (Anthropic)"
 
 ; The petal fold of flatten-petal-two-fans.bel, with the two kite creases
-; marked on the front flap first and named as rays. The statement cuts each
-; marked crease into the paper as it reads the ray, so the flap that `on`
-; names and the staying point are found on the faces that state holds. The
-; result is the state of the petal fold written with constructions.
+; marked first and named as rays. The statement cuts each marked crease into
+; the paper as it reads the ray, so the vertices and the staying point are
+; found on the faces that state holds. Each fan folds the pieces of its kite
+; crease that pass through its vertex: the one in the front layer and the
+; one in the layer behind it, which the side edge joins to the front layer
+; (BEP-0079). The points land where the petal fold written with
+; constructions puts them; the marks also cut the layers of the back flap,
+; which the fans leave flat, so the state has four faces more.
 
 paper square
 
@@ -17,15 +21,15 @@ reverse (map .d onto .c) as --v
 .sr = --ab * --h
 .sl = --da * --v
 
-mark (map .sr onto --mid through .a) (on #[.a]) as --kr
-mark (map .sl onto --mid through .a) (on #[.a]) as --kl
+mark (map .sr onto --mid through .a) as --kr
+mark (map .sl onto --mid through .a) as --kl
 
-flatten (fan (--h & .sr) (--kr & .a valley) as .r)
-        (fan (--v & .sl) (--kl & .a valley) as .l)
+flatten (fan (--h & .sr) (--kr valley) as .r)
+        (fan (--v & .sl) (--kl valley) as .l)
         (on #[.a]) (staying .o) as --pf
 
 ; assert steps = 4
-; assert faces = 11
+; assert faces = 15
 ; assert .sr = .sl
 ; assert .b = (1, 1)
 ; assert .d = .b

@@ -14,19 +14,24 @@ val solve :
   into:(int * (Geom.line -> unit)) option ->
   verb:string ->
   elem_cands:elem_cand list list ->
+  pieces:Fold_state.crease_segment list list ->
   o:Geom.point ->
   elem_names:string list ->
   over:(int * int) list ->
   anchor:Geom.point array list option ->
   staying:Collapse.stayer option ->
+  ?staying_paper:Geom.point list ->
   emergent:(Geom.point * string) option ->
   Error.span ->
   (int * Geom.line) option
 (** The fan at [o] on resolved operands: one candidate list per element,
-    the `over` constraints as face pairs, the anchor flap as paper polygons
-    ([None]: the topmost flap under [o]), the stayer ([None]: the wedge
-    between the first two elements) and the emergent item: a table point
-    and its name.
+    the pieces each element names, the `over` constraints as face pairs,
+    the anchor flap as paper polygons ([None]: the topmost flap under [o]),
+    the stayer ([None]: the wedge between the first two elements), the
+    staying points on the paper, and the emergent item: a table point and
+    its name. The fan folds at the one paper point over [o] that a piece of
+    every element passes through; where several are, the anchor picks the
+    one on it (BEP-0079).
     [verb] names the write in messages and crease records, [elem_names] the
     elements as the program wrote them. Leaves the chosen state in the
     context and records the trace; returns the emergent crease where one
