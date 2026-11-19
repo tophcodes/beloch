@@ -252,13 +252,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit) ~(fans : Ast.fan list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.point_operand list option)
-    ~(on_opt : Ast.flap_arg option) ~(toward_opt : Ast.point_operand option)
-    (span : Error.span) : unit =
-  (match toward_opt with
-  | Some _ ->
-      Error.fail ~hint:"drop the toward item" span
-        "a flatten with several fans takes no toward item"
-  | None -> ());
+    ~(on_opt : Ast.flap_arg option) (span : Error.span) : unit =
   let fans = Array.of_list fans in
   let m = Array.length fans in
   if m < 2 then
@@ -734,38 +728,16 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | Error _ -> acc)
       [] results
   in
+  (* the letters of the rays in each state, for the hint of an ambiguous
+     statement: a state carries the pattern it came from *)
+  let pattern_of =
+    List.concat
+      (List.map2
+         (fun pat res -> match res with Ok sts -> List.map (fun s -> (s, pat)) sts | Error _ -> [])
+         patterns results)
+  in
   let states = Collapse.rank_by_outline st ~state:Fun.id all in
   let errors = List.filter_map (function Error e -> Some e | Ok _ -> None) results in
-  (* fewest mountains on the creases the program gave, as for one fan *)
-  let given_cids =
-    Array.to_list rays
-    |> List.filter_map (fun (r : ray) -> if r.derived then None else Some r.cid)
-    |> List.sort_uniq compare
-  in
-  let mountains st =
-    List.length
-      (List.filter
-         (fun cid ->
-           let hs = Fold_state.hinges st in
-           let found = ref false in
-           Array.iteri
-             (fun i (h : Fold_state.hinge) ->
-               if
-                 h.Fold_state.crease_id = cid
-                 && Num.sign h.Fold_state.angle <> 0
-                 && Fold_state.mv st i = Fold_state.M
-               then found := true)
-             hs;
-           !found)
-         given_cids)
-  in
-  let kept =
-    match states with
-    | [] -> []
-    | _ ->
-        let least = List.fold_left (fun acc s -> min acc (mountains s)) max_int states in
-        List.filter (fun s -> mountains s = least) states
-  in
   let segs =
     Array.to_list (Array.map (fun (r : ray) -> (verts.(r.fan), r.far)) rays)
   in
@@ -777,11 +749,11 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
              detail =
                Trace.fan ~pre:pre_st ~post:s ~point:v0 ~rays:segs
                  ~emergent:(Option.map (fun _ -> (verts.(0), verts.(1))) !derived);
-             removed = (if List.memq s kept then None else Some Trace.By_mountains);
+             removed = None;
              chosen = (match chosen with Some c -> c == s | None -> false) })
          states)
   in
-  (match kept with
+  (match states with
   | [ s ] ->
       trace (Some s);
       (match (into, !derived) with
@@ -803,8 +775,37 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | None -> "the fans do not fold flat together")
   | many ->
       trace None;
-      Error.fail span
-        (Printf.sprintf "flatten is ambiguous: %d realizations" (List.length many)));
+      (* each ray as the program could letter it, in the order of [rays]: the
+         rays of each fan item, then the derived crease, which no item names *)
+      let item (r : Ast.fan_ray) =
+        match r.Ast.fray with
+        | Ast.MLine lo -> Flatten.ray_item (Resolve.lstr lo)
+        | Ast.MConstruction _ ->
+            let p = fst r.Ast.fspan in
+            fun l ->
+              Printf.sprintf "%s on the ray at %d:%d"
+                (if l then "valley" else "mountain")
+                p.Lexing.pos_lnum (p.Lexing.pos_cnum - p.Lexing.pos_bol + 1)
+      in
+      let items =
+        List.concat
+          (Array.to_list
+             (Array.mapi
+                (fun j (f : Ast.fan) ->
+                  List.concat
+                    (List.map2
+                       (fun (r : Ast.fan_ray) op ->
+                         List.map
+                           (fun _ -> if r.Ast.fdir = Ast.MvFree then Some (item r) else None)
+                           (rays_at pre_st ~fan:j verts.(j) r op))
+                       f.Ast.fan_rays ops.(j))
+                  @ if !derived = None then [] else [ None ])
+                fans))
+      in
+      let message, hint =
+        Flatten.suggest ~verb:"flatten" ~items ~letters:(fun s -> List.assq s pattern_of) many
+      in
+      Error.fail ~hint span message);
   (* the vertices a fan binds, as the paper points of the anchor under them *)
   Array.iteri
     (fun j (f : Ast.fan) ->

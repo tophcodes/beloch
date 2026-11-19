@@ -204,8 +204,7 @@ export interface TraceEntry {
 export type Region = Vec2[][];
 export type Segment = [Vec2, Vec2];
 export type WriteRemoval =
-  | "letter" | "bodies" | "interleaved" | "crossing"          // reverse
-  | "opposite" | "toward" | "mountains" | "top";              // flatten
+  | "letter" | "bodies" | "interleaved" | "crossing";         // reverse
 export type WriteTerms =
   | {
       write: "fold"; axis: LineCoeffs; side: number; moving: Region;

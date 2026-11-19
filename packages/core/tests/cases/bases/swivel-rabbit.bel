@@ -28,4 +28,4 @@ mark (through .b .[--da --lowerh]) as --bb  ; hinge from b, same free height
 ; the fourth — the emergent "ear" crease, a mountain at ~320° from the vertex
 ; (meeting the base right of center), on a line no Huzita axiom constructs
 ; from the given points and lines.
-flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear
+flatten (--ba \ .a valley) (--bb \ .b) (--v \ .m valley) (staying .c .d) (emergent beside .b) as --ear

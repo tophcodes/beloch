@@ -24,7 +24,7 @@ let span_of_stmt : Ast.stmt -> Error.span = function
   | Ast.Export (_, _, sp)
   | Ast.Squash (_, _, _, sp)
   | Ast.Flatten (_, _, _, _, _, _, sp)
-  | Ast.FlattenFans (_, _, _, _, _, _, sp) -> sp
+  | Ast.FlattenFans (_, _, _, _, _, sp) -> sp
 
 (* collapse every run of whitespace to a single space and trim: so
    reindentation / line breaks inside a statement do not change the key. *)

@@ -122,9 +122,9 @@ flatten_item := line_operand [ "mountain" | "valley" ]
               | flap_operand "over" flap_operand
               | "staying" point_operand+
               | "on" flap_operand
-              | "toward" point_operand
+              | "emergent" "beside" point_operand
               | "fan" [ "at" point_operand ] fan_ray+ [ "as" POINT_NAME ]
-fan_ray      := "(" ( construction_body | line_operand [ "mountain" | "valley" ] ) ")"
+fan_ray      := "(" ( construction_body | line_operand ) [ "mountain" | "valley" ] ")"
 squash_item  := line_operand "onto" ( point_operand | line_operand )
 side_item    := [ toward_subject ] "toward" ( point_operand | line_operand )
               | "moving" flap_operand

@@ -3,9 +3,9 @@
 ; Mirror file of flatten-rabbit-ear-toward-c.bel: same vertex, ear folded to
 ; the a side (emergent hinge = perpendicular from the incenter to --ab). This
 ; is the realization the pre-fix evaluator produced as its only one; it must
-; keep working — now selected explicitly, since with both sides real the
-; statement is ambiguous without (toward). `.t = --ear * --ab` errors if the
-; c-side ear (parallel to --ab) were picked.
+; keep working, now selected by (emergent beside .a), since with both sides
+; real the statement is ambiguous without it. `.t = --ear * --ab` errors if
+; the c-side ear (parallel to --ab) were picked.
 
 paper square
 
@@ -14,10 +14,10 @@ mark (map --ab onto --diag) as --ea
 mark (map --ab onto --bc) as --eb
 mark (map --bc onto --diag) as --ec
 
-; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
-; sector the ear folds onto; the emergent splits it into the two mirror
-; worlds (toward) then picks (design 2026-07-17 stayer convention).
-flatten (--ea) (--ec) (--eb) (toward .a) as --ear
+; (staying .d) names the big sector the ear folds onto. The emergent ray
+; lies in the wedge between --ea and --eb or in the one between --eb and
+; --ec, the two mirror worlds; (emergent beside …) names the wedge.
+flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent beside .a) as --ear
 .t = --ear * --ab
 
 ; assert --ear is mountain

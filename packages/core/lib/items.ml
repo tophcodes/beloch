@@ -29,13 +29,14 @@ let head_of (it : raw_item) : string =
   | RiExtent (_, _) -> "at"
   | RiOrder _ -> "order"
   | RiStaying _ -> "staying"
+  | RiEmergent _ -> "emergent"
   | RiSelection _ -> "toward"
   | RiAlignment _ -> "alignment"
   | RiFan _ -> "fan"
 
 let span_of (it : raw_item) : Error.span =
   match it with
-  | RiConstruction (_, sp)
+  | RiConstruction (_, _, sp)
   | RiLine (_, _, sp)
   | RiMoving (_, sp)
   | RiMovingDir (_, _, sp)
@@ -47,6 +48,7 @@ let span_of (it : raw_item) : Error.span =
   | RiExtent (_, sp)
   | RiOrder (_, _, sp)
   | RiStaying (_, sp)
+  | RiEmergent (_, sp)
   | RiAlignment (_, _, sp)
   | RiSelection (_, sp)
   | RiFan (_, _, _, sp) ->
@@ -59,18 +61,22 @@ let refuse (verb : string) (it : raw_item) : 'a =
 
 (* `(--d mountain)` is a ray item's spelling; under a verb that takes an axis
    the letter has no slot to go to. *)
+let no_letter (mv : mv_constraint) (sp : Error.span) : unit =
+  match mv with
+  | MvFree -> ()
+  | MvMountain | MvValley ->
+      Error.fail ~hint:"write (mountain) as its own item" sp
+        "an axis item takes no mountain or valley"
+
 let axis_item (verb : string) (cell : markable option ref) (it : raw_item) : bool
     =
   match it with
-  | RiConstruction (c, sp) ->
+  | RiConstruction (c, mv, sp) ->
+      no_letter mv sp;
       slot verb "axis" cell sp (MConstruction c);
       true
   | RiLine (lo, mv, sp) ->
-      (match mv with
-      | MvFree -> ()
-      | MvMountain | MvValley ->
-          Error.fail ~hint:"write (mountain) as its own item" sp
-            "an axis item takes no mountain or valley");
+      no_letter mv sp;
       slot verb "axis" cell sp (MLine lo);
       true
   | _ -> false
@@ -218,7 +224,7 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
   List.iter
     (fun it ->
       match it with
-      | RiConstruction (_, sp) ->
+      | RiConstruction (_, _, sp) ->
           Error.fail ~hint:"name the crease the hinges lie on" sp
             "unfold opens hinges on a crease the program already has; it takes \
              a crease, not a construction"
@@ -256,8 +262,8 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       },
       span )
 
-(* A fan item takes rays: a line with an optional letter, or a construction
-   (BEP-0055). *)
+(* A fan item takes rays: a line or a construction, each with an optional
+   letter (BEP-0055). *)
 let fan (at : point_operand option) (items : raw_item list)
     (bind : (string * Error.span) option) (span : Error.span) : fan =
   (match (at, bind) with
@@ -268,7 +274,7 @@ let fan (at : point_operand option) (items : raw_item list)
   let ray it =
     match it with
     | RiLine (lo, mv, sp) -> { fray = MLine lo; fdir = mv; fspan = sp }
-    | RiConstruction (c, sp) -> { fray = MConstruction c; fdir = MvFree; fspan = sp }
+    | RiConstruction (c, mv, sp) -> { fray = MConstruction c; fdir = mv; fspan = sp }
     | it ->
         Error.fail ~hint:"put it beside the fan, as an item of the flatten"
           (span_of it)
@@ -283,24 +289,21 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   (* rays and orders are accumulated reversed and restored, so that the ray
      order the first two rays' stayer convention reads
      (docs/reference/BELOCH-WRITES.md, flatten) is source order *)
-  let rays = ref [] and overs = ref [] and staying = ref None and toward = ref None in
-  let on = ref None and fans = ref [] in
+  let rays = ref [] and overs = ref [] and staying = ref None in
+  let on = ref None and fans = ref [] and emergent = ref None in
   List.iter
     (fun it ->
       match it with
+      | RiEmergent (p, sp) -> slot verb "emergent" emergent sp (p, sp)
       | RiLine (lo, mv, _) -> rays := { cline = lo; cdir = mv } :: !rays
       | RiFan (at, its, bind, sp) -> fans := fan at its bind sp :: !fans
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
       | RiStaying (ps, sp) -> slot verb "staying" staying sp ps
       | RiOn (fa, sp) -> slot verb "on" on sp fa
-      | RiSelection ({ target = TowardPoint p; subject = None }, sp) ->
-          slot verb "toward" toward sp p
-      | RiSelection ({ subject = Some _; _ }, sp) ->
-          Error.fail ~hint:"write (toward .p)" sp
-            "the toward of flatten names no object"
-      | RiSelection ({ target = TowardLine _; _ }, sp) ->
-          Error.fail ~hint:"name a point" sp
-            "the toward of flatten takes a point, not a line"
+      | RiSelection (_, sp) ->
+          Error.fail
+            ~hint:"name the side of the emergent ray with (emergent beside .p), or give letters"
+            sp "flatten takes no (toward) item: an item is a condition (BEP-0061)"
       | it -> refuse verb it)
     items;
   match (!rays, !fans) with
@@ -308,9 +311,16 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   | _ :: _, _ :: _ ->
       Error.fail ~hint:"move the rays into a fan item" span
         "a flatten takes ray items or fan items, not both"
-  | rays, [] -> Flatten (out, List.rev rays, List.rev !overs, !staying, !on, !toward, span)
+  | rays, [] ->
+      Flatten
+        (out, List.rev rays, List.rev !overs, !staying, !on, Option.map fst !emergent, span)
   | [], fans ->
-      FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, !toward, span)
+      Option.iter
+        (fun (_, sp) ->
+          Error.fail ~hint:"drop the emergent item" sp
+            "a flatten with several fans has no emergent ray")
+        !emergent;
+      FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target
    (BEP-0038), and nothing else: the spine names the anchor (BEP-0040). *)
@@ -322,7 +332,7 @@ let squash (items : raw_item list) (out : output) (span : Error.span) : stmt =
       match it with
       | RiAlignment (spine, target, sp) ->
           slot verb "alignment" alignment sp (spine, target)
-      | RiConstruction (_, sp) ->
+      | RiConstruction (_, _, sp) ->
           Error.fail ~hint:"write (--l onto --m) without map or align" sp
             "squash completes the alignment with the fold line through the \
              vertex; it takes no construction"

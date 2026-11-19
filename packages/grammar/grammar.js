@@ -95,6 +95,7 @@ module.exports = grammar({
       $.order_item,
       $.alignment_item,
       $.stayer_item,
+      $.emergent_item,
       $.selection_item,
     ),
 
@@ -109,8 +110,15 @@ module.exports = grammar({
     // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
     // the rays of one vertex of a flatten (BEP-0055)
     fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
-      repeat1(choice($.construction, $.flatten_element)),
+      repeat1(choice($.construction, $.fan_construction, $.flatten_element)),
       optional(seq('as', $.point)), ')'),
+
+    // a construction ray of a fan with its letter:
+    // `(map .sr onto --mid through .a valley)`
+    fan_construction: $ => prec(1, seq('(', choice(
+      seq('align', repeat($.crease), repeat1($.alignment)),
+      $._prose_axiom,
+    ), $._mv, ')')),
 
     _mv: _ => choice('mountain', 'valley'),
 
@@ -148,6 +156,9 @@ module.exports = grammar({
 
     // `(staying .a)`
     stayer_item: $ => seq('(', 'staying', $._operand, ')'),
+
+    // `(emergent beside .a)`: the wedge the emergent ray of an odd fan lies in
+    emergent_item: $ => seq('(', 'emergent', 'beside', $._operand, ')'),
 
     // `(toward .q)`, or `(--v toward .q)` naming what goes toward it
     selection_item: $ => prec(1, seq('(', optional($._operand), 'toward', $._operand, ')')),

@@ -151,7 +151,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 .m = free on --bd from .b at 1/4
 --s = (perp --bd through .m)
 mark (--s) (on #[.a]) as --sm
@@ -201,7 +201,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.example #ex-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
@@ -1492,7 +1492,7 @@ an *anchor*: a flap $\Phi$ whose image meets the rays, a finite set of
 *rays*: segments of creases on lines through $O$, from $O$ where $O$ lies on
 the image of $\Phi$ and from the edge of that image where it does not, to
 the other edge, no two of one crease in one direction, a set of
-constraints, and a selection $\sigma$. Rays of different creases in one
+constraints. Rays of different creases in one
 direction lie in different layers and count as one direction below. At a
 point at infinity the lines of the rays are parallel and the wedges
 between them are strips. Let $\rho_1, \ldots, \rho_k$ be the reflections of
@@ -1560,10 +1560,12 @@ other letter, and *opens* when it changes, as the spine of a squash does.
 Of all candidate states of all candidate fans, those whose faces lie on
 the table inside the convex hull of the state before the write are kept
 where there are any, and all of them where there are none
-([[BEP-0058]]). The value of the write is the one candidate state $\sigma$
-selects from that set; it is undefined when
-the set is empty, when its states differ in their stayer, or when
-$\sigma$ leaves more than one. The crease the write
+([[BEP-0058]]). The constraints are conditions on that set: the letters,
+the `over` pairs, and for an odd $k$ a point $p$ whose wedge, edges
+included, holds the emergent ray ([[BEP-0061]], [[BEP-0078]]). The value
+of the write is the one candidate state the constraints leave; it is
+undefined when none is left, when the states left differ in their stayer,
+or when more than one is left. The crease the write
 scores is the bundle of the hinges on the given rays when $k$ is even and
 the bundle of the hinges on the emergent ray when $k$ is odd.
 
@@ -1585,8 +1587,8 @@ region, so a layer that the tip leaves in place keeps its faces whole.
 Motions, candidate states and letters are as above, with the regions in
 place of the wedges. The order of two faces outside $T$ that one lay above
 in every column stays as it was. The convex hull of the state before the
-write ranks the candidate states as above, and the rest of $\sigma$ is the
-fewest mountains on the rays the program names.
+write ranks the candidate states as above, and the write is undefined
+when more than one is left.
 :::
 
 ::: {.term #term-fan name="fan, ray"}
@@ -1630,15 +1632,13 @@ the tip is every piece outside the stayer's wedge. Where a face of $T$ is
 hinged to a face in the stayer's wedge off the rays, the paths disagree and
 the write is undefined, as for every reflection.
 
-::: {.figure #fig-flatten caption="The preliminary base by one collapse at the center: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
+::: {.figure #fig-flatten caption="The preliminary base by one collapse at the center: six rays fold, the diagonal through `.a` and `.c` stays flat, and the letters on three rays leave one of the 18 flat states the six rays fold to." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.figure #fig-flatten-op caption="The terms of the collapse in [#fig-flatten]: the vertex at the center, the six rays, and the stayer, the quarter between the rays on `--h` and `--v` that holds the diagonal to `.c`. Every other sector moves by the reflections across the rays between it and the stayer; on the right the state after the collapse." views="op" at="collapse"}
@@ -1647,13 +1647,11 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 @label collapse
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
-::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. The three with three mountains are removed; the three with one mountain each remain, and without `toward` the program fails as ambiguous ([#open-flatten-selection])." views="candidates" at="vertex"}
+::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. Without a letter the program fails as ambiguous." views="candidates" at="vertex"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -1662,25 +1660,13 @@ mark (map --ab onto --cd) as --h
 flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b)
 :::
 
-::: {.figure #fig-flatten-toward caption="The same vertex with `toward .c`: of the three states with one mountain, two put less of the material toward `.c` on top than the third, which remains." views="candidates" at="vertex"}
+::: {.figure #fig-flatten-letters caption="The same vertex with the rays to `--bc` and to `.c` as valleys: one state has both letters, and it remains." views="candidates" at="vertex"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 @label vertex
-flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b) (toward .c)
-:::
-
-::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-selection"}
-[#def-flatten] leaves $\sigma$ to the program, as [#def-construction] does
-for the candidates of a construction. The language's `toward` is three rules in
-sequence: the candidate whose moved material lies toward the named point,
-among those the ones with the fewest mountains on the given rays, among
-those the one whose material toward the point lies on top. The first is a
-selection in the sense of [#def-selection]; the other two are conventions that
-pick a folder's habit out of several states that are all flat folded. Whether
-they belong in the model as named selections, or the language should ask for
-a constraint instead when several states remain, is not decided.
+flatten (--h & --bc valley) (--ac & .c valley) (--h & --da) (--bd & .b)
 :::
 
 ::: {.definition #def-squash name="squash" uses="def-write def-flatten def-flap def-letter" defines="term-vertex"}
@@ -1730,9 +1716,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 squash (--h & --da onto --ac) as --s
 :::
 

@@ -20,8 +20,8 @@ reverse (map .d onto .c) as --v
 mark (map .sr onto --mid through .a) (on #[.a]) as --kr
 mark (map .sl onto --mid through .a) (on #[.a]) as --kl
 
-flatten (fan (--h & .sr) (--kr & .a) as .r)
-        (fan (--v & .sl) (--kl & .a) as .l)
+flatten (fan (--h & .sr) (--kr & .a valley) as .r)
+        (fan (--v & .sl) (--kl & .a valley) as .l)
         (on #[.a]) (staying .o) as --pf
 
 ; assert steps = 4

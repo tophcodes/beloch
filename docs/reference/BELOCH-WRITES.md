@@ -16,9 +16,8 @@ delimited on both sides and classified by its head.
 (`def`, `on`, `export`); no item uses braces. The side items name the side
 of the axis that stays, `toward`, and the side that folds over, `moving`,
 and select among the candidates of a construction by them
-([[reference/beloch-constructions#selection]]). The `toward` item of `flatten` selects among
-states rather than among lines
-([[reference/model#open-flatten-selection|open-flatten-selection]]). The `on` item of
+([[reference/beloch-constructions#selection]]). `flatten` takes no side
+item: its items are conditions on its states ([[BEP-0061]]). The `on` item of
 `flatten` names its anchor, the flap anywhere in the stack under the vertex
 whose tip the fan moves; without it the anchor is the topmost flap there
 ([[reference/model#def-flatten|def-flatten]]). The other layers under the vertex stay
@@ -387,10 +386,8 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 .f = free on --da from .a at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 ```
 
 ```{.bel .frag prelude=squash-base}
@@ -448,12 +445,28 @@ flat-foldability for a sheet of many vertices is NP-hard
 `(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
 orders two sectors in the result, `(staying <flap>)` names the stayer,
-the wedge that keeps its place, `(on <flap>)` names the anchor, and
-`(toward .p)` selects among the states that remain. Every item but
-`toward` is a constraint that narrows the set of states; `toward` picks
-one of them. `staying` and `toward` stand at most once (`` only one
-staying item per flatten ``, `` only one toward item per flatten ``), and
-an item that rules nothing out is no error.
+the wedge that keeps its place, `(on <flap>)` names the anchor,
+and `(emergent beside .p)` names where the emergent ray of an odd fan
+lies. Every item is a condition that narrows the set of states. `staying`
+and `emergent` stand at most once (`` only one staying item per flatten
+``, `` only one emergent item per flatten ``), an item that rules nothing
+out is no error, and `toward` is refused (`` flatten takes no (toward)
+item: an item is a condition (BEP-0061) ``, hint `` name the side of the
+emergent ray with (emergent beside .p), or give letters ``).
+
+**The emergent ray.** `(emergent beside .p)` keeps the states whose
+emergent ray lies in a wedge of the given rays that holds the table point
+of `.p`, the two rays that bound the wedge included ([[BEP-0078]]). On a
+rabbit ear the emergent ray lies on one side of the middle ray or on the
+other, and a point on that side names it: `.a` for the ear that ends on
+`--ab`. A point on a given ray lies on the edge of two wedges and names
+neither side. A fan with an even number of rays has no emergent ray (``
+flatten with an even ray count has no emergent ray ``, hint `` drop the
+emergent item ``), a flatten of several fans has none either (`` a
+flatten with several fans has no emergent ray ``), and a point no state
+puts its emergent ray beside is an error (`` no state has its emergent
+ray beside <point> ``, hint `` name a point in a wedge the emergent ray
+can split ``).
 
 **The stayer.** Without `staying`, the stayer is the wedge of less than a
 half-turn between the folded rays of the first two ray items, so the
@@ -478,17 +491,22 @@ marked crease (`` collapse folds along existing creases; <operand> is not
 a material crease ``) are errors. The checks a flatten runs, with every
 message, stand in the kernel's tables ([[reference/kernel#fan]]).
 
-**Selection.** Where several states remain, `toward .p` selects in three
-steps ([[reference/model#open-flatten-selection|open-flatten-selection]]): the
-states whose moved material lies toward `.p`, among them those with the
-fewest mountains on the rays the program gave, among those the one whose material
-toward `.p` lies on top. A point on the line of a crease through the
-vertex names no side (`` `toward` does not pick a side — the point is
-collinear with a crease through the vertex ``, hint `` aim it off the
-creases ``). Without `toward`, only the mountain count runs, and more than
-one state left is an error (`` flatten is ambiguous: <n> realizations ``,
-hint `` add (toward .p) to pick the fold direction ``); states that hold
-different wedges still are one too (`` flatten is ambiguous: its
+**Selection.** The value of a flatten is the one state its rays,
+letters, `over` items, stayer and emergent item leave ([[BEP-0061]],
+[[BEP-0078]]). More than one state left is an error (`` flatten is
+ambiguous: <n> realizations ``). Its hint names the items
+that would leave one state: for up to four states, for each state the
+letter of one ray that no other state shares, or the letters of two rays
+where one does not part it from the rest (`` each of these keeps one
+state: (--v & --ab mountain); (--h & --bc mountain); … ``); for more, the ray
+whose letter splits the states most evenly (`` add (--h & --bc valley)
+or (--h & --bc mountain): they keep 9 and 9 of the 18 states ``). States
+that no letter parts differ in their layers only, and an `over` item
+orders them. A ray of a fan that is a construction is named by where it
+stands in the program. An odd fan closes on an emergent ray on a new
+line or on the far side of a given ray, and the states of both count
+alike, so their stayers can differ; states that hold different wedges
+still are an error too (`` flatten is ambiguous: its
 candidates hold different sectors still ``, hint `` add (staying .p) with
 .p in the sector that stays ``). An `over` no state satisfies is
 `` contradictory `over` ``.
@@ -508,7 +526,8 @@ mark (map --bc onto --diag) as --ec
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--ea) (--ec) (--eb) (toward .a) as --ear   ; three rays: the fourth emerges
+; three rays: the fourth emerges
+flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent beside .a) as --ear
 .t = --ear * --ab                                   ; where the ear reaches the edge
 
 ; assert --ear is mountain
@@ -521,13 +540,13 @@ flatten (--ea) (--ec) (--eb)
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--ea) (--ec) (--eb) (toward .b)      ; .b lies on the line of --eb
+flatten (--ea & .a) (--ec & .c) (--eb & .b) (staying .d) (emergent beside .b)  ; .b on --eb
 
-; expect error "does not pick a side"
+; expect error "flatten is ambiguous"
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) (toward .a) as --ear
+flatten (--eb & .b valley) (--ea & .a valley) (--ec & .c) (staying .d) (emergent beside .a) as --ear
 
 ; assert --ear is mountain
 ```
@@ -545,16 +564,16 @@ stand in fan items ([[BEP-0055]]). A fan item holds the rays of one
 vertex: `(fan at .p ray+)` names a point the program has bound, and the
 statement fails when the rays do not meet at it (`` the rays of the fan do
 not meet at <point> ``); `(fan ray+ as .p)` binds the point where they
-meet. A ray is a line operand, with a letter where the program fixes one,
-or a construction, which the statement scores on the layers that move.
+meet. A ray is a line operand or a construction, which the statement
+scores on the layers that move, each with a letter where the program fixes
+one: `(map .sr onto --mid through .a valley)`.
 `&` narrows a line to the half that holds the point it names. A crease
 that `mark` recorded between two points is a ray from the end at the
 vertex to the other end, also where it lies inside a face and cuts none;
 the statement scores it. The items
 `on`, `staying` and `over` stand beside the fans and apply to the whole
 statement; `staying` is required (`` a flatten with several fans needs a
-staying item ``), and `toward` is refused (`` a flatten with several fans
-takes no toward item ``). A statement takes ray items or fan items (`` a
+staying item ``). A statement takes ray items or fan items (`` a
 flatten takes ray items or fan items, not both ``), and at least two fan
 items.
 
@@ -570,9 +589,9 @@ piece from a piece that stays or from a moving piece of another region.
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
-remove its states ([[BEP-0058]]). Among those, the states with the fewest mountains on
-the rays the program gave are kept, and more than one state left is an
-error (`` flatten is ambiguous: <n> realizations ``).
+remove its states ([[BEP-0058]]). More than one state left is an error
+(`` flatten is ambiguous: <n> realizations ``), with the hint of a flatten
+of one fan.
 
 ```{.bel .frag}
 fold (map .a onto .c) as --bd
@@ -582,8 +601,8 @@ reverse (map .d onto .c) as --v
 --mid = (through .c .o)
 .sr = --ab * --h
 .sl = --da * --v
-flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)
-        (fan (--v & .sl) (map .sl onto --mid through .a) as .l)
+flatten (fan (--h & .sr) (map .sr onto --mid through .a valley) as .r)
+        (fan (--v & .sl) (map .sl onto --mid through .a valley) as .l)
         (on #[.a]) (staying .o) as --pf     ; the petal fold
 
 ; assert faces = 11
@@ -607,13 +626,11 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 ```
 
 ```{.bel .frag prelude=prelim}
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d)
-        (.q over .r) (staying .a) (toward .q)
+flatten (--h & --bc) (--v & --cd) (--h & --da valley) (--v & --ab mountain) (--bd & .b)
+        (--bd & .d valley) (staying .a)
 flip
 
 ; assert steps = 2
@@ -698,15 +715,13 @@ mark (through .a .c) as --ac
 mark (map --ab onto --cd) (on #[.c]) (between .m .o) (mountain) as --h
 :::
 
-::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper center into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
+::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper center into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, and the letters on three of them leave one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.figure #fig-lang-flip caption="`flip` takes no item at all. It turns the sheet over, so the fold that follows is placed on what was the back, and `--g` comes out mountain where the same fold on an unflipped sheet would read valley." views="cp folded" highlight="--g"}

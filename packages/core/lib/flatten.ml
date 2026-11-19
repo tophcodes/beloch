@@ -2,26 +2,20 @@
     Given a set of material creases ("rays") sharing one interior vertex O, an
     ODD ray count means one emergent ray is part of the solution space;
     [candidates] generates the geometric completions that could close the vertex
-   : same-direction filter, per-line dedup, two-tier (`LineNew`/`OppositeRay`)
-    preference tag. It does NOT check feasibility or M/V and does NOT pick a
-    winner.
+   : same-direction filter, per-line dedup, and a tag that says whether the
+    completion lies on a new line (`LineNew`) or on the far side of a given
+    one (`OppositeRay`). It does NOT check feasibility or M/V and does NOT
+    pick a winner.
 
     Choosing among them is [Flatten_solve]'s job: it enumerates every
     Maekawa-consistent M/V pattern ([mv_patterns], pure and unit-testable) over
     each candidate's full ray set, tries each via [Collapse.collapse_all], pools
-    the results, and disambiguates by tier then by `(toward)`'s
-    moved-material-centroid score. Feasibility-filtering and `toward`-selection
-    belong there rather than here because they need [Collapse.collapse_all] and
+    the results, and keeps the states the items leave. Feasibility-filtering
+    and the items belong there rather than here because they need [Collapse.collapse_all] and
     [Ast.mv_constraint], neither of which this module should depend on beyond
     the generator's own geometry. *)
 
 let e_infeasible = "vertex not flat-foldable toward that side"
-
-let e_toward_ambiguous =
-  "`toward` does not pick a side — the point is collinear with a crease through \
-   the vertex"
-
-let e_toward_ambiguous_hint = "aim it off the creases"
 
 (* The +1-eigenvector direction of a reflection's linear part. A reflection
    fixing the origin is a symmetric orthogonal matrix (m01 = m10), so either
@@ -47,12 +41,12 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
     Geom.ccw_compare ~center:o lo q < 0 || Geom.ccw_compare ~center:o q hi < 0
 
 (* The candidate GENERATOR (spec step 1's odd branch): every geometric
-   completion of the given rays that closes Kawasaki at [o], tagged by the
-   two-tier preference (§4.9: the emergent crease is "not
+   completion of the given rays that closes Kawasaki at [o], tagged by its
+   kind (§4.9: the emergent crease is "not
    constructible by any Huzita axiom": a completion that only re-uses a
    given line's far side is the degenerate, `OppositeRay` case; a completion
    on a new line is `LineNew`). No feasibility check and no
-   [toward] selection: both are the caller's job now, over the pooled
+   item: both are the caller's job, over the pooled
    realizations of every (candidate x M/V pattern). *)
 let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
     (Geom.line * Geom.point * [ `LineNew | `OppositeRay ]) list =
@@ -165,3 +159,84 @@ let mv_patterns (constraints : Ast.mv_constraint list) : bool list list =
          let nv = List.length (List.filter (fun v -> v) lst) in
          let nm = n - nv in
          if abs (nm - nv) = 2 then Some lst else None)
+
+(* The error of a flatten that leaves several states, and its hint: the
+   items that would leave one ([BEP-0061]). [letters s] is the letter of
+   every given ray in the state [s], true for a valley, parallel to
+   [items]; an item spells a ray with a letter, and [None] stands for a ray
+   the program cannot letter, because it lettered it already or wrote no
+   item for it. Up to [max_listed] states
+   get an item each: the letter of one ray that no other state shares, or
+   the letters of two rays where one does not part it from the rest. A
+   state that no letter parts from another differs from it in its layers
+   only. Above [max_listed] the hint names the ray whose letter splits the
+   states most evenly. Ceiling: the pair search is quadratic in the rays
+   per state, which stays small for the fans a program writes. *)
+let max_listed = 4
+
+(* a ray item with its letter, as the program writes it *)
+let ray_item (name : string) (valley : bool) : string =
+  Printf.sprintf "(%s %s)" name (if valley then "valley" else "mountain")
+
+let suggest ~(verb : string) ~(items : (bool -> string) option list)
+    ~(letters : 'a -> bool list) (states : 'a list) : string * string =
+  let n = List.length states in
+  let message = Printf.sprintf "%s is ambiguous: %d realizations" verb n in
+  let item k l = (Option.get (List.nth items k)) l in
+  let ls = List.map letters states in
+  let ks =
+    List.filteri (fun _ k -> List.nth items k <> None)
+      (List.init (List.length items) Fun.id)
+  in
+  if n <= max_listed then begin
+    let parts i own =
+      let others = List.filteri (fun j _ -> j <> i) ls in
+      let apart sel = List.for_all (fun o -> not (sel o)) others in
+      match List.find_opt (fun k -> apart (fun o -> List.nth o k = List.nth own k)) ks with
+      | Some k -> Some (item k (List.nth own k))
+      | None ->
+          List.find_map
+            (fun k1 ->
+              List.find_map
+                (fun k2 ->
+                  if
+                    k1 < k2
+                    && apart (fun o ->
+                           List.nth o k1 = List.nth own k1
+                           && List.nth o k2 = List.nth own k2)
+                  then Some (item k1 (List.nth own k1) ^ " and " ^ item k2 (List.nth own k2))
+                  else None)
+                ks)
+            ks
+    in
+    let found = List.mapi parts ls in
+    let items = List.filter_map Fun.id found in
+    let layered = List.length (List.filter Option.is_none found) in
+    let listed =
+      if items = [] then []
+      else [ "each of these keeps one state: " ^ String.concat "; " items ]
+    in
+    let layers =
+      if layered = 0 then []
+      else
+        [ Printf.sprintf
+            "%d states differ in their layers only, which an (.p over .q) item \
+             orders"
+            layered ]
+    in
+    (message, String.concat "; " (listed @ layers))
+  end
+  else
+    let split k =
+      let v = List.length (List.filter (fun l -> List.nth l k) ls) in
+      (abs ((2 * v) - n), k, v)
+    in
+    match List.sort compare (List.map split ks) with
+    | (_, k, v) :: _ when v > 0 && v < n ->
+        ( message,
+          Printf.sprintf "add %s or %s: they keep %d and %d of the %d states"
+            (item k true) (item k false) v (n - v) n )
+    | _ ->
+        ( message,
+          "the states differ in their layers only, which an (.p over .q) item \
+           orders" )

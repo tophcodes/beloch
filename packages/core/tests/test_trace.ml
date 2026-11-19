@@ -357,22 +357,27 @@ let test_reverse () =
       end)
     cs
 
-let collapse toward =
+let collapse rays =
   "paper square\nmark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
    mark (map --ab onto --cd) as --h\nmark (map --da onto --bc) as --v\n\
    .q = free on --ab from .a at 1/4\n.r = free on --ab from .b at 1/4\n\
-   flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) \
-   (--bd & .d) (.q over .r)" ^ toward ^ "\n"
+   flatten " ^ rays ^ "\n"
 
 let test_flatten_even () =
-  let json, failed = fold_traced (collapse " (toward .q)") in
+  let json, failed =
+    fold_traced
+      (collapse
+         "(--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
+          (--bd & .b mountain) (--bd & .d)")
+  in
   Alcotest.(check bool) "the program succeeds" false failed;
   let e = only_write json in
   Alcotest.(check string) "write" "flatten" (e |> member "write" |> to_string);
   Alcotest.(check (list (float 1e-9))) "the vertex is the center" [ 0.5; 0.5 ]
     (terms e |> member "point" |> floats);
   let cs = candidates e in
-  Alcotest.(check int) "one selected" 1 (count selected cs);
+  Alcotest.(check int) "one candidate, selected" 1 (count selected cs);
+  Alcotest.(check int) "the letters leave one state" 1 (List.length cs);
   List.iter
     (fun c ->
       Alcotest.(check int) "six given rays" 6 (List.length (c |> member "rays" |> to_list));
@@ -380,14 +385,16 @@ let test_flatten_even () =
       Alcotest.(check int) "the stayer is bounded by two ray ends" 2
         (List.length (c |> member "stayer" |> to_list));
       Alcotest.(check bool) "every candidate is a state" true
-        (c |> member "frame" |> member "faces_vertices" <> `Null);
-      if not (selected c) then
-        Alcotest.(check bool) "removed by a stage of the selection" true
-          (List.mem (removed c) [ Some "toward"; Some "mountains"; Some "top" ]))
+        (c |> member "frame" |> member "faces_vertices" <> `Null))
     cs
 
 let test_flatten_ambiguous () =
-  let json, failed = fold_traced (collapse "") in
+  let json, failed =
+    fold_traced
+      (collapse
+         "(--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) \
+          (--bd & .d) (.q over .r)")
+  in
   Alcotest.(check bool) "the program fails" true failed;
   let cs = candidates (only_write json) in
   Alcotest.(check int) "none selected" 0 (count selected cs);
@@ -399,7 +406,7 @@ let test_flatten_odd () =
     fold_traced
       "paper square\nmark (map .a onto .c) as --diag\nmark (through .a .c) as --ray\n\
        mark (map --ab onto --diag) as --l1\nmark (map --da onto --diag) as --l2\n\
-       flatten (--l1) (--l2) (--ray) (toward .d)\n"
+       flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (emergent beside .d)\n"
   in
   Alcotest.(check bool) "the program succeeds" false failed;
   let cs = candidates (only_write json) in

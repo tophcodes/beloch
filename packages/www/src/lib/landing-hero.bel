@@ -28,15 +28,19 @@ flip
 ; one behind
 flatten
   (fan (--s1 & .sr)
-    (map .sr onto --mid through .a) as .e1)
+    (map .sr onto --mid through .a valley)
+    as .e1)
   (fan (--s1 & .sl)
-    (map .sl onto --mid through .a) as .e2)
+    (map .sl onto --mid through .a valley)
+    as .e2)
   (on #[.a]) (staying .o) as --pf
 flatten
   (fan (--s2 & .br)
-    (map .br onto --mid through .c) as .e3)
+    (map .br onto --mid through .c valley)
+    as .e3)
   (fan (--s2 & .bl)
-    (map .bl onto --mid through .c) as .e4)
+    (map .bl onto --mid through .c valley)
+    as .e4)
   (on #[.c]) (staying .o) as --pb
 
 ; a point for the head, on the petal's edge

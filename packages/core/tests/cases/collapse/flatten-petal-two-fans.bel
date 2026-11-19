@@ -21,8 +21,8 @@ reverse (map .d onto .c) as --v
 .sr = --ab * --h
 .sl = --da * --v
 
-flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)
-        (fan (--v & .sl) (map .sl onto --mid through .a) as .l)
+flatten (fan (--h & .sr) (map .sr onto --mid through .a valley) as .r)
+        (fan (--v & .sl) (map .sl onto --mid through .a valley) as .l)
         (on #[.a]) (staying .o) as --pf
 
 ; assert steps = 4

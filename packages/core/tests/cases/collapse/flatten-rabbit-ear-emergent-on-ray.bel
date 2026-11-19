@@ -1,0 +1,17 @@
+@author "Claude (Anthropic)"
+
+; (emergent beside .b) cannot pick a rabbit-ear side: .b lies on the ray
+; --eb, so it lies in the closure of both wedges beside that ray, and the
+; emergent ray of either side passes the item. The statement stays
+; ambiguous until a point inside one wedge, or letters, settle it.
+
+paper square
+
+mark (through .a .c) as --diag
+mark (map --ab onto --diag) as --ea
+mark (map --ab onto --bc) as --eb
+mark (map --bc onto --diag) as --ec
+
+flatten (--ea & .a) (--ec & .c) (--eb & .b) (staying .d) (emergent beside .b)
+
+; expect error "flatten is ambiguous"

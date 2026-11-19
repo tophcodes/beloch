@@ -308,8 +308,8 @@ valley fold reach.
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
-there are any (`Collapse.rank_by_outline`, [[BEP-0058]]), then those with the fewest mountains on the rays the
-program gave. One ceiling remains: a statement derives a crease between
+there are any (`Collapse.rank_by_outline`, [[BEP-0058]]); more than one
+state left is an error. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
 
@@ -416,9 +416,8 @@ candidate whose leading pair admits no stayer sector, and it is also the
 fallback the evaluator reports once every candidate and every Maekawa
 pattern has been tried and none produced a live realization (\|S\| = 0,
 under Pipeline). Check 14 runs once every segment combination has been
-attempted in full, before `toward` selection is ever reached: a genuine
-contradiction between combinations, distinct from the geometric/M/V
-selection stages that follow it.
+attempted in full: a genuine contradiction between combinations, distinct
+from an ambiguity among the states of one combination.
 
 Two checks concern the anchor. They are numbered after the others so that
 the numbers above keep their meaning.
@@ -527,17 +526,19 @@ the stayer (Sectors, below).
    combination independently produced a non-empty realization pool, the
    statement stops here: `` <name> is ambiguous at the vertex; select a
    segment with `&` ``, naming the element that had the multiple segments.
-   Only a single winning combination's pool ever reaches selection:
-   `toward` never resolves a segment-choice contradiction, only a fold
-   direction.
+   Only a single winning combination's pool is decided on.
 4. **Decide by \|S\|** (S = every surviving realization of the winning
    combination, pooled across candidates and, per candidate, across every
    admissible stayer sector):
 
-   - **Tier rule** (applied before counting): a `LineNew` realization always
-     outranks an `OppositeRay` one: S is the `LineNew` pool if it is
-     non-empty, the `OppositeRay` pool otherwise. A lone `LineNew` survivor
-     decides even if several `OppositeRay` realizations also close.
+   - S holds the realizations of `LineNew` and `OppositeRay` candidates
+     alike; the tag ranks none of them ([[BEP-0061]]).
+   - `(emergent beside .p)` keeps the realizations whose emergent ray
+     lies in a wedge of the given rays, sorted counter-clockwise around O,
+     that holds the table point of `.p` or has it on a bounding ray
+     ([[BEP-0078]]). It runs after the outline, and leaving no realization
+     where there were some is `` no state has its emergent ray beside
+     <point> ``.
    - \|S\| = 0 → infeasible, checked in priority order: whichever of
      `` collapse through unaligned layers ``, `` the anchor flap has no
      material outside the staying sector ``, `` collinear leading creases
@@ -549,8 +550,8 @@ the stayer (Sectors, below).
      failure: the first that isn't `` assignment forces self-intersection
      ``, falling back to that, or to `` Maekawa violated by the stated
      assignment `` if no pattern was even tried.
-   - \|S\| = 1 → fold it. A `toward` item present is redundant, never an error.
-   - \|S\| > 1 → **selection** (Selection, below).
+   - \|S\| = 1 → fold it.
+   - \|S\| > 1 → an error with a hint (Ambiguity, below).
 
 ### Sectors
 
@@ -573,38 +574,15 @@ holds at each hinge whose face on the clockwise side of the ray lies above no
 such face of another hinge the element names; the other hinges take the
 letter the layer order gives them.
 
-### Selection
+### Ambiguity
 
-With more than one realization left, `Flatten_solve` selects in three
-stages, each narrowing the set, and reads `toward` at the first stage that
-needs it:
-
-1. **Position.** Where a realization lies depends on which ray lines it
-   used and never on the letters, so the realizations group into position
-   classes by the centroid of their moved material. `toward .p` keeps the
-   class that maximizes $(c - O) \cdot (p - O)$ for the centroid $c$. Two
-   classes with one value of that product mean that $p$ is collinear with a
-   crease through O: `` `toward` does not pick a side — the point is
-   collinear with a crease through the vertex ``, hint `` aim it off the
-   creases ``.
-2. **Fewest mountains.** Within the class, the realizations with the
-   fewest derived mountains among the rays the program gave stay. An
-   emergent ray on a new line is no such ray and never counts; an emergent
-   ray on the far side of a given line counts, since it is that line. This
-   stage needs no `toward`, and it runs alone when `toward` is absent.
-3. **Dipole.** Among those, the realization that maximizes
-   $S(R) = \sum_{\text{faces}} \text{area} \cdot h_f \cdot ((c_f - O) \cdot (p - O))$,
-   with $c_f$ the table centroid of the face and $h_f$ the number of faces
-   it lies above less the number of faces it lies below
-   ([[BEP-0060]]): the material toward $p$ comes to lie on top. Mirror realizations score
-   the same value with opposite sign, so any $p$ off the axis decides. A
-   guard runs first: when the set of ray directions is invariant under the
-   reflection across the line through O and $p$, or $p$ is O, the sides are
-   indistinguishable, and the error is the one of stage 1.
-
-Without `toward` only stage 2 runs. One realization left folds; more are
-`` flatten is ambiguous: <n> realizations ``, hint `` add (toward .p) to
-pick the fold direction ``, with the count after stage 2. `Collapse` has a
+More than one realization is `` flatten is ambiguous: <n>
+realizations ``. `Flatten.suggest` writes its
+hint from the pattern each realization came from, the letter of every
+given ray: for up to four realizations an item per realization, a letter no
+other realization shares or two that together part it, and above four the
+ray whose letter splits them most evenly. A several-fan flatten builds the
+same hint. `Collapse` has a
 single-result contract of its own, `` ambiguous stacking (<k> orders) ``,
 which `flatten` never reaches: it calls `collapse_all` and pools every
 realization; the message survives in the module's own tests.

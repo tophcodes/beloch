@@ -88,6 +88,7 @@ let toward_inside (span : Error.span) : 'a =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
+%token EMERGENT BESIDE
 %token FLATTEN FAN SQUASH OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
 %token FREE ON FROM ALIGN HEADING INTO
 %token BY SHAPE TRIM UNIT
@@ -209,6 +210,8 @@ annot_arg:
   | UP                               { { av = AvWord "up"; av_span = $loc } }
   | DOWN                             { { av = AvWord "down"; av_span = $loc } }
   | FAN                              { { av = AvWord "fan"; av_span = $loc } }
+  | EMERGENT                         { { av = AvWord "emergent"; av_span = $loc } }
+  | BESIDE                           { { av = AvWord "beside"; av_span = $loc } }
 
 body_stmt:
   (* value binding: pure geometry, no material *)
@@ -256,7 +259,7 @@ item:
 
 (* the union of every verb's item bodies; Items holds the per-verb table *)
 item_body:
-  | construction_body                   { Ast.RiConstruction ($1, $loc) }
+  | construction_body mv_opt            { Ast.RiConstruction ($1, $2, $loc) }
   | line_operand mv_opt                 { Ast.RiLine ($1, $2, $loc) }
   | line_operand ONTO align_object      { Ast.RiAlignment ($1, $3, $loc) }
   | line_operand ONTO crease_object     { Ast.RiAlignment ($1, AoLine $3, $loc) }
@@ -281,6 +284,7 @@ item_body:
   | line_operand TOWARD toward_target
       { Ast.RiSelection ({ target = $3; subject = Some (AoLine $1) }, $loc) }
   | FAN items fan_as                    { Ast.RiFan (None, $2, $3, $loc) }
+  | EMERGENT BESIDE point_operand       { Ast.RiEmergent ($3, $loc) }
   | FAN AT point_operand items fan_as   { Ast.RiFan (Some $3, $4, $5, $loc) }
 
 (* the name `(fan … as .p)` binds to the vertex (BEP-0055) *)
