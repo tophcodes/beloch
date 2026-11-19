@@ -976,18 +976,22 @@ let inherit_order (g : t) ~(prov : State.provenance option)
    observable output, not an implementation detail. Clipping the caller's
    canonical line/axis directly (rather than reconstructing a line from the
    chord via [Geom.line_through], whose sign depends on point order) is what
-   keeps that order deterministic. *)
+   keeps that order deterministic. When [cut_of] keeps every face whole,
+   [g] itself is the result. *)
 let split_with_flat_hinges (g : t) ~(cid : int)
     ~(prov : State.provenance option)
     ~(cut_of :
        int ->
        (Geom.point array * Geom.point array * (Geom.point * Geom.point))
        option) : t =
+  let cuts = Array.init (Array.length g.faces) cut_of in
+  if Array.for_all Option.is_none cuts then g
+  else
   let out = ref [] in (* ([paper_poly], parent): prepended, reversed at the end *)
   let chords = ref [] in (* (parent, a, b) for each cut face *)
   Array.iteri
     (fun fi f ->
-      match cut_of fi with
+      match cuts.(fi) with
       | None -> out := (f, fi) :: !out
       | Some (pp, pm, (a, b)) ->
           chords := (fi, a, b) :: !chords;
@@ -1069,19 +1073,24 @@ let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
    face. Children follow their parent in the given order, and the new hinges
    precede the carried ones in the order of their faces, as in
    [split_with_flat_hinges]. A new hinge of crease [cid] carries
-   [hinge_prov cid], [prov] when it is absent. *)
+   [hinge_prov cid], [prov] when it is absent. When [cut_of] keeps every
+   face whole, the result is [g] itself with each face its own parent. *)
 let split_faces ?hinge_prov (g : t) ~(prov : State.provenance option)
     ~(cut_of :
        int ->
        (face list * (int * int * (Geom.point * Geom.point) * int) list) option)
     : t * int array =
+  let n = Array.length g.faces in
+  let split = Array.init n cut_of in
+  if Array.for_all Option.is_none split then (g, Array.init n Fun.id)
+  else
   let hinge_prov = Option.value hinge_prov ~default:(fun _ -> prov) in
   let out = ref [] in
   let cuts = ref [] in
   let next = ref 0 in
   Array.iteri
     (fun fi f ->
-      match cut_of fi with
+      match split.(fi) with
       | None ->
           out := (f, fi) :: !out;
           incr next

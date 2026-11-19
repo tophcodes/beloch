@@ -587,6 +587,22 @@ let test_subdivide_carried_split () =
   Alcotest.(check int) "crease 0 split in two" 2 (List.length (pieces_of 0));
   Alcotest.(check int) "crease 1 in two" 2 (List.length (pieces_of 1))
 
+(* A segment or a fan that cuts no face leaves the state as it is: the
+   segment and the ray run along the crease the square already has. *)
+let test_subdivide_cuts_nothing () =
+  Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let axis = { Geom.a = q 1; b = q 0; c = half } in (* x = 1/2 *)
+  let g =
+    Fold_state.subdivide_paper (Fold_state.flat [| Sheet.square_corners Num.one |])
+      axis ~prov:None
+  in
+  let bottom = { Geom.x = half; y = q 0 } and top = { Geom.x = half; y = q 1 } in
+  Alcotest.(check bool) "segment: same state" true
+    (Fold_state.subdivide_paper_segment g (bottom, top) ~prov:None == g);
+  Alcotest.(check bool) "fan: same state" true
+    (Fold_state.subdivide_fan g ~o:bottom ~rays:[ (7, axis, top) ] ~prov:None == g)
+
 (* Asserts the concrete face/hinge layout of THIS construction, pinned from
    a scratch run of the same fold graph: the guard confines the axis crease to the y>1/2 side, so the
    whole bottom strip (face 2) stays unsplit and un-hinged to the axis
@@ -2046,7 +2062,9 @@ let () =
           Alcotest.test_case "carried split parity" `Quick
             test_subdivide_carried_split;
           Alcotest.test_case "keep_side parity" `Quick
-            test_subdivide_keep_side ] );
+            test_subdivide_keep_side;
+          Alcotest.test_case "a split that cuts nothing keeps the state" `Quick
+            test_subdivide_cuts_nothing ] );
       ( "task4-fold",
         [ Alcotest.test_case "single fold parity" `Quick test_fold_parity_single;
           Alcotest.test_case "mountain parity" `Quick test_fold_parity_mountain;
