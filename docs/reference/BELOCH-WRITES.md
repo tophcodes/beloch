@@ -17,12 +17,11 @@ delimited on both sides and classified by its head.
 of the axis that stays, `toward`, and the side that folds over, `moving`,
 and select among the candidates of a construction by them
 ([[reference/beloch-constructions#selection]]). `flatten` takes no side
-item: its items are conditions on its states ([[BEP-0061]]). The `on` item of
-`flatten` names its anchor, the flap anywhere in the stack under the vertex
-whose tip the fan moves; without it the anchor is the topmost flap there
-([[reference/model#def-flatten|def-flatten]]). The other layers under the vertex stay
-where they lie and need no rays. `on` names a flap by incidence for both
-writes: the flap a `mark` scores, and the flap a `flatten` folds.
+item: its items are conditions on its states ([[BEP-0061]]). A fan
+of `flatten` folds at a point of the paper, its vertex, and the layers
+that meet there; the other layers under the vertex stay where they lie and
+need no rays ([[reference/model#def-flatten|def-flatten]]). `flatten`
+takes no `on` item. `on` names the flap a `mark` scores, by incidence.
 
 A head that does not belong to the verb is an error naming the verb and
 the item (`` fold takes no (between) item ``), and an item type given
@@ -444,19 +443,23 @@ flat-foldability for a sheet of many vertices is NP-hard
 **Items.** A *ray* item names a piece of a marked crease at the vertex,
 `(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
-orders two sectors in the result, `(staying <flap>)` names the stayer,
-the wedge that keeps its place, `(on <flap>)` names the anchor,
-and `(emergent beside .p)` names where the emergent ray of an odd fan
-lies. Every item is a condition that narrows the set of states. `staying`
-and `emergent` stand at most once (`` only one staying item per flatten
-``, `` only one emergent item per flatten ``), an item that rules nothing
-out is no error, and `toward` is refused (`` flatten takes no (toward)
-item: an item is a condition (BEP-0061) ``, hint `` name the side of the
-emergent ray with (emergent beside .p), or give letters ``).
+orders two sectors in the result, `(staying .p …)` names the stayer,
+the part of the paper that keeps its place, and `(emergent beside .p)`
+names where the emergent ray of an odd fan lies. Every item is a condition
+that narrows the set of states. `staying` and `emergent` stand at most
+once (`` only one staying item per flatten ``, `` only one emergent item
+per flatten ``), and an item that rules nothing out is no error. `toward`
+is refused (`` flatten takes no (toward) item: an item is a condition
+(BEP-0061) ``, hint `` name the side of the emergent ray with (emergent
+beside .p), or give letters ``), and so is `on` (`` flatten takes no (on)
+item ``, hint `` name the part that stays with (staying .p), or the layers
+a fan folds with (up to <flap>) ``).
 
 **The emergent ray.** `(emergent beside .p)` keeps the states whose
 emergent ray lies in a wedge of the given rays that holds the table point
-of `.p`, the two rays that bound the wedge included ([[BEP-0078]]). On a
+of `.p`, the two rays that bound the wedge included ([[BEP-0078]]). The
+statement scores the emergent ray as it scores a ray given as a
+construction: in every layer that meets at the vertex ([[BEP-0079]]). On a
 rabbit ear the emergent ray lies on one side of the middle ray or on the
 other, and a point on that side names it: `.a` for the ear that ends on
 `--ab`. A point on a given ray lies on the edge of two wedges and names
@@ -473,15 +476,16 @@ half-turn between the folded rays of the first two ray items, so the
 order of those two is part of the fold; the other items stand in any
 order. Two leading rays on one line leave no such wedge
 (`` collinear leading creases don't pick a stayer ``, hint `` add
-(staying .p) ``). With `staying`, the stayer is the one wedge whose
-closure holds every named point, and the order of the rays says nothing
-(`` <point> does not lie on the anchor ``, hint `` name a point on the
-flap the fan folds ``; `` no sector of the fan holds every staying
-point ``; `` the staying points lie in more than one sector ``, hint
+(staying .p) ``). With `staying`, the stayer is the one part of the paper
+whose closure holds every named point, and the order of the rays says
+nothing (`` no sector of the fan holds every staying point ``; `` the staying points lie in more than one sector ``, hint
 `` add a point inside the sector that stays ``).
 
-**Resolution.** A ray item resolves to every piece of its crease at the
-vertex: a crease an earlier fold split at the vertex carries two, and
+**Resolution.** The vertex of a flatten of ray items is the paper point
+where the bundles of its rays meet
+([[reference/model#def-meet|def-meet]]), and rays that meet at no paper
+point or at several are an error. A ray item resolves to every piece of
+its crease through the vertex: a crease an earlier fold split at the vertex carries two, and
 both are tried, with the states that keep the stayer still deciding
 between them. `&` narrows a ray to one piece where both combinations
 leave states (`` <name> is ambiguous at the vertex ``, hint `` select a
@@ -561,31 +565,45 @@ flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
 
 **Fans.** A flatten folds several vertices in one move when its rays
 stand in fan items ([[BEP-0055]]). A fan item holds the rays of one
-vertex: `(fan at .p ray+)` names a point the program has bound, and the
-statement fails when the rays do not meet at it (`` the rays of the fan do
-not meet at <point> ``); `(fan ray+ as .p)` binds the point where they
-meet. A ray is a line operand or a construction, which the statement
-scores on the layers that move, each with a letter where the program fixes
-one: `(map .sr onto --mid through .a valley)`.
-`&` narrows a line to the half that holds the point it names. A crease
-that `mark` recorded between two points is a ray from the end at the
-vertex to the other end, also where it lies inside a face and cuts none;
-the statement scores it. The items
-`on`, `staying` and `over` stand beside the fans and apply to the whole
-statement; `staying` is required (`` a flatten with several fans needs a
-staying item ``). A statement takes ray items or fan items (`` a
-flatten takes ray items or fan items, not both ``), and at least two fan
-items.
+vertex, a point of the paper ([[BEP-0079]]): `(fan at .p ray+)` names a
+point the program has bound, and the statement fails when the rays do not
+pass through it (`` the rays of the fan do not meet at <point> ``);
+`(fan ray+ as .p)` binds the paper point where the rays meet. A ray is a
+bundle, given as a line operand or a construction, each with a letter
+where the program fixes one: `(map .sr onto --mid through .a valley)`. A
+line operand gives the pieces of its bundle that pass through the vertex,
+and a line with no such piece is an error; `&` narrows a line to the half
+that holds the point it names. A construction runs through every layer
+that meets at the vertex, and the statement scores it there. A crease that
+`mark` recorded between two points is a ray from the end at the vertex to
+the other end, also where it lies inside a face and cuts none; the
+statement scores it. A crease on the table line of a ray that does not
+pass through the vertex is no ray of the fan and keeps its fold.
 
-The crease between the two vertices is a ray of both fans. Where neither
-fan names it, the statement scores it, and the output clause binds it;
-a crease one fan names and the other does not is an error (`` a crease
-between two vertices is a ray of both fans ``). A layer moves when it
-belongs to the anchor and lies outside the region that stays, or when a
-crease that was there before the statement joins it to a layer that
-moves, within one region; the regions are what the rays of all fans cut
-the table into. Each ray is scored on the layers where it parts a moving
-piece from a piece that stays or from a moving piece of another region.
+`(up to <flap>)` in a fan item folds the same rays on every layer under
+the vertex's table position, from the topmost down to the named flap, each
+layer at its own paper point. The layers of that stack keep their order
+relative to each other in every sector, and `(.p over .q)` reorders single
+pairs. The items `staying` and `over` stand beside the fans and apply to
+the whole statement. A statement takes ray items or fan items (`` a
+flatten takes ray items or fan items, not both ``), and at least two fan
+items or one with `up to`.
+
+The crease between two vertices is the paper segment between them, a ray
+of both fans. In a statement of two fans where neither fan names it, the
+statement scores it, and the output clause binds it; a statement of three
+or more fans derives no crease, and names every crease between two
+vertices in both fans. A crease one fan names and the other does not is
+an error (`` a crease between two vertices is a ray of both fans ``). A
+part of the paper moves when no path on the paper joins it to the part
+that stays without crossing a ray; a path crosses creases and never runs
+through a single point. Without `staying`, the part of largest area on the
+paper stays. `staying` fixes where the result lies on the table and which
+state the outline ranks first; where the faces lie relative to each other
+does not depend on it. A statement whose moving part would drag along a
+layer that no ray reaches fails, and the error names that layer. Each ray
+is scored on the layers its pieces cross.
+
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
@@ -603,7 +621,7 @@ reverse (map .d onto .c) as --v
 .sl = --da * --v
 flatten (fan (--h & .sr) (map .sr onto --mid through .a valley) as .r)
         (fan (--v & .sl) (map .sl onto --mid through .a valley) as .l)
-        (on #[.a]) (staying .o) as --pf     ; the petal fold
+        (staying .o) as --pf                ; the petal fold
 
 ; assert faces = 11
 ; assert --pf is mountain
