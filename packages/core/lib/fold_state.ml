@@ -1442,6 +1442,13 @@ let subdivide_paper_segment ?crease_id (g : t) ((a, b) : Geom.point * Geom.point
      whole *)
   let cut_of fi =
     let f = g.faces.(fi) in
+    (* a face with no vertex on one side of the line and fewer than three on
+       it has no part of three vertices on that side, so it stays whole
+       without the exact clip *)
+    let sides = Array.map (Geom.side_of_line paper_axis) f in
+    let count s = Array.fold_left (fun n x -> if x = s then n + 1 else n) 0 sides in
+    if (count 1 = 0 || count (-1) = 0) && count 0 < 3 then None
+    else
     let part k =
       let sub = Geom.clip_convex_halfplane paper_axis k f in
       if Array.length sub >= 3 then Some sub else None
