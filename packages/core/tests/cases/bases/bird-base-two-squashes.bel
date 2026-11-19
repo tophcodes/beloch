@@ -24,10 +24,10 @@ flip
 
 flatten (fan (--s1 & .sr) (map .sr onto --mid through .a valley))
         (fan (--s1 & .sl) (map .sl onto --mid through .a valley))
-        (on #[.a]) (staying .o) as --pf                                         ; front petal
+        (staying .o) as --pf                                                    ; front petal
 flatten (fan (--s2 & .br) (map .br onto --mid through .c valley))
         (fan (--s2 & .bl) (map .bl onto --mid through .c valley))
-        (on #[.c]) (staying .o) as --pb                                         ; back petal
+        (staying .o) as --pb                                                    ; back petal
 
 ; assert steps = 8
 ; assert faces = 20

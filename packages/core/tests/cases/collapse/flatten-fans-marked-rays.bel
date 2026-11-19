@@ -26,7 +26,7 @@ mark (map .sl onto --mid through .a) as --kl
 
 flatten (fan (--h & .sr) (--kr valley) as .r)
         (fan (--v & .sl) (--kl valley) as .l)
-        (on #[.a]) (staying .o) as --pf
+        (staying .o) as --pf
 
 ; assert steps = 4
 ; assert faces = 15
