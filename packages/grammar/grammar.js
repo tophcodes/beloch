@@ -62,9 +62,10 @@ module.exports = grammar({
       seq('into', $.crease),
     ),
 
-    // _axis_item and _ray_item are the same union of heads and differ in one
-    // alternative: the bare-line item is `axis_item` under the five axis
-    // verbs and `flatten_element` under `flatten`.
+    // _axis_item and _ray_item are the same union of heads with two
+    // differences: the bare-line item is `axis_item` under the five axis
+    // verbs and `flatten_element` under `flatten`, and `flatten` takes no
+    // `layer_item` (BEP-0079).
     _axis_item: $ => choice(
       $.construction,
       $.axis_item,
@@ -91,7 +92,6 @@ module.exports = grammar({
       $.kind_item,
       $.intent_item,
       $.extent_item,
-      $.layer_item,
       $.order_item,
       $.alignment_item,
       $.stayer_item,

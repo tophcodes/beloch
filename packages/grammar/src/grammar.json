@@ -511,10 +511,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "layer_item"
-        },
-        {
-          "type": "SYMBOL",
           "name": "order_item"
         },
         {
