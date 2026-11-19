@@ -8,9 +8,6 @@
 ; folds and four petal folds, steps 13 to 18 narrow the four legs and
 ; reverse-fold them, and step 19 folds the head down.
 ;
-; The program stops at the frog base, after step 12. The legs of steps 13
-; to 19 are not folded yet (tophcodes/beloch#323).
-;
 ; Smith writes the frog base in OIL from the preliminary base
 ; [smith1975oil, §5.4, p. 34]: one fold instruction per squash and three per
 ; petal fold. This program writes a squash as one statement and a petal
@@ -49,6 +46,75 @@ def petal(--s --e .l .r .m .o) {
   mark (through .vr .m) (on #[.m]) as --mr
   flatten (fan at .vl (--s & .wl) (--kl & .l) (--ml valley))
           (fan at .vr (--s & .wr) (--kr & .r) (--mr))
+}
+
+; step 13 on one face of the frog base: its two bottom edges, from the
+; side corners .vl and .vr down to the leg tips .l and .r, onto the center
+; line. Each fold takes the top layer on its side, the half of the petal
+; fold that .wl or .wr names, and the corner of the lifted petal it
+; crosses. The outer edges --nl and --nr of the two legs are its creases.
+def narrow(.vl .vr .wl .wr .l .r .o) {
+  --mid = (through .o .l)
+  fold (map --[.vl .l] onto --mid) (moving .vl) (up to #[.vl .l .wl]) as --nl
+  fold (map --[.vr .r] onto --mid) (moving .vr) (up to #[.vr .r .wr]) as --nr
+}
+
+; steps 15 and 16 on one leg: --n is its outer edge, --s the squash crease
+; of its face, --sp the diagonal along its spine, .t its tip and .w the end
+; of the paper edge on its side, which names the layer of the outer edge
+; that runs to the tip. The leg turns at .p, its hip, where the outer edge
+; leaves the squash crease. The letter keeps the opening between the two
+; halves of the leg, which meet at the spine.
+;
+; A front leg turns about the perpendicular to its outer edge, so it
+; points up along the line of that edge. The line meets the center line
+; where Tan's figure for step 15 draws it.
+def lift(--n --s --sp .t .w) {
+  .p = (--n & #[.t .w]) * --s
+  reverse (perp --n through .p) (moving .t) (--sp & .t valley)
+}
+
+; A back leg turns about the line from its hip to .q, the middle of its
+; spine, and points out 45 degrees above the level. Tan's figures for
+; steps 17 to 19 draw it between 20 and 30 degrees above the level. A line
+; that meets the spine nearer .o would turn it lower; the kernel refuses
+; the lines through the points at 2/5 and 49/100 of the spine with
+; "reversing the tip would pierce layer".
+def spread(--n --s --sp .t .w .o) {
+  .p = (--n & #[.t .w]) * --s
+  .q = free on --sp & .o & .t from .o at 1/2
+  reverse (through .p .q) (moving .t) (--sp & .t valley)
+}
+
+; steps 17 and 18 on one leg, each an inside reverse fold along the line
+; through a point .k1 of its spine and a point .k2 of its outer edge. Tan
+; places knees and feet by eye. The fractions put them where her figures
+; for steps 18 and 19 draw them: a front shin points out level and its
+; foot straight up, a back shin points straight down and its foot out
+; level. A foot takes .k, the point of the knee on the outer edge, which
+; names the piece of the outer edge on the shin.
+def frontknee(--n --sp .t .w) {
+  .k1 = free on --sp & .t from .t at 9/20
+  .k2 = free on --n & #[.t .w] from .t at 7/20
+  reverse (through .k1 .k2) (moving .t)
+}
+
+def backknee(--n --sp .t .w) {
+  .k1 = free on --sp & .t from .t at 5/8
+  .k2 = free on --n & #[.t .w] from .t at 5/8
+  reverse (through .k1 .k2) (moving .t)
+}
+
+def frontfoot(--n --sp .t .k) {
+  .k1 = free on --sp & .t from .t at 2/5
+  .k2 = free on --n & .t & .k from .t at 17/40
+  reverse (through .k1 .k2) (moving .t)
+}
+
+def backfoot(--n --sp .t .k) {
+  .k1 = free on --sp & .t from .t at 2/5
+  .k2 = free on --n & .t & .k from .t at 9/25
+  reverse (through .k1 .k2) (moving .t)
 }
 
 ; steps 1 to 3 crease the square in half both ways and along both
@@ -100,9 +166,9 @@ squash (--v & --cd onto --bd) as --s4            ; step 8
 
 ; steps 9 and 10 on the front flap, the squash of --v & --cd, and step 11
 ; on the back flap, the squash of --v & --ab
-apply petal(--s4 --cd .d .c .ml .o)              ; steps 9 and 10
+$p4 = apply petal(--s4 --cd .d .c .ml .o)        ; steps 9 and 10
 flip                                             ; step 11
-apply petal(--s3 --ab .a .b .mr .o)              ; step 11
+$p3 = apply petal(--s3 --ab .a .b .mr .o)        ; step 11
 
 ; points on the other halves of the squashes of steps 6 and 7, which the
 ; turns of step 12 move
@@ -115,31 +181,85 @@ apply petal(--s3 --ab .a .b .mr .o)              ; step 11
 ; center line. Then the petal fold on that squash, and the same on the
 ; back for the squash of step 7.
 fold (--h & --da) (moving .t1) (up to .t1)       ; step 12
-apply petal(--s1 --da .a .d .x6 .o)              ; step 12
+$p1 = apply petal(--s1 --da .a .d .x6 .o)        ; step 12
 flip                                             ; step 12
 fold (--h & --bc) (moving .t2) (up to .t2)       ; step 12
-apply petal(--s2 --bc .c .b .x7 .o)              ; step 12
+$p2 = apply petal(--s2 --bc .c .b .x7 .o)        ; step 12
+
+; the points of each petal fold that the steps after it name: .v2l and
+; .v2r are the side corners of the petal fold on the squash --s2, .w2l and
+; .w2r the ends of its paper edge on the center line, and so on for the
+; other three
+export { .vl as .v1l .vr as .v1r .wl as .w1l .wr as .w1r } $p1
+export { .vl as .v2l .vr as .v2r .wl as .w2l .wr as .w2r } $p2
+export { .vl as .v3l .vr as .v3r .wl as .w3l .wr as .w3r } $p3
+export { .vl as .v4l .vr as .v4r .wl as .w4l .wr as .w4r } $p4
 
 ; the base stands with its closed point up, as the diagram draws it from
 ; step 6 on
 @orient .o up
 
+; step 13: narrow the two legs of the front face, then, the model turned
+; over, those of the back face
+$n2 = apply narrow(.v2l .v2r .w2l .w2r .c .b .o)  ; step 13
+flip                                              ; step 13
+$n1 = apply narrow(.v1l .v1r .w1l .w1r .a .d .o)  ; step 13
+
+; step 14: turn the top two flaps on the right over to the left, which
+; folds the face in front in half along its center line and lays the face
+; of the squash --s4 flat in front, and narrow its legs. Then the same on
+; the back for the face of --s3.
+fold (--v & --cd) (moving .v4l) (up to #[.v4l .w4l .ml])  ; step 14
+$n4 = apply narrow(.v4l .v4r .w4l .w4r .d .c .o)  ; step 14
+flip                                              ; step 14
+fold (--v & --ab) (moving .v3r) (up to #[.v3r .w3r .mr])  ; step 14
+$n3 = apply narrow(.v3l .v3r .w3l .w3r .a .b .o)  ; step 14
+
+; the outer edges of the eight leg halves: --n3l and --n3r on the face of
+; --s3, which is in front now, and so on
+export { --nl as --n1l --nr as --n1r } $n1
+export { --nl as --n2l --nr as --n2r } $n2
+export { --nl as --n3l --nr as --n3r } $n3
+export { --nl as --n4l --nr as --n4r } $n4
+
+; step 15: the front legs .a and .b up beside the head; step 16: the back
+; legs .c and .d out to the sides
+apply lift(--n3l --s3 --ac .a .w3l)               ; step 15
+apply lift(--n3r --s3 --bd .b .w3r)               ; step 15
+apply spread(--n4l --s4 --bd .d .w4l .o)          ; step 16
+apply spread(--n4r --s4 --ac .c .w4r .o)          ; step 16
+
+; step 17: a knee in each leg
+$ka = apply frontknee(--n3l --ac .a .w3l)         ; step 17
+$kb = apply frontknee(--n3r --bd .b .w3r)         ; step 17
+$kc = apply backknee(--n4r --ac .c .w4r)          ; step 17
+$kd = apply backknee(--n4l --bd .d .w4l)          ; step 17
+export { .k2 as .ka } $ka
+export { .k2 as .kb } $kb
+export { .k2 as .kc } $kc
+export { .k2 as .kd } $kd
+
+; step 18: a foot at the end of each leg
+apply frontfoot(--n3l --ac .a .ka)                ; step 18
+apply frontfoot(--n3r --bd .b .kb)                ; step 18
+apply backfoot(--n4r --ac .c .kc)                 ; step 18
+apply backfoot(--n4l --bd .d .kd)                 ; step 18
+
+; step 19: fold the tip of the head behind, through every layer. Tan folds
+; it by eye; the program lays .o on the tips of the petals, which puts the
+; crease where her figure draws it.
+fold (map .o onto .ml) (mountain)                 ; step 19
+
 ; every write but a mark makes one step
-; assert steps = 33
+; assert steps = 58
 
-; the four petal folds and their creases cut the paper into 48 faces
-; assert faces = 48
+; the folds after the frog base cut its 48 faces into 208
+; assert faces = 208
 
-; the outline is the frog base: the closed point .o and the four paper
-; corners at the open end
-; assert .o = (1/2, 1/2)
-; assert .a = (1, 1)
-; assert .b = .a
-; assert .c = .a
-; assert .d = .a
-
-; each petal fold lifts the middle of a paper edge to one point of the
-; center line between .o and the corners. Its coordinates carry sqrt(2).
+; the outline is the frog of step 19: the tip of the head lies behind on
+; the tips of the four petals, which share one point of the center line.
+; The legs end where the free fractions of steps 17 and 18 put them.
+; assert .o = .x6
 ; assert .ml = .x6
 ; assert .mr = .x6
 ; assert .x7 = .x6

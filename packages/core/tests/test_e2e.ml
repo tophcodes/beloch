@@ -1530,15 +1530,23 @@ let test_square_twist_crease_names () =
         (List.mem (`String n) names))
     [ "s1"; "s2"; "s3"; "s4"; "k1"; "k2"; "k3"; "k4"; "m1"; "m2"; "m3"; "m4" ]
 
-(* The traditional frog folds up to its frog base, and 33 of its writes
-   move the paper: the collapse, four squashes, four petal folds with the
-   two folds and two unfolds of their step 9 each, four turns and four
-   flips. After the squashes the 16 faces make 14 flaps
-   (def-flap). Each petal fold adds three: it cuts the top layer of its flap
-   into four parts and each lower layer into two, and opens the two hinges
-   that join the side parts of the top layer to the lower layers. Each of
-   the two turns before the last two petal folds adds one: it opens one
-   hinge and folds the petal it carries in half along two. *)
+(* The traditional frog folds all 19 steps of Tan's diagram, and 58 of
+   its writes move the paper. The first 33 fold the frog base: the
+   collapse, four squashes, four petal folds with the two folds and two
+   unfolds of their step 9 each, four turns and four flips. After the
+   squashes the 16 faces make 14 flaps (def-flap). Each petal fold adds
+   three: it cuts the top layer of its flap into four parts and each lower
+   layer into two, and opens the two hinges that join the side parts of
+   the top layer to the lower layers. Each of the two turns before the last
+   two petal folds adds one: it opens one hinge and folds the petal it
+   carries in half along two. The frog base has 14 + 4 * 3 + 2 = 28 flaps.
+   The other 25 writes fold the legs and the head: eight narrowing folds,
+   two turns and two flips in steps 13 and 14, twelve reverse folds in
+   steps 15 to 18 and the fold of the head in step 19. A fold or a reverse
+   fold cuts each flap its line crosses in two, joined by a folded hinge,
+   and adds one flap per flap it cuts: a narrowing fold cuts four, a
+   reverse fold eight and the fold of the head fourteen. The turns add
+   none. The frog has 28 + 8 * 4 + 12 * 8 + 14 = 170 flaps. *)
 let test_traditional_frog_flaps () =
   let fd =
     Eval.eval_folded
@@ -1546,7 +1554,7 @@ let test_traditional_frog_flaps () =
          (read_example "traditional-frog.bel"))
   in
   let st = fd.Eval.state in
-  Alcotest.(check int) "one frame per write that moves the paper" 33
+  Alcotest.(check int) "one frame per write that moves the paper" 58
     (List.length fd.Eval.frames);
   let n = Array.length (Fold_state.faces st) in
   let parent = Array.init n Fun.id in
@@ -1556,7 +1564,7 @@ let test_traditional_frog_flaps () =
       if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
     (Fold_state.hinges st);
   let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
-  Alcotest.(check int) "flaps" 28 flaps
+  Alcotest.(check int) "flaps" 170 flaps
 
 let () =
   Alcotest.run "beloch-e2e"
@@ -1579,7 +1587,7 @@ let () =
             test_flapping_bird_flaps;
           Alcotest.test_case "the samurai helmet tucks its back corner inside" `Quick
             test_samurai_helmet_tuck;
-          Alcotest.test_case "the traditional frog folds to 28 flaps" `Quick
+          Alcotest.test_case "the traditional frog folds to 170 flaps" `Quick
             test_traditional_frog_flaps;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
