@@ -1497,6 +1497,9 @@ the bundle the write scores along its line on the faces that hold $v$ and
 on the faces that flat hinges join to them. The *hinges of the fan* are the
 hinges along the pieces it uses. A hinge on the table line of a ray that
 does not pass through $v$ is no hinge of the fan and keeps its angle.
+Where the program names no vertex and the rays pass through more than one
+common paper point over $O$, the write is undefined; a squash takes the one
+on its anchor ([#def-squash]).
 Pieces of different creases in one direction on the table lie in different
 layers and count as one direction below. Let
 $\rho_1, \ldots, \rho_k$ be the reflections of the table across the lines
@@ -1574,7 +1577,11 @@ A vertex given with a flap $\Psi$ stands for one vertex per layer under
 $O$, from the topmost layer down to the
 layers of $\Psi$: the paper point under $O$ in each, with the same rays.
 The layers of that stack keep their order relative to each other in every
-sector, except where a constraint orders two sectors the other way.
+sector, except where a constraint orders two sectors the other way. A
+letter names the side of the paper a crease folds toward, so a layer that
+faces the other way than the topmost layer takes each letter of the rays
+the other way round. Where the stayer holds a face of the stack, the parts
+that hold the faces of the other layers in the same sector stay with it.
 
 `flatten` also takes a finite set of vertices $v_1, \ldots, v_m$,
 $m \ge 2$, each with its rays, and folds them in one motion
