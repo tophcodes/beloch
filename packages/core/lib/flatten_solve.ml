@@ -170,8 +170,8 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let pre_st = !(ctx.state) in
   let pre = Fold_state.faces pre_st in
   (* The vertex on the paper (BEP-0079): the one paper point at which a piece
-     of every element passes over [o]. Where several remain, the anchor picks
-     the one on it. *)
+     of every element passes over [o]. Where several remain, the anchor of a
+     squash picks the one on it; a flatten has no anchor and fails. *)
   let pv =
     let on_anchor = Collapse.anchor_faces pre_st o anchor in
     let on_it q =
@@ -180,7 +180,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (List.init (Array.length pre) Fun.id)
     in
     match
-      Fan_paper.vertex ~pick:on_it span
+      Fan_paper.vertex ~pick:(if anchor = None then (fun _ -> false) else on_it) span
         (List.map (fun segs -> Fan_paper.paper_points segs o) pieces)
     with
     | Some p -> p
@@ -689,7 +689,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
-    ~(staying_opt : Ast.point_operand list option) ~(on_opt : Ast.flap_arg option)
+    ~(staying_opt : Ast.point_operand list option)
     ~(emergent_opt : Ast.point_operand option) (span : Error.span) : unit =
   let elem_cands = resolve_elems ctx ~elems span in
   (* the pieces each item names, on the state the statement folds *)
@@ -707,25 +707,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     List.map
       (fun (u, l) -> (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
       overs
-  in
-  (* the anchor flap `on` names, as paper polygons: the odd case scores the
-     emergent ray into a copy of the state, whose faces the kernel finds
-     inside these. The flap must lie under the vertex. *)
-  let anchor =
-    match on_opt with
-    | None -> None
-    | Some fa ->
-        let st = !(ctx.state) in
-        let faces = Resolve.resolve_flap_cluster ctx fa span in
-        let under =
-          List.exists
-            (fun f ->
-              Geom.in_convex_polygon (Fold_state.table_polygon_ccw st f) o)
-            faces
-        in
-        if not under then
-          Error.fail span "the on flap does not lie under the vertex"
-        else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
   in
   (* explicit staying (BEP-0048): points of the paper, whose table images
      name the one sector that stays; ray order carries no stayer meaning
@@ -749,7 +730,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     List.map (fun (el : Ast.collapse_elem) -> Resolve.lstr el.Ast.cline) elems
   in
   let emergent =
-    solve ctx ~into ~verb:"flatten" ~elem_cands ~pieces ~o ~elem_names ~over ~anchor
+    solve ctx ~into ~verb:"flatten" ~elem_cands ~pieces ~o ~elem_names ~over ~anchor:None
       ~staying ?staying_paper ~emergent span
   in
   (* run the output clause's binding step: with no emergent ray materialized

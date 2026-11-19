@@ -31,7 +31,7 @@ val solve :
     staying points on the paper, and the emergent item: a table point and
     its name. The fan folds at the one paper point over [o] that a piece of
     every element passes through; where several are, the anchor picks the
-    one on it (BEP-0079).
+    one on it, and without an anchor the fan fails (BEP-0079).
     [verb] names the write in messages and crease records, [elem_names] the
     elements as the program wrote them. Leaves the chosen state in the
     context and records the trace; returns the emergent crease where one
@@ -48,9 +48,6 @@ val run :
   elems:Ast.collapse_elem list ->
   overs:(Ast.flap_arg * Ast.flap_arg) list ->
   staying_opt:Ast.point_operand list option ->
-  on_opt:Ast.flap_arg option ->
-  (** [on_opt] names the anchor flap, whose tip the flatten moves; [None]
-      takes the topmost flap under the vertex (BEP-0040). *)
   emergent_opt:Ast.point_operand option ->
   Error.span ->
   unit

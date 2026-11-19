@@ -252,8 +252,7 @@ let rays_at (st : Fold_state.t) ~(fan : int) (v : Geom.point)
 let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit) ~(fans : Ast.fan list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
-    ~(staying_opt : Ast.point_operand list option)
-    ~on_opt:(_ : Ast.flap_arg option) (span : Error.span) : unit =
+    ~(staying_opt : Ast.point_operand list option) (span : Error.span) : unit =
   let items = Array.of_list fans in
   let stacked = Array.exists (fun f -> f.Ast.fan_up_to <> None) items in
   if Array.length items < 2 && not stacked then

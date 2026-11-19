@@ -295,7 +295,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
      order the first two rays' stayer convention reads
      (docs/reference/BELOCH-WRITES.md, flatten) is source order *)
   let rays = ref [] and overs = ref [] and staying = ref None in
-  let on = ref None and fans = ref [] and emergent = ref None in
+  let fans = ref [] and emergent = ref None in
   List.iter
     (fun it ->
       match it with
@@ -304,7 +304,11 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       | RiFan (at, its, bind, sp) -> fans := fan at its bind sp :: !fans
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
       | RiStaying (ps, sp) -> slot verb "staying" staying sp ps
-      | RiOn (fa, sp) -> slot verb "on" on sp fa
+      | RiOn (_, sp) ->
+          Error.fail
+            ~hint:"name the part that stays with (staying .p), or fold the layers \
+                   under a fan's vertex with (up to <flap>) in the fan"
+            sp "flatten takes no (on) item"
       | RiSelection (_, sp) ->
           Error.fail
             ~hint:"name the side of the emergent ray with (emergent beside .p), or give letters"
@@ -318,14 +322,14 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
         "a flatten takes ray items or fan items, not both"
   | rays, [] ->
       Flatten
-        (out, List.rev rays, List.rev !overs, !staying, !on, Option.map fst !emergent, span)
+        (out, List.rev rays, List.rev !overs, !staying, Option.map fst !emergent, span)
   | [], fans ->
       Option.iter
         (fun (_, sp) ->
           Error.fail ~hint:"drop the emergent item" sp
             "a flatten with several fans has no emergent ray")
         !emergent;
-      FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, span)
+      FlattenFans (out, List.rev fans, List.rev !overs, !staying, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target
    (BEP-0038), and nothing else: the spine names the anchor (BEP-0040). *)
