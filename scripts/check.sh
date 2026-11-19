@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The checks to run before a push: every test suite, the prose lint at level
-# error, the id links between documents and the credits of the programs,
-# without the site build. `check-all`
+# error, the id links between documents, the credits of the programs and the
+# hashes of the reviewed interfaces, without the site build. `check-all`
 # adds what the deploy job adds on top. Run inside the devshell, where both
 # are on PATH.
 #
@@ -36,5 +36,6 @@ step "bun test packages/www" bun_suite www
 step "prose lint at level error" bash scripts/prose.sh --minAlertLevel=error
 step "id links" bun scripts/id-links.ts --check
 step "program credits" bash scripts/check-program-credits.sh
+step "reviewed interfaces" bash scripts/check-reviewed-interfaces.sh
 
 finish check
