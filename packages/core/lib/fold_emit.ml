@@ -134,13 +134,15 @@ let fold_angles_json edges : Yojson.Safe.t list =
       | _ -> `Float 0.0)
     edges
 
-let folded_frame_of_state (sheet : Sheet.t)
+let folded_frame_of_state ?(display = cp_display) (sheet : Sheet.t)
     (named_points : (string * Geom.point) list)
     (state : Fold_state.t)
     (span : Error.span option) : Yojson.Safe.t =
   (* graduate marks into flat (F) creases for the folded diagram too, so a
-     scored precrease shows in the folded frame; emit-only, like the CP frame *)
-  let state, _ = cp_display state in
+     scored precrease shows in the folded frame; emit-only, like the CP frame.
+     [display] defaults to [cp_display]; a caller that has displayed a state
+     already passes one that returns that display for it *)
+  let state, _ = display state in
   let faces = Fold_state.faces state in
   (* dedup vertices by (paper [coord], table [coord]) together, remembering both per
      vertex. Two faces sharing a paper corner merge only when their isometries
@@ -596,6 +598,10 @@ let beloch_inspect_json (state : Fold_state.t)
 let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
   let sheet = fd.Eval.sheet in
   let disp, kept_marks = cp_display fd.Eval.state in
+  (* the last frame holds the final state, already displayed as [disp] *)
+  let display st =
+    if st == fd.Eval.state then (disp, kept_marks) else cp_display st
+  in
   let faces = Fold_state.faces disp in
   (* dedup vertices by paper [coord]; remember paper [coord] per vertex, for the
      top-level crease-pattern frame (built from the final state). *)
@@ -779,15 +785,15 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
            frame only: not counted as a fold (the `steps` assertion reads
            Eval.frames, which excludes it). *)
         `List
-          (folded_frame_of_state sheet named_points_2 sheet.Sheet.start
+          (folded_frame_of_state ~display sheet named_points_2 sheet.Sheet.start
              None
           :: List.map
                (fun (st, span) ->
-                 folded_frame_of_state sheet named_points_2 st span)
+                 folded_frame_of_state ~display sheet named_points_2 st span)
                fd.Eval.frames) );
     ]
     @
     if trace then
-      let frame st = folded_frame_of_state sheet named_points_2 st None in
+      let frame st = folded_frame_of_state ~display sheet named_points_2 st None in
       [ ("beloch:trace", `List (List.map (Trace.to_json ~frame) fd.Eval.trace)) ]
     else [])
