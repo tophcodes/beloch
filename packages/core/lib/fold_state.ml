@@ -480,9 +480,9 @@ let check_tacos ?(decided = fun _ _ -> true) (geo : geometry) (p : placed)
       if
         p.p_folded.(i) && p.p_folded.(j)
         && a <> c && a <> d && b <> c && b <> d
-        && overlaps i j
         && decided a c && decided c b && decided a d && decided d b
         && between a c b <> between a d b
+        && overlaps i j
       then raise (V (Taco_taco (i, j)))
     done
   done;
@@ -504,8 +504,8 @@ let check_tacos ?(decided = fun _ _ -> true) (geo : geometry) (p : placed)
       if
         p.p_folded.(i) && (not p.p_folded.(j)) && d >= 0
         && a <> c && a <> d && b <> c && b <> d
-        && overlaps i j
         && (between a c b || between a d b)
+        && overlaps i j
       then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
     done
   done
