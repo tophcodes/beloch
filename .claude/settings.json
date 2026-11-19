@@ -11,6 +11,16 @@
             "statusMessage": "Checking the subjects about to be pushed"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/guard-reviewed-interfaces.sh\"",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }
