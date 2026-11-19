@@ -1,12 +1,11 @@
 @author "Claude (Anthropic)"
 
 ; flatten-waterbomb-both-layers.bel with its creases marked on the top layer
-; alone. The fan keeps the sector along the raw edges, so the spine's pieces
-; move and the tip is both layers (BEP-0037); the flatten scores its rays on
-; the bottom layer itself, as def-flatten scores every layer under the fan,
-; and folds the same state as the program that marks them on both layers.
-; The selectors of the diagonal through the corners name the top layer's
-; corner .b in place of .a, which lies on the bottom layer.
+; alone. The vertex is the point of the top layer where the rays meet, and
+; the fan folds the top layer alone (BEP-0079). The spine joins the bottom
+; layer to a moving sector of the top layer, so the bottom layer moves, and
+; no ray of the fan folds it: the write is undefined, and the error names
+; the layer by its corner .a.
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine
@@ -21,14 +20,4 @@ mark (map .a onto .s0) (on #[.b]) as --v
 flatten (--d1 & .b valley) (--d1 & .s1 valley) (--d2 & .s0 valley) (--d2 \ .s0 valley)
   (--v & --ab mountain) (--v \ --ab mountain) (staying .b .c)
 
-; assert steps = 2
-; assert faces = 12
-; assert .a = (0, 0)
-; assert .d = (0, 1)
-; assert .b = (0, 0)
-; assert .c = (0, 1)
-; assert .m = (1/2, 1/2)
-; assert .s0 = (0, 0)
-; assert .s1 = (0, 1)
-; assert .e = (0, 1/2)
-; assert .f = (0, 1/2)
+; expect error "the layer of .a lies under the vertex and moves"

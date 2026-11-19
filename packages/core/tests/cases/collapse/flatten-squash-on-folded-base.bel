@@ -30,7 +30,7 @@ mark (align (--h onto --bd) (heading --h)) as --t
 .e = free on --da from .d at 1/4
 .f = free on --da from .a at 1/4
 flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
-flatten (--h & --da) (--s & --da valley) (--t & --da valley) (--ac & .a) (on #[.f]) (staying .q)
+flatten (--h & --da) (--s & --da valley) (--t & --da valley) (--ac & .a) (staying .q)
 
 ; assert faces = 12
 ; assert .a = (1, 1)

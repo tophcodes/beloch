@@ -181,11 +181,14 @@ type markable =
    program fixes for it. *)
 type fan_ray = { fray : markable; fdir : mv_constraint; fspan : Error.span }
 
-(* `(fan [at .p] ray+ [as .p])`: the rays of one vertex of a `flatten`, with
-   the point the vertex has to lie on or the name it binds (BEP-0055) *)
+(* `(fan [at .p] ray+ [(up to <flap>)] [as .p])`: the rays of one vertex of a
+   `flatten`, with the point the vertex has to lie on or the name it binds
+   (BEP-0055), and the flap down to which the fan folds every layer under its
+   vertex (BEP-0079) *)
 type fan = {
   fan_at : point_operand option;
   fan_rays : fan_ray list;
+  fan_up_to : flap_arg option;
   fan_as : (string * Error.span) option;
   fan_span : Error.span;
 }
@@ -287,14 +290,12 @@ type stmt =
          spine lies on --l opens and its spine lands on the target, a line
          or a point; a fan at the spine's vertex (BEP-0038, BEP-0044) *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
-                * point_operand list option * flap_arg option
-                * point_operand option * Error.span
+                * point_operand list option * point_operand option * Error.span
       (* flatten <items>: single-vertex multi-crease fold, ONE solver
          pipeline (spec §4.9). elements = the given rays, each with an
          [mv_constraint] (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         staying = the points of the sector that stays (BEP-0048); on = the anchor flap, whose tip moves
-         (BEP-0037, BEP-0040). An odd ray count
+         staying = the points of the sector that stays (BEP-0048). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by
@@ -305,11 +306,10 @@ type stmt =
          binds the name to the emergent crease (when one was materialized) or the
          given-ray bundle. *)
   | FlattenFans of output * fan list * (flap_arg * flap_arg) list
-                   * point_operand list option * flap_arg option
-                   * Error.span
+                   * point_operand list option * Error.span
       (* flatten <fan items> <items>: the fans fold in one motion (BEP-0055);
-         the over pairs, staying and on apply to the whole
-         statement, as for [Flatten] *)
+         the over pairs and staying apply to the whole statement, as for
+         [Flatten] *)
 
 (* The sheet a `paper` line opens: the square of a side (1 when none is
    given), or a shape with one number per parameter. *)

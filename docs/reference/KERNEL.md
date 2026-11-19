@@ -198,47 +198,45 @@ hints `extend --x to (x, y)`.
 ## Fan
 
 `Flatten_solve.run` reads the rays of a `flatten` from material creases and
-hands them to `Flatten_solve.solve`, which scores them on the layers under
-the fan; `Collapse` folds the tip of
-[[reference/model#def-flatten|def-flatten]] on the scored state. The layers under
-the fan are the faces whose table image meets the anchor's in positive
-area. `Fold_state.subdivide_fan` scores each ray from the vertex to the
-ray's far point into the ray's own crease: a face that holds the vertex
-inside it is cut into the wedges between consecutive rays at once, and
-every other face the ray crosses between those two points is cut along it.
-The pieces carry the flatten as
-the statement that scored them. A program therefore marks the rays on one
-layer, and the flatten carries them onto the others.
+hands them to `Flatten_solve.solve`, which folds them at a point of the
+paper ([[BEP-0079]]); `Collapse` folds the tip of
+[[reference/model#def-flatten|def-flatten]] on the scored state. The vertex
+is the one paper point over the table vertex that a piece of every
+element passes through (`Fan_paper.vertex`). Where several paper points
+qualify, the anchor of a squash picks the one on it, and a flatten fails
+with `the vertex lies at several points of the paper`. `Collapse` takes
+the layers that meet at the vertex as its anchor: Kawasaki's condition
+runs where they surround the vertex, and the staying sector has to hold a
+face of them.
 
-The kernel scores less than [[reference/model#def-flatten|def-flatten]] states: of
-the layers under the fan it scores only the faces that
-`Collapse.sector_of_poly_opt` places in no wedge. That test checks the
-vertices of a face, so a face in a wedge wider than a half-turn, which a fan
-has when its vertex lies on a folded edge, can count as lying in that wedge
-while a ray crosses it between two of its vertices; such a face stays whole.
-On the squash of the folded preliminary base
-(`flatten-squash-on-folded-base.bel`) these are the two layers behind the
-flap: scored, their pieces would hang on the flap by the base's folded edge
-and join the tip, and the squash would fold them too.
+A given ray folds the pieces its element names, and the statement scores
+no other layer with it. An odd fan scores its emergent ray from the
+vertex through the layers that meet at the vertex: the faces at the
+vertex's paper point that the ray's half-line enters, and every face a
+flat hinge joins to one of them that it enters (`Fan_paper.line_faces`).
+`Fold_state.subdivide_fan` scores the ray from the vertex into its crease
+on those faces. The pieces carry the flatten as the statement that scored
+them.
 
-The tip is read off the state scored through every layer under the fan,
-with `Collapse.tips` for each admissible stayer sector, and the rays are
-then scored again on the state before the flatten, in each face that holds
-a face of the tip; the other layers keep their faces whole. Sectors whose
-tips hold different faces are solved on states of their own. A face is
-placed in a sector when all of it lies in one wedge of the fan, and a face
-a ray's half-line runs through belongs to no sector. The tip grows from the
-anchor's faces outside the stayer's wedge over hinges of any angle. A face
-of the tip that still belongs to no sector, one outside the layers under
-the fan that a half-line runs through, fails with `collapse through
-unaligned layers`. An anchor with nothing outside the stayer's wedge fails
-with `the anchor flap has no material outside the staying sector`. `on`
-reaches the kernel as the paper polygons of the flap it names, so the
-anchor survives the scoring.
+The tip is read off the paper (`tip_rule_for` in `Flatten_solve`). A hinge
+of the fan is a piece of a ray's crease on its half-line that ends at the
+vertex's paper point, one of the pieces its element names for a given ray.
+`Fan_paper.parts` splits the paper along those hinges; a path between two
+faces crosses hinges and never runs through a single point. The parts that
+hold a face of the staying sector with a staying point stay, or with the
+vertex's paper point where the statement names no staying point; the rest
+is the tip. A hinge on a ray's table line that does not end at the
+vertex's paper point keeps its angle. A layer under the table vertex that
+holds a face of the tip and on which no hinge of the fan lies fails the
+fan with `the layer of .p lies under the vertex and moves, but no ray of
+the fan folds it`, naming the layer by the first point of the program on
+it in alphabetical order (`Fan_paper.unfolded_layer`). A squash keeps its
+anchor and skips that check. A face of the tip that lies in no sector
+fails with `collapse through unaligned layers`, and an empty tip with
+`the anchor flap has no material outside the staying sector`.
 
-An odd fan scores its emergent ray with the given rays, the same way. The
-emergent ray goes into the crease the program already scored along it on
-some layer, when there is exactly one, so that it is one crease on every
+The emergent ray goes into the crease the program already scored along it
+on some layer, when there is exactly one, so that it is one crease on every
 layer of the tip; otherwise into a new crease, or into the crease `into`
 names.
 
@@ -270,43 +268,66 @@ four fans.
 
 ### Fans
 
-`Flatten_fans.run` folds a `flatten` of several fan items
-([[BEP-0055]]). It resolves each ray item to a line: a line operand to
-its material segments, a construction to the line `Axiom.select` keeps,
-under a fresh crease id. A fan with `at` has its vertex at the table
-position of that point; a fan without it, at the one point every ray item
-passes through. The rays are the halves of those
+`Flatten_fans.run` folds a `flatten` of fan items ([[BEP-0055]],
+[[BEP-0079]]). It cuts every crease a ray item names into the paper first,
+then resolves each ray item to a line: a line operand to its material
+segments, a construction to the line `Axiom.select` keeps, under a fresh
+crease id. A fan with `at` has its table vertex at the table position of
+that point and its paper vertex at the point; a fan without it, at the one
+paper point where the pieces of its named creases pass over the one table
+point every ray item passes through. The rays are the halves of those
 lines from the vertex: of a segment through the vertex the halves that
 hold every point a `&` keeps, of a construction the halves along which a
 face lies. A crease that `mark` recorded between two points and that cuts
 no face from edge to edge gives its recorded segments, so a ray can start
-at a vertex inside a face and end at the other end of the segment. For two
-fans whose rays leave the segment between their
-vertices out, the statement adds it to both under one crease id, the
+at a vertex inside a face and end at the other end of the segment. For
+two fan items whose rays leave the segment between their vertices out,
+and no `up to`, the statement adds it to both under one crease id, the
 crease the output clause binds.
+
+A fan with `(up to <flap>)` stands for one fan per layer under its table
+vertex, from the topmost down to the layer that holds a face of the flap.
+A layer is the faces under the vertex that hold one paper point there,
+and it lies above another where one of its faces lies above one of the
+other's. Each of those fans stands at the paper point of its layer and
+takes the rays of the item. A letter names the side of the paper a crease
+folds toward, so a layer that faces the other way than the topmost one
+takes each letter the other way round. Where a staying part holds a face
+of the stack, the parts that hold the other layers' faces in the same
+region stay with it. Of the states, the statement keeps those in which
+two faces of the stack in one region that overlap before and after lie
+the same way round, or the other way round where the fan turns them over;
+an `over` item exempts its pair.
 
 The faces are sorted into regions, one per combination of wedges around
 the vertices, with `Collapse.sector_of_poly_opt` per vertex; a face a ray
 runs through belongs to none. A ray ends at its far point: a face that only
 the line beyond that point runs through lies in the wedge that holds a
-point inside the face. The statement scores each ray from its vertex to its
-far point. A face that holds two vertices or more inside it is cut along
-all its rays at once (`Fold_state.subdivide_segments`), into the cells its
-edges and the rays enclose, since no single ray cuts such a face from edge
-to edge. The statement scores every ray on every
-layer under the fans, reads the tip off that state, and scores each ray
-again on the state before the flatten, on the faces where a hinge of the
-first scoring on that ray parts a face of the tip from a face that stays,
-or two faces of the tip in different regions. The tip grows from the
-anchor's faces outside the stayer's region over the hinges the state had
-before the flatten, within one region. On the petal fold this scores the
-crease between the vertices on the top layer alone and the kite creases on
-the top layer and the one below it, the state that two reverse folds and a
+point inside the face. Each ray folds the faces of its bundle: for a named
+crease, the pieces on the ray that pass through the vertex's paper point
+and the pieces on their paper lines beyond it; for a construction, the
+faces `Fan_paper.line_faces` gives; for the crease between two vertices,
+the faces the paper segment between them runs through. A ray whose named
+crease has no piece through the vertex's paper point fails with `<ray>
+passes through no point of the vertex`. The statement scores each ray
+from its vertex to its far point on the faces of its bundle. A face that
+holds the paper points of two vertices or more inside it is cut along all
+its rays at once (`Fold_state.subdivide_segments`), into the cells its
+edges and the rays enclose, since no single ray cuts such a face from
+edge to edge. The hinges of the rays on their bundles split the paper
+into parts. The staying part is the one part that holds every staying
+point, on a face or its edge; without `staying` it is the part of largest
+area on the paper, and two parts of equal largest area fail with `two
+parts of the paper share the largest area, so neither holds still`. The
+other parts are the tip, and the layer check of one fan applies. On the
+petal fold this folds the kite creases in the front layer and in the
+layer behind it, which the side edge joins to it, and the crease between
+the vertices in the front layer: the state that two reverse folds and a
 valley fold reach.
 
 `Collapse.geoms_of` takes the regions as its sectors and finds the motions
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
-parity only where the anchor surrounds its vertex. Of the states, those
+parity only where the layers of its bundles surround its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
 there are any (`Collapse.rank_by_outline`, [[BEP-0058]]); more than one
 state left is an error. One ceiling remains: a statement derives a crease between
@@ -383,7 +404,6 @@ added; the order the evaluator runs them in follows the tables.
 | 2 | bare element resolves to zero material segments | `--<name> has no material segment` | |
 | 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` | |
 | 4 | segments don't all share one common endpoint O, or O lies on the sheet's raw edge in some layer (read on the paper, whatever the sheet's shape and wherever folding placed it) | `no common interior vertex` | |
-| 5 | (`staying` given) a point of `staying` lies on no face of the anchor | `<point> does not lie on the anchor` | `name a point on the flap the fan folds` |
 | 6 | a face of the tip does not carry the rays after the scoring: it lies outside the layers under the fan and a ray's half-line runs through it, so it lies in no sector | `collapse through unaligned layers` | |
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
 | 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `the derived crease does not close the vertex` | |
@@ -419,12 +439,13 @@ under Pipeline). Check 14 runs once every segment combination has been
 attempted in full: a genuine contradiction between combinations, distinct
 from an ambiguity among the states of one combination.
 
-Two checks concern the anchor. They are numbered after the others so that
-the numbers above keep their meaning.
+One check concerns the anchor. It is numbered after the others so that
+the numbers above keep their meaning. Numbers 5 and 15 stay unused: they
+checked a staying point and the flap of `on` against the anchor, and a
+`flatten` has no anchor ([[BEP-0079]]).
 
 | # | check | shipped message | shipped hint |
 |---|---|---|---|
-| 15 | (`on` given) no face of the named flap lies under the vertex | `the on flap does not lie under the vertex` | |
 | 16 | the anchor has no face outside the stayer's wedge, so the tip is empty | `the anchor flap has no material outside the staying sector` | |
 
 Four checks concern the stayer ([[BEP-0048]]). A candidate fan that fails 17,
@@ -439,8 +460,7 @@ fan contributes any.
 | 20 | the candidate states left for the selection hold different sectors still | `flatten is ambiguous: its candidates hold different sectors still` | `add (staying .p) with .p in the sector that stays` |
 
 The evaluator runs the checks in this order. Checks 1–3 run per element, in
-source order, and check 4 once the elements are resolved; then check 15,
-when `on` is given, and check 5, when `staying` is given. Each segment
+source order, and check 4 once the elements are resolved. Each segment
 combination runs check 8 (odd count only), and each candidate fan of it
 checks 7, 9, 10 and 11, then the stayer: check 12 or 13 under the
 leading-pair convention, checks 17, 19 and 18 under `staying`. Per admissible
@@ -499,8 +519,8 @@ the stayer (Sectors, below).
    `packages/core/tests/cases/collapse/flatten-order-load-bearing.bel` two
    combinations fold such states, and the statement fails with check 14.
    For each surviving combination, at each admissible stayer sector
-   (above), the tip is found first: the anchor's faces outside the stayer's
-   wedge and every face joined to them by hinges outside that wedge. A face
+   (above), the tip is found first: the parts of the paper the fan's hinges
+   separate from the staying sector's faces (Fan, above). A face
    of the tip that lies in no sector fails the sector with check 6, and an
    empty tip with check 16; both are M/V-independent. Otherwise enumerate every Maekawa-consistent completion of the *unpinned*
    slots (\|M − V\| = 2 over the rays; a pinned `mountain`/`valley` fixes

@@ -171,7 +171,7 @@ let stmt_shape (s : Ast.stmt) : string =
       Printf.sprintf "reverse %s %s moving=%s outside=%b%s" (outstr out) (mstr m)
         (optstr fastr rs.Ast.rmoving)
         rs.Ast.outside (sidestr rs.Ast.rtoward None)
-  | Ast.Flatten (out, elems, overs, staying, _, emergent, _) ->
+  | Ast.Flatten (out, elems, overs, staying, emergent, _) ->
       Printf.sprintf "flatten %s rays=[%s] overs=[%s] staying=%s emergent=%s"
         (outstr out)
         (String.concat " "
@@ -183,7 +183,7 @@ let stmt_shape (s : Ast.stmt) : string =
            (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
         (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
         (optstr pstr emergent)
-  | Ast.FlattenFans (out, fans, overs, staying, _, _) ->
+  | Ast.FlattenFans (out, fans, overs, staying, _) ->
       Printf.sprintf "flatten %s fans=[%s] overs=[%s] staying=%s"
         (outstr out)
         (String.concat " "
@@ -724,7 +724,7 @@ let test_parse_flatten_followed_by_stmt () =
       "paper square\nflatten (--a) (--b mountain)\n.x = --a * --b\n"
   in
   match prog with
-  | [ Ast.Flatten (Ast.Anonymous, [ _; _ ], [], None, None, None, _); Ast.Point ("x", _, _) ]
+  | [ Ast.Flatten (Ast.Anonymous, [ _; _ ], [], None, None, _); Ast.Point ("x", _, _) ]
     ->
       ()
   | _ -> Alcotest.fail "expected Flatten then Point"
@@ -769,12 +769,25 @@ let test_parse_flatten_fan_errors () =
   in
   fails "a flatten takes ray items or fan items, not both"
     "flatten (--a) (fan (--b) (--c))";
-  fails "a fan takes rays only, not a (staying) item"
+  fails "a fan takes rays and up to only, not a (staying) item"
     "flatten (fan (--b) (staying .o))";
   fails "a fan needs at least one ray" "flatten (fan as .p)";
   fails "a fan names its vertex with at or binds it with as, not both"
     "flatten (fan at .p (--b) as .q)"
 
+
+(* A fan item takes one `up to`, a flatten of one fan item with it folds,
+   and a flatten takes no `on` (BEP-0079). *)
+let test_parse_fan_up_to () =
+  (match parse_stmts ~filename:"t.bel" "paper square\nflatten (fan (--b) (--c) (up to #[.a]))\n" with
+  | [ Ast.FlattenFans (_, [ f ], _, _, _) ] ->
+      Alcotest.(check bool) "the fan keeps its up to" true (f.Ast.fan_up_to <> None)
+  | _ -> Alcotest.fail "expected one flatten of one fan item");
+  expect_error "only one up to item per fan" (fun () ->
+      parse_stmts ~filename:"t.bel"
+        "paper square\nflatten (fan (--b) (up to #[.a]) (up to #[.b]))\n");
+  expect_error "flatten takes no (on) item" (fun () ->
+      parse_stmts ~filename:"t.bel" "paper square\nflatten (--a) (--b) (on #[.c])\n")
 
 let test_parse_flatten_double_staying_rejected () =
   let src = "paper square\nflatten (--a) (staying .p) (staying .q)\n" in
@@ -1247,6 +1260,7 @@ let () =
             test_parse_flatten_fan_construction_letter;
           Alcotest.test_case "flatten fan item errors" `Quick
             test_parse_flatten_fan_errors;
+          Alcotest.test_case "a fan item takes up to" `Quick test_parse_fan_up_to;
           Alcotest.test_case "flatten double staying rejected" `Quick
             test_parse_flatten_double_staying_rejected;
           Alcotest.test_case "flatten double emergent rejected" `Quick

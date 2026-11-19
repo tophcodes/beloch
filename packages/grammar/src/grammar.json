@@ -511,10 +511,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "layer_item"
-        },
-        {
-          "type": "SYMBOL",
           "name": "order_item"
         },
         {
@@ -644,6 +640,18 @@
               }
             ]
           }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "depth_item"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "CHOICE",

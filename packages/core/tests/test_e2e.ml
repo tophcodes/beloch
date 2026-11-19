@@ -1234,28 +1234,6 @@ let same_state (a : Fold_state.t) (b : Fold_state.t) =
   same_stacks a b;
   same_stacks b a
 
-(* A flatten scores its rays on every layer under the fan (def-flatten), so
-   a fan whose rays are marked on the top layer alone folds the same state as
-   one whose rays are marked on both layers first: same faces, and the same
-   column of layers over every face of either state. *)
-let test_e2e_flatten_scores_under_fan () =
-  let run src =
-    (Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)).Eval.state
-  in
-  let both = read_case "collapse/flatten-waterbomb-both-layers.bel" in
-  same_state
-    (run (read_case "collapse/flatten-waterbomb-rays-on-top-layer.bel"))
-    (run both);
-  (* the odd fan: the median's second half is the emergent ray *)
-  let drop sub s =
-    let i = Str.search_forward (Str.regexp_string sub) s 0 in
-    let j = i + String.length sub in
-    String.sub s 0 i ^ String.sub s j (String.length s - j)
-  in
-  same_state
-    (run (read_case "collapse/flatten-waterbomb-emergent-on-top-layer.bel"))
-    (run (drop " (--v \\ --ab mountain)" both))
-
 (* The petal fold as one flatten of two fans (BEP-0055) folds the state that
    two reverse folds and a valley fold reach. *)
 let petal_by_steps =
@@ -1655,10 +1633,6 @@ let () =
           Alcotest.test_case
             "preliminary base: Eos route equals flatten route pointwise" `Quick
             test_e2e_preliminary_routes_agree;
-          Alcotest.test_case
-            "flatten scores its rays under the fan: top-layer marks fold \
-             as both-layer marks"
-            `Quick test_e2e_flatten_scores_under_fan;
           Alcotest.test_case "flatten: the petal fold as two fans" `Quick
             test_e2e_flatten_petal_two_fans;
           Alcotest.test_case "flatten: the bird base by two petal folds" `Quick

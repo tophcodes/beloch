@@ -108,10 +108,9 @@ pieces stacked, with a hinge at every turn labeled --d1, --d2 or
 
 Figure 4 shows a section across the folded base: the pieces 1 to 6 of one
 layer and 7 to 12 of the other turn at the same creases `--d1`, `--d2` and
-`--v`, and the two layers fold as one stack. No kernel folds the `up to`
-form yet; the figure shows the state it names, which
+`--v`, and the two layers fold as one stack.
 `packages/core/tests/cases/collapse/flatten-waterbomb-both-layers.bel` folds
-today with ray items.
+this statement.
 
 ## Rule
 
@@ -119,8 +118,10 @@ In [[reference/model#def-flatten]]:
 
 - The vertex of a fan of `flatten` is a paper point $v$, and the fan folds
   at its table position $f(v)$. `fan at` names it; otherwise it is the
-  paper point where the bundles of the rays meet. `reverse` and `squash`
-  keep their vertex on the table and their anchor.
+  paper point where the bundles of the rays meet. Where the bundles meet
+  at more than one paper point over $f(v)$, the write is undefined.
+  `reverse` and `squash` keep their vertex on the table and their anchor,
+  and a squash takes the paper point on its anchor.
 - A ray is a bundle. The fan uses the pieces of the bundle that pass
   through $v$, and a ray with no such piece makes the write undefined. A
   ray given as a construction is scored through every layer that meets at
@@ -147,7 +148,11 @@ In [[reference/model#def-flatten]]:
 - A fan with `(up to Ψ)` stands for one fan per layer under $f(v)$, from
   the topmost down to the flap $Ψ$, each at its own paper point and with
   the same rays. Those layers keep their order relative to each other in
-  every sector, and `(.p over .q)` reorders single pairs.
+  every sector, and `(.p over .q)` reorders single pairs. A letter names
+  the side of the paper a crease folds toward, so a layer that faces the
+  other way than the topmost one takes each letter the other way round.
+  Where the stayer holds a face of the stack, the parts that hold the
+  faces of the other layers in the same sector stay with it.
 
 In [[reference/beloch-writes#flatten-and-flip]] the items and the part on
 fans state the same for the program: a fan item takes `(up to <flap>)`,

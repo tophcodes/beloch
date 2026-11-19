@@ -263,7 +263,7 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       span )
 
 (* A fan item takes rays: a line or a construction, each with an optional
-   letter (BEP-0055). *)
+   letter (BEP-0055), and at most one `up to` (BEP-0079). *)
 let fan (at : point_operand option) (items : raw_item list)
     (bind : (string * Error.span) option) (span : Error.span) : fan =
   (match (at, bind) with
@@ -271,18 +271,23 @@ let fan (at : point_operand option) (items : raw_item list)
       Error.fail ~hint:"drop at or as" sp
         "a fan names its vertex with at or binds it with as, not both"
   | _ -> ());
+  let up_to = ref None in
   let ray it =
     match it with
-    | RiLine (lo, mv, sp) -> { fray = MLine lo; fdir = mv; fspan = sp }
-    | RiConstruction (c, mv, sp) -> { fray = MConstruction c; fdir = mv; fspan = sp }
+    | RiLine (lo, mv, sp) -> Some { fray = MLine lo; fdir = mv; fspan = sp }
+    | RiConstruction (c, mv, sp) -> Some { fray = MConstruction c; fdir = mv; fspan = sp }
+    | RiUpTo (fa, sp) ->
+        slot "fan" "up to" up_to sp fa;
+        None
     | it ->
         Error.fail ~hint:"put it beside the fan, as an item of the flatten"
           (span_of it)
-          (Printf.sprintf "a fan takes rays only, not a (%s) item" (head_of it))
+          (Printf.sprintf "a fan takes rays and up to only, not a (%s) item"
+             (head_of it))
   in
-  let rays = List.map ray items in
+  let rays = List.filter_map ray items in
   if rays = [] then Error.fail span "a fan needs at least one ray";
-  { fan_at = at; fan_rays = rays; fan_as = bind; fan_span = span }
+  { fan_at = at; fan_rays = rays; fan_up_to = !up_to; fan_as = bind; fan_span = span }
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "flatten" in
@@ -290,7 +295,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
      order the first two rays' stayer convention reads
      (docs/reference/BELOCH-WRITES.md, flatten) is source order *)
   let rays = ref [] and overs = ref [] and staying = ref None in
-  let on = ref None and fans = ref [] and emergent = ref None in
+  let fans = ref [] and emergent = ref None in
   List.iter
     (fun it ->
       match it with
@@ -299,7 +304,11 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       | RiFan (at, its, bind, sp) -> fans := fan at its bind sp :: !fans
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
       | RiStaying (ps, sp) -> slot verb "staying" staying sp ps
-      | RiOn (fa, sp) -> slot verb "on" on sp fa
+      | RiOn (_, sp) ->
+          Error.fail
+            ~hint:"name the part that stays with (staying .p), or fold the layers \
+                   under a fan's vertex with (up to <flap>) in the fan"
+            sp "flatten takes no (on) item"
       | RiSelection (_, sp) ->
           Error.fail
             ~hint:"name the side of the emergent ray with (emergent beside .p), or give letters"
@@ -313,14 +322,14 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
         "a flatten takes ray items or fan items, not both"
   | rays, [] ->
       Flatten
-        (out, List.rev rays, List.rev !overs, !staying, !on, Option.map fst !emergent, span)
+        (out, List.rev rays, List.rev !overs, !staying, Option.map fst !emergent, span)
   | [], fans ->
       Option.iter
         (fun (_, sp) ->
           Error.fail ~hint:"drop the emergent item" sp
             "a flatten with several fans has no emergent ray")
         !emergent;
-      FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, span)
+      FlattenFans (out, List.rev fans, List.rev !overs, !staying, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target
    (BEP-0038), and nothing else: the spine names the anchor (BEP-0040). *)

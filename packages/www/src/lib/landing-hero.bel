@@ -33,7 +33,7 @@ flatten
   (fan (--s1 & .sl)
     (map .sl onto --mid through .a valley)
     as .e2)
-  (on #[.a]) (staying .o) as --pf
+  (staying .o) as --pf
 flatten
   (fan (--s2 & .br)
     (map .br onto --mid through .c valley)
@@ -41,7 +41,7 @@ flatten
   (fan (--s2 & .bl)
     (map .bl onto --mid through .c valley)
     as .e4)
-  (on #[.c]) (staying .o) as --pb
+  (staying .o) as --pb
 
 ; a point for the head, on the petal's edge
 .ht = free on --[.e2 .a] from .a at 1/3

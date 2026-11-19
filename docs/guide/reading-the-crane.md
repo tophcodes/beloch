@@ -101,10 +101,10 @@ points together.
 ::: {.figure #fig-crane-bird caption="The bird base. `--pf` is the crease the front flap is lifted on, `--pb` the one on the back." views="cp folded" highlight="--pf --pb .e1 .e2" after="fig-crane-sides"}
 flatten (fan (--s1 & .sr) (map .sr onto --mid through .a valley) as .e1)
         (fan (--s1 & .sl) (map .sl onto --mid through .a valley) as .e2)
-        (on #[.a]) (staying .o) as --pf
+        (staying .o) as --pf
 flatten (fan (--s2 & .br) (map .br onto --mid through .c valley) as .e3)
         (fan (--s2 & .bl) (map .bl onto --mid through .c valley) as .e4)
-        (on #[.c]) (staying .o) as --pb
+        (staying .o) as --pb
 :::
 
 On the first page `flatten` took the rays of one vertex. Here each
@@ -127,10 +127,10 @@ A third crease runs from `.e1` to `.e2`: the one the flap is lifted on.
 Neither fan names it. Beloch works it out, since both vertices have to
 fold flat, and the `as --pf` at the end of the statement names it.
 
-`(on #[.a])` says which flap the move folds. `#[.a]` is the flap that holds
-the corner `.a`, the front flap; the second statement names the back flap
-by `.c`. `(staying .o)` names paper that keeps its place, here the closed
-tip.
+Each vertex is a point of the paper, and a fan folds the layers that meet
+there: the front flap and the layer its side edge joins it to, in the
+first statement, and the back flap in the second. `(staying .o)` names
+paper that keeps its place, here the closed tip.
 
 The two long points left standing are the *legs* of the bird base. Their
 tips are the corners `.b` and `.d`.

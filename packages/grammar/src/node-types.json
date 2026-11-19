@@ -513,6 +513,10 @@
           "named": true
         },
         {
+          "type": "depth_item",
+          "named": true
+        },
+        {
           "type": "fan_construction",
           "named": true
         },

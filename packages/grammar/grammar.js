@@ -62,9 +62,10 @@ module.exports = grammar({
       seq('into', $.crease),
     ),
 
-    // _axis_item and _ray_item are the same union of heads and differ in one
-    // alternative: the bare-line item is `axis_item` under the five axis
-    // verbs and `flatten_element` under `flatten`.
+    // _axis_item and _ray_item are the same union of heads with two
+    // differences: the bare-line item is `axis_item` under the five axis
+    // verbs and `flatten_element` under `flatten`, and `flatten` takes no
+    // `layer_item` (BEP-0079).
     _axis_item: $ => choice(
       $.construction,
       $.axis_item,
@@ -91,7 +92,6 @@ module.exports = grammar({
       $.kind_item,
       $.intent_item,
       $.extent_item,
-      $.layer_item,
       $.order_item,
       $.alignment_item,
       $.stayer_item,
@@ -108,9 +108,11 @@ module.exports = grammar({
     flatten_element: $ => seq('(', $._operand, optional($._mv), ')'),
 
     // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
-    // the rays of one vertex of a flatten (BEP-0055)
+    // the rays of one vertex of a flatten (BEP-0055), and `(up to #[.a])`, the
+    // flap down to which it folds the layers under its vertex (BEP-0079)
     fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
       repeat1(choice($.construction, $.fan_construction, $.flatten_element)),
+      optional($.depth_item),
       optional(seq('as', $.point)), ')'),
 
     // a construction ray of a fan with its letter:

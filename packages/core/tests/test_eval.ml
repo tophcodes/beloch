@@ -376,7 +376,7 @@ let test_flatten_all_layers_ok () =
 (* A fan moves its tip (BEP-0037). On a book fold a four-ray vertex near the
    corner, scored on one layer, folds that layer's corner and leaves the
    other corner flat where it lies. [layer] is the flap the rays are marked
-   on and the anchor of the flatten; [edge] is that layer's raw edge. *)
+   on; [edge] is that layer's raw edge. *)
 let book_corner_fan ?(pp = "valley") ?(dg = "mountain") ~layer ~corner ~edge ~stay () =
   Printf.sprintf
     "paper square\n\
@@ -391,8 +391,8 @@ let book_corner_fan ?(pp = "valley") ?(dg = "mountain") ~layer ~corner ~edge ~st
      mark (map --hz onto --pp) (toward .e) (on #[%s]) as --r4\n\
      .z = free on %s from %s at 1/4\n\
      flatten (--pp & %s %s) (--r4 & %s) (--dg & %s %s) (--r2 & --da) \
-     (staying .z) (on #[%s])\n"
-    layer corner layer layer corner layer layer edge stay edge pp edge corner dg layer
+     (staying .z)\n"
+    layer corner layer layer corner layer layer edge stay edge pp edge corner dg
 
 let face_at (st : Fold_state.t) (p : Geom.point) : int =
   let faces = Fold_state.faces st in

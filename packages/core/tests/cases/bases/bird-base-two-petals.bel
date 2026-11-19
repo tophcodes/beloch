@@ -24,10 +24,10 @@ reverse (map .d onto .c) as --v
 
 flatten (fan (--h & .sr) (map .sr onto --mid through .a valley))
         (fan (--v & .sl) (map .sl onto --mid through .a valley))
-        (on #[.a]) (staying .o) as --pf                                         ; front petal
+        (staying .o) as --pf                                                    ; front petal
 flatten (fan (--h & .br) (map .br onto --mid through .c valley))
         (fan (--v & .bl) (map .bl onto --mid through .c valley))
-        (on #[.c]) (staying .o) as --pb                                         ; back petal
+        (staying .o) as --pb                                                    ; back petal
 
 ; assert steps = 5
 ; assert faces = 16

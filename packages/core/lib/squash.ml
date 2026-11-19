@@ -469,14 +469,14 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
   (* the two pieces of the axis are the flanks of the opened spine, and a
      squash folds both as valleys (BEP-0061): each element carries the
      letter as a letter item of `flatten` carries it *)
+  let axis_segs cid = List.filter at_o (Fold_state.crease_segments st2 cid) in
   let axis_elem cid =
-    match List.filter at_o (Fold_state.crease_segments st2 cid) with
+    match axis_segs cid with
     | [] -> Error.fail span "the axis of the squash does not cross the flap"
     | segs -> List.map (cand ~letter:Ast.MvValley cid) segs
   in
   let in_anchor = within anchor_polys st2 in
-  let target_elem =
-    let segs =
+  let target_segs =
       Fold_state.crease_segments st2 target_cid
       |> List.filter (fun (s : Fold_state.crease_segment) ->
              let fa, fb = s.Fold_state.faces in
@@ -484,8 +484,9 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
              && Geom.side_of_line target_line (far_of s) = 0
              && Geom.side_of_line guard_t (far_of s) = want
              && (in_anchor fa || in_anchor fb))
-    in
-    match segs with
+  in
+  let target_elem =
+    match target_segs with
     | [] ->
         Error.fail ~hint:"mark it first" span
           (Printf.sprintf
@@ -507,24 +508,37 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
           Geom.clip_convex_halfplane target_line away (Fold_state.table_polygon_ccw st2 i)
         in
         if Array.length clip >= 3 && Num.sign (Geom.signed_area clip) <> 0 then
-          Some (centroid clip)
+          Some (i, centroid clip)
         else find (i + 1)
       else find (i + 1)
     in
     find 0
   in
   let stayer = beyond_target in_anchor in
+  (* the staying point on the paper: the fan of the squash holds the part
+     of the paper that holds it still *)
+  let stayer_paper =
+    Option.map
+      (fun (i, c) ->
+        Isometry.apply_point (Isometry.inverse (Fold_state.face_iso2 st2 i)) c)
+      stayer
+  in
+  let stayer = Option.map snd stayer in
   let spine_elem = [ cand ~letter:Ast.MvValley c.cid c.seg ] in
   (match stayer with
   | Some stayer ->
       ignore
         (Flatten_solve.solve ctx ~into:None ~verb:"squash"
            ~elem_cands:[ spine_elem; axis_elem cid_a; axis_elem cid_b; target_elem ]
+           ~pieces:[ [ c.seg ]; axis_segs cid_a; axis_segs cid_b; target_segs ]
            ~o ~elem_names:[ spine_str; "the axis"; "the axis"; target_str ]
            ~over:[] ~anchor:(Some anchor_polys)
            ~staying:(Some (Collapse.Points [ stayer ]))
+           ?staying_paper:(Option.map (fun q -> [ q ]) stayer_paper)
            ~emergent:None span)
   | None ->
+      (* the flap ends at its target line, so no staying point lies beyond
+         it; the flap turns about its own hinges (BEP-0057) *)
       own_hinges ctx st2 ~o ~f ~f' ~target_line ~spine_cid:c.cid ~cid_a ~cid_b
         ~in_flap:(fun i -> in_anchor i || in_lower i)
         ~other_side:(beyond_target in_lower <> None)

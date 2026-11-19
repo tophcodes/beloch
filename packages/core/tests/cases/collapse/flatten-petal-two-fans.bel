@@ -23,7 +23,7 @@ reverse (map .d onto .c) as --v
 
 flatten (fan (--h & .sr) (map .sr onto --mid through .a valley) as .r)
         (fan (--v & .sl) (map .sl onto --mid through .a valley) as .l)
-        (on #[.a]) (staying .o) as --pf
+        (staying .o) as --pf
 
 ; assert steps = 4
 ; assert faces = 11
