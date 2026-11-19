@@ -500,50 +500,87 @@ and spine_attempt = {
 
 val reverse_failure_to_string : reverse_failure -> string
 
-val reverse :
-  ?crease_id:int ->
+type reverse_fan
+(** A reverse fold as a fan (BEP-0077): the state with every face of the tip
+    cut along the axis by a flat hinge, and the hinges the fan changes. Every
+    piece beyond the axis moves by the reflection across it, whatever the
+    opening, so every opening is a stacking of one folded state. *)
+
+val reverse_fan :
+  cid:int ->
   t ->
   axis:Geom.line ->
   move_side:int ->
   tip:bool array ->
-  inside:bool ->
   prov:State.provenance option ->
-  (t, reverse_failure) result
-(** Reverse fold of the material [tip] (a mask over PARENT faces) across the
-    TABLE-space [axis] (BEP-0043). An opening parts the tip into a lower and
-    an upper half where every hinge joining the two is folded and lies on
-    one table line that reaches beyond the axis, and no face of the upper
-    half lies below a face of the lower half it overlaps; the openings depend
-    on the order of overlapping faces only. Each half has at least one
-    parent cut by the axis (its hinge layers). Each opening yields a
-    candidate {!fold_blocks_all} with the two blocks, one per stacking.
-    Inside: the lower block [Over] the outermost layers of the lower body
-    and the upper block [Under] those of the upper body; outside: [Bottom]
-    and [Top]. Every hinge across the opening keeps the order of its faces
-    and so turns; every other hinge of the tip keeps its letter. Candidates
-    that agree on every overlapping pair are one state; exactly one state is
-    the result. [tip] must contain only
-    parents with a piece on the moving side (the caller builds it so). It is
-    [reverse_of_attempts] of [reverse_attempts]. *)
+  (reverse_fan, violation) result
+(** The fan of a reverse fold of the material [tip] (a mask over PARENT
+    faces) across the TABLE-space [axis]: each face of the tip that the axis
+    crosses is cut, with a flat hinge of crease [cid] between its piece on
+    [-move_side] and its piece on [move_side]. *)
+
+val reverse_scored : reverse_fan -> t
+(** The cut state the fan folds. *)
+
+val reverse_moved : reverse_fan -> bool array
+(** Per face of {!reverse_scored}, whether it is the piece of a face of the
+    tip beyond the axis. *)
+
+val reverse_changes : reverse_fan -> bool array
+(** Per hinge of {!reverse_scored}, whether the fan changes it: every hinge
+    along the axis, and a hinge on the axis with exactly one side beyond
+    it. *)
+
+val reverse_root : reverse_fan -> int
+(** The face of {!reverse_scored} the folded state is placed from: it stays,
+    and its parent's placement is unchanged. *)
+
+val fold_opening :
+  reverse_fan ->
+  geometry ->
+  turned:bool array ->
+  blocks:(bool array * placement) list ->
+  (t list, violation) result
+(** The stackings of one opening on [geometry], the folded state of the fan,
+    with [blocks] placed as {!fold_blocks_all} places them. The units of the
+    layer search are the stationary faces and each block: a face keeps its
+    side against a face of its own unit, exchanged where [turned] (per face
+    of {!reverse_scored}) says the fan turns it over, and the block listed
+    first lies below the other. The states have their faces and hinges in
+    the order {!fold_blocks_all} gives the same fold, and so does the
+    violation. *)
 
 val reverse_attempts :
-  ?crease_id:int ->
+  cid:int ->
   t ->
   axis:Geom.line ->
   move_side:int ->
   tip:bool array ->
   inside:bool ->
-  prov:State.provenance option ->
+  fold:((bool array * placement) list -> (t list, violation) result) ->
   spine_attempt list
-(** Every opening {!reverse} finds, from the bottom of the tip up, with what
-    became of it. *)
+(** Every opening of a reverse fold of the material [tip] (a mask over
+    PARENT faces) across the TABLE-space [axis] (BEP-0043), from the bottom
+    of the tip up, with what became of it. An opening parts the tip into a
+    lower and an upper half where every hinge joining the two is folded and
+    lies on one table line that reaches beyond the axis, and no face of the
+    upper half lies below a face of the lower half it overlaps; the openings
+    depend on the order of overlapping faces only. Each half has at least
+    one parent cut by the axis (its hinge layers). [fold] gives the
+    stackings of an opening with its two blocks: for [inside], the lower
+    block [Over] the outermost layers of the lower body and the upper block
+    [Under] those of the upper body; outside, [Bottom] and [Top]. Every
+    hinge across the opening keeps the order of its faces and so turns;
+    every other hinge of the tip keeps its letter. [tip] must contain only
+    parents with a piece on the moving side (the caller builds it so). *)
 
 val reverse_letter : t -> spine_attempt -> int -> assign
 (** The letter hinge [i] of the tip has after the attempt's reverse fold:
     reversed across the opening, kept elsewhere. *)
 
 val reverse_of_attempts : spine_attempt list -> (t, reverse_failure) result
-(** The one state, or the failure {!reverse} reports. *)
+(** The one state the openings give, two that order every overlapping pair
+    alike counting as one, or why there is no state or more than one. *)
 
 val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical

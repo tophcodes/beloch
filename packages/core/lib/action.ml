@@ -663,7 +663,7 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       letters
   in
   let attempts =
-    Fold_state.reverse_attempts ~crease_id:cid st ~axis ~move_side ~tip ~inside ~prov
+    Reverse.attempts ~cid st ~axis ~move_side ~tip ~inside ~prov
   in
   (* an opening is kept where every lettered hinge takes its letter *)
   let keeps (a : Fold_state.spine_attempt) =
