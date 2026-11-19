@@ -108,9 +108,11 @@ module.exports = grammar({
     flatten_element: $ => seq('(', $._operand, optional($._mv), ')'),
 
     // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
-    // the rays of one vertex of a flatten (BEP-0055)
+    // the rays of one vertex of a flatten (BEP-0055), and `(up to #[.a])`, the
+    // flap down to which it folds the layers under its vertex (BEP-0079)
     fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
       repeat1(choice($.construction, $.fan_construction, $.flatten_element)),
+      optional($.depth_item),
       optional(seq('as', $.point)), ')'),
 
     // a construction ray of a fan with its letter:
