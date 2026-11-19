@@ -559,22 +559,26 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   let faces = Fold_state.faces st in
   let nf = Array.length faces in
-  (* the parts of the paper the hinges of the fans separate: the parts that
-     hold a staying point stay, and the rest is the tip *)
+  (* the parts of the paper the hinges of the fans separate; the staying
+     parts stay, and the rest is the tip *)
   let part = Fan_paper.parts st ~cut:ray_hinge in
-  let staying_pts =
-    match staying_opt with
-    | None ->
-        Error.fail ~hint:"add (staying .p) with .p in the region that stays" span
-          "a flatten with several fans needs a staying item"
-    | Some pos -> List.map (Resolve.resolve_point ctx) pos
-  in
+  (* the staying parts: those that hold a staying point, or the part of
+     largest area on the paper where the statement names none *)
   let staying_parts =
-    List.filter_map
-      (fun i ->
-        if List.exists (Geom.in_convex_polygon faces.(i)) staying_pts then Some part.(i)
-        else None)
-      (List.init nf Fun.id)
+    match staying_opt with
+    | Some pos ->
+        let pts = List.map (Resolve.resolve_point ctx) pos in
+        List.filter_map
+          (fun i ->
+            if List.exists (Geom.in_convex_polygon faces.(i)) pts then Some part.(i)
+            else None)
+          (List.init nf Fun.id)
+    | None -> (
+        match Fan_paper.largest st part with
+        | Some k -> [ k ]
+        | None ->
+            Error.fail ~hint:"add (staying .p) with .p in the part that stays" span
+              "two parts of the paper share the largest area, so neither holds still")
   in
   let tip = Array.map (fun k -> not (List.mem k staying_parts)) part in
   let on_anchor =

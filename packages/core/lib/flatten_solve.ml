@@ -727,34 +727,15 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           Error.fail span "the on flap does not lie under the vertex"
         else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
   in
-  (* explicit staying (BEP-0048): points on the anchor, whose table images
+  (* explicit staying (BEP-0048): points of the paper, whose table images
      name the one sector that stays; ray order carries no stayer meaning
      then. The sector itself is checked per candidate fan by the kernel. *)
   let staying =
-    match staying_opt with
-    | None -> None
-    | Some pos ->
-        let st = !(ctx.state) in
-        let on_anchor = Collapse.anchor_faces st o anchor in
-        let faces = Fold_state.faces st in
-        let images =
-          List.map
-            (fun po ->
-              let pp = Resolve.resolve_point ctx po in
-              let held = ref false in
-              Array.iteri
-                (fun i f ->
-                  if on_anchor.(i) && Geom.in_convex_polygon f pp then
-                    held := true)
-                faces;
-              if not !held then
-                Error.fail ~hint:"name a point on the flap the fan folds" span
-                  (Printf.sprintf "%s does not lie on the anchor"
-                     (Resolve.fstr (Ast.FlapPoint po)));
-              Fold_state.table_position st pp)
-            pos
-        in
-        Some (Collapse.Points images)
+    Option.map
+      (fun pos ->
+        Collapse.Points
+          (List.map (fun po -> Fold_state.table_position !(ctx.state) (Resolve.resolve_point ctx po)) pos))
+      staying_opt
   in
   let staying_paper =
     Option.map (List.map (Resolve.resolve_point ctx)) staying_opt
