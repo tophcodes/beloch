@@ -108,10 +108,9 @@ pieces stacked, with a hinge at every turn labeled --d1, --d2 or
 
 Figure 4 shows a section across the folded base: the pieces 1 to 6 of one
 layer and 7 to 12 of the other turn at the same creases `--d1`, `--d2` and
-`--v`, and the two layers fold as one stack. No kernel folds the `up to`
-form yet; the figure shows the state it names, which
+`--v`, and the two layers fold as one stack.
 `packages/core/tests/cases/collapse/flatten-waterbomb-both-layers.bel` folds
-today with ray items.
+this statement.
 
 ## Rule
 
