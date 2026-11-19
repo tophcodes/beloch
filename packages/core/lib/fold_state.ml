@@ -963,6 +963,19 @@ let inherit_order (g : t) ~(prov : State.provenance option)
   match geometry ~base:g.base ~faces:faces' ~hinges:hinges' ~root:root' () with
   | Error v -> fail_of_violation prov v
   | Ok geo -> (
+      (* a child lies inside its parent on the table, so two children of one
+         face, or of two faces that lie apart, lie apart too: [build] reads
+         them without the exact overlap test *)
+      (match geo.g_placed with
+       | Ok p ->
+           let n = Array.length faces' in
+           for i = 0 to n - 1 do
+             for j = i + 1 to n - 1 do
+               if parent.(i) = parent.(j) || side g parent.(i) parent.(j) = 0
+               then p.p_overlap.(i).(j) <- Some false
+             done
+           done
+       | Error _ -> ());
       try
         build ~marks:g.marks ~cycles:false geo ~side:(fun i j ->
             side g parent.(i) parent.(j) > 0)
