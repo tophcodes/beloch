@@ -15,6 +15,9 @@ type ray = {
   dir : Ast.mv_constraint;
   derived : bool;
   item : string;  (* the ray item as the program wrote it *)
+  segs : Fold_state.crease_segment list;
+      (* the segments the item names; empty for a construction and the
+         derived crease *)
 }
 
 (* What a ray item names before its vertex is known: material segments of
@@ -180,7 +183,8 @@ let rays_at (st : Fold_state.t) ~(fan : int) (v : Geom.point)
     | Ast.MLine lo -> Resolve.lstr lo
     | Ast.MConstruction _ -> "the construction ray"
   in
-  let mk cid far = { cid; fan; far; dir = r.Ast.fdir; derived = false; item } in
+  let segs = match op with Segments (_, segs, _) -> segs | Line _ -> [] in
+  let mk cid far = { cid; fan; far; dir = r.Ast.fdir; derived = false; item; segs } in
   let dedup rays =
     List.fold_left
       (fun acc (ry : ray) ->
@@ -250,10 +254,10 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.point_operand list option)
     ~on_opt:(_ : Ast.flap_arg option) (span : Error.span) : unit =
-  let fans = Array.of_list fans in
-  let m = Array.length fans in
-  if m < 2 then
-    Error.fail ~hint:"write the rays as items of the flatten" span
+  let items = Array.of_list fans in
+  let stacked = Array.exists (fun f -> f.Ast.fan_up_to <> None) items in
+  if Array.length items < 2 && not stacked then
+    Error.fail ~hint:"write the rays as items of the flatten, or add (up to <flap>)" span
       "a flatten with one fan item folds one vertex; give its rays without \
        the fan";
   (* the rays of every fan, at its vertex. Every named crease is cut first,
@@ -265,16 +269,89 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (fun (r : Ast.fan_ray) ->
           match r.Ast.fray with Ast.MLine lo -> cut_named ctx lo | _ -> ())
         f.Ast.fan_rays)
-    fans;
-  let ops = Array.map (fun f -> List.map (operand_of ctx) f.Ast.fan_rays) fans in
+    items;
+  let item_ops = Array.map (fun f -> List.map (operand_of ctx) f.Ast.fan_rays) items in
   let pre_st = !(ctx.state) in
-  let verts = Array.mapi (fun j f -> vertex_of ctx f ops.(j)) fans in
+  let item_verts = Array.mapi (fun j f -> vertex_of ctx f item_ops.(j)) items in
+  (* A fan with `up to` stands for one fan per layer under its table vertex,
+     from the topmost down to the layer of the flap it names, each at the
+     paper point of its layer and with the same rays (BEP-0079). A layer is
+     the faces under the vertex that hold one paper point there; it lies
+     above another where one of its faces lies above one of the other's. *)
+  let layers_down (f : Ast.fan) (v : Geom.point) (fa : Ast.flap_arg) =
+    let nf = Array.length (Fold_state.faces pre_st) in
+    let groups =
+      List.fold_left
+        (fun acc i ->
+          if not (Geom.in_convex_polygon (Fold_state.table_polygon_ccw pre_st i) v)
+          then acc
+          else
+            let q =
+              Isometry.apply_point (Isometry.inverse (Fold_state.face_iso2 pre_st i)) v
+            in
+            match List.partition (fun (p, _) -> Geom.point_equal p q) acc with
+            | [ (p, fs) ], rest -> (p, i :: fs) :: rest
+            | _ -> (q, [ i ]) :: acc)
+        [] (List.init nf Fun.id)
+    in
+    let above (_, fs) (_, gs) =
+      List.exists (fun i -> List.exists (fun k -> Fold_state.above pre_st i k) gs) fs
+    in
+    let depth g = List.length (List.filter (fun h -> h != g && above h g) groups) in
+    let ordered = List.stable_sort (fun g h -> compare (depth g) (depth h)) groups in
+    let flap = Resolve.resolve_flap_cluster ctx fa f.Ast.fan_span in
+    let rec down = function
+      | [] ->
+          Error.fail f.Ast.fan_span
+            (Printf.sprintf "%s holds no layer under the vertex"
+               (Resolve.fstr fa))
+      | ((_, fs) as g) :: rest ->
+          if List.exists (fun i -> List.mem i flap) fs then [ g ] else g :: down rest
+    in
+    down ordered
+  in
+  (* the fans of the statement: per fan item, one, or one per layer under
+     `up to`, with the paper point of that layer and its faces *)
+  let inst =
+    Array.concat
+      (Array.to_list
+         (Array.mapi
+            (fun j (f : Ast.fan) ->
+              match f.Ast.fan_up_to with
+              | None -> [| (j, None) |]
+              | Some fa ->
+                  Array.of_list
+                    (List.map (fun g -> (j, Some g)) (layers_down f item_verts.(j) fa)))
+            items))
+  in
+  let fans = Array.map (fun (j, _) -> items.(j)) inst in
+  let ops = Array.map (fun (j, _) -> item_ops.(j)) inst in
+  let verts = Array.map (fun (j, _) -> item_verts.(j)) inst in
+  let m = Array.length fans in
+  (* A letter names the side of the paper a crease folds toward, so a layer
+     of an `up to` that faces the other way than the topmost one takes each
+     letter the other way round: the stack folds as one. *)
+  let turned j =
+    match inst.(j) with
+    | k, Some (_, i :: _) -> (
+        match Array.find_opt (fun (k', g) -> k' = k && g <> None) inst with
+        | Some (_, Some (_, t :: _)) ->
+            Fold_state.face_up pre_st i <> Fold_state.face_up pre_st t
+        | _ -> false)
+    | _ -> false
+  in
+  let other = function
+    | Ast.MvValley -> Ast.MvMountain
+    | Ast.MvMountain -> Ast.MvValley
+    | Ast.MvFree -> Ast.MvFree
+  in
   let given =
     Array.to_list
       (Array.mapi
          (fun j f ->
            List.concat
-             (List.map2 (rays_at pre_st ~fan:j verts.(j)) f.Ast.fan_rays ops.(j)))
+             (List.map2 (rays_at pre_st ~fan:j verts.(j)) f.Ast.fan_rays ops.(j))
+           |> List.map (fun (r : ray) -> if turned j then { r with dir = other r.dir } else r))
          fans)
   in
   List.iteri
@@ -289,7 +366,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   let given = Array.of_list given in
   let derived = ref None in
-  if m = 2 then begin
+  if m = 2 && not stacked then begin
     let toward j k =
       List.exists (fun (r : ray) -> same_dir verts.(j) r.far verts.(k)) given.(j)
     in
@@ -298,7 +375,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     | false, false ->
         let cid = Lazy.force derived_cid in
         let d j k =
-          { cid; fan = j; far = verts.(k); dir = Ast.MvFree; derived = true; item = "" }
+          { cid; fan = j; far = verts.(k); dir = Ast.MvFree; derived = true; item = ""; segs = [] }
         in
         given.(0) <- given.(0) @ [ d 0 1 ];
         given.(1) <- given.(1) @ [ d 1 0 ];
@@ -357,8 +434,9 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               | Line _ -> [])
             ops.(j)
         in
-        match f.Ast.fan_at with
-        | Some po ->
+        match (inst.(j), f.Ast.fan_at) with
+        | (_, Some (p, _)), _ -> p
+        | _, Some po ->
             let p = Resolve.resolve_point ctx po in
             if
               not
@@ -370,7 +448,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (Printf.sprintf "the rays of the fan do not pass through %s"
                    (Resolve.fstr (Ast.FlapPoint po)));
             p
-        | None -> (
+        | _, None -> (
             match Fan_paper.vertex f.Ast.fan_span per_op with
             | Some p -> p
             | None ->
@@ -394,12 +472,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (fun i -> Fan_paper.overlaps p q (Geom.clip_line_to_convex l pre.(i)))
         (List.init (Array.length pre) Fun.id)
     else
-      match
-        List.find_opt
-          (function Segments (c, _, _) | Line (c, _) -> c = r.cid)
-          ops.(j)
-      with
-      | Some (Segments (_, segs, _)) -> (
+      match r.segs with
+      | _ :: _ as segs -> (
           let on_ray (s : Fold_state.crease_segment) =
             Geom.side_of_line (Geom.line_through v r.far) s.Fold_state.ta = 0
             && Geom.side_of_line (Geom.line_through v r.far) s.Fold_state.tb = 0
@@ -544,7 +618,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let bfaces = Array.map bundle rays in
   let st = score (fun k p -> List.mem p bfaces.(k)) in
   let par = Fan_paper.parents pre st in
-  let wedges, _ = regions st in
+  let wedges, cells = regions st in
   let hinges0 = Fold_state.hinges st in
   let in_bundle i k =
     let h = hinges0.(i) in
@@ -562,23 +636,68 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   (* the parts of the paper the hinges of the fans separate; the staying
      parts stay, and the rest is the tip *)
   let part = Fan_paper.parts st ~cut:ray_hinge in
-  (* the staying parts: those that hold a staying point, or the part of
-     largest area on the paper where the statement names none *)
+  (* the staying part: the one part that holds every staying point, on its
+     faces or their edges, or the part of largest area on the paper where
+     the statement names none *)
   let staying_parts =
     match staying_opt with
-    | Some pos ->
+    | Some pos -> (
         let pts = List.map (Resolve.resolve_point ctx) pos in
-        List.filter_map
-          (fun i ->
-            if List.exists (Geom.in_convex_polygon faces.(i)) pts then Some part.(i)
-            else None)
-          (List.init nf Fun.id)
+        let holds k p =
+          List.exists
+            (fun i -> part.(i) = k && Geom.in_convex_polygon faces.(i) p)
+            (List.init nf Fun.id)
+        in
+        match
+          List.filter (fun k -> List.for_all (holds k) pts) (List.sort_uniq compare (Array.to_list part))
+        with
+        | [ k ] -> [ k ]
+        | [] -> Error.fail span Collapse.e_staying_none
+        | _ ->
+            Error.fail ?hint:(Collapse.hint_of Collapse.e_staying_several) span
+              Collapse.e_staying_several)
     | None -> (
         match Fan_paper.largest st part with
         | Some k -> [ k ]
         | None ->
             Error.fail ~hint:"add (staying .p) with .p in the part that stays" span
               "two parts of the paper share the largest area, so neither holds still")
+  in
+  (* the layer of an `up to` that holds each face, as an index into [inst],
+     or -1 *)
+  let layer_of =
+    Array.map
+      (fun p ->
+        let found = ref (-1) in
+        Array.iteri
+          (fun x (_, g) ->
+            match g with
+            | Some (_, fs) when !found < 0 && p >= 0 && List.mem p fs -> found := x
+            | _ -> ())
+          inst;
+        !found)
+      par
+  in
+  (* the layers of an `up to` fold as one stack: the parts that hold a face
+     of them in a region where a staying part holds one stay too *)
+  let staying_parts =
+    if not stacked then staying_parts
+    else
+      let held =
+        List.filter_map
+          (fun i ->
+            if layer_of.(i) >= 0 && List.mem part.(i) staying_parts then Some cells.(i)
+            else None)
+          (List.init nf Fun.id)
+      in
+      List.sort_uniq compare
+        (staying_parts
+        @ List.filter_map
+            (fun i ->
+              if layer_of.(i) >= 0 && cells.(i) <> None && List.mem cells.(i) held then
+                Some part.(i)
+              else None)
+            (List.init nf Fun.id))
   in
   let tip = Array.map (fun k -> not (List.mem k staying_parts)) part in
   let on_anchor =
@@ -724,6 +843,31 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | Error _ -> acc)
       [] results
   in
+  (* The layers of one `up to` keep their order relative to each other in
+     every sector: two faces of them in one region that overlap before the
+     flatten and after it lie the same way round, or the other way round
+     where the fan turns them over. An `over` item reorders its pair. *)
+  let keeps_order s =
+    let ok = ref true in
+    for a = 0 to nf - 1 do
+      for b = 0 to nf - 1 do
+        let la = layer_of.(a) and lb = layer_of.(b) in
+        if
+          !ok && la >= 0 && lb >= 0 && la < lb
+          && fst inst.(la) = fst inst.(lb)
+          && cells.(a) <> None && cells.(a) = cells.(b)
+          && not (List.mem (a, b) over || List.mem (b, a) over)
+        then
+          match (Fold_state.rel st a b, Fold_state.rel s a b) with
+          | Fold_state.Apart, _ | _, Fold_state.Apart -> ()
+          | before, after ->
+              let turned = Fold_state.face_up s a <> Fold_state.face_up st a in
+              if (before = after) = turned then ok := false
+      done
+    done;
+    !ok
+  in
+  let all = if stacked then List.filter keeps_order all else all in
   (* the letters of the rays in each state, for the hint of an ambiguous
      statement: a state carries the pattern it came from *)
   let pattern_of =

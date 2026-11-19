@@ -181,11 +181,14 @@ type markable =
    program fixes for it. *)
 type fan_ray = { fray : markable; fdir : mv_constraint; fspan : Error.span }
 
-(* `(fan [at .p] ray+ [as .p])`: the rays of one vertex of a `flatten`, with
-   the point the vertex has to lie on or the name it binds (BEP-0055) *)
+(* `(fan [at .p] ray+ [(up to <flap>)] [as .p])`: the rays of one vertex of a
+   `flatten`, with the point the vertex has to lie on or the name it binds
+   (BEP-0055), and the flap down to which the fan folds every layer under its
+   vertex (BEP-0079) *)
 type fan = {
   fan_at : point_operand option;
   fan_rays : fan_ray list;
+  fan_up_to : flap_arg option;
   fan_as : (string * Error.span) option;
   fan_span : Error.span;
 }

@@ -769,12 +769,23 @@ let test_parse_flatten_fan_errors () =
   in
   fails "a flatten takes ray items or fan items, not both"
     "flatten (--a) (fan (--b) (--c))";
-  fails "a fan takes rays only, not a (staying) item"
+  fails "a fan takes rays and up to only, not a (staying) item"
     "flatten (fan (--b) (staying .o))";
   fails "a fan needs at least one ray" "flatten (fan as .p)";
   fails "a fan names its vertex with at or binds it with as, not both"
     "flatten (fan at .p (--b) as .q)"
 
+
+(* A fan item takes one `up to`, and a flatten of one fan item with it folds
+   (BEP-0079). *)
+let test_parse_fan_up_to () =
+  (match parse_stmts ~filename:"t.bel" "paper square\nflatten (fan (--b) (--c) (up to #[.a]))\n" with
+  | [ Ast.FlattenFans (_, [ f ], _, _, _, _) ] ->
+      Alcotest.(check bool) "the fan keeps its up to" true (f.Ast.fan_up_to <> None)
+  | _ -> Alcotest.fail "expected one flatten of one fan item");
+  expect_error "only one up to item per fan" (fun () ->
+      parse_stmts ~filename:"t.bel"
+        "paper square\nflatten (fan (--b) (up to #[.a]) (up to #[.b]))\n")
 
 let test_parse_flatten_double_staying_rejected () =
   let src = "paper square\nflatten (--a) (staying .p) (staying .q)\n" in
@@ -1247,6 +1258,7 @@ let () =
             test_parse_flatten_fan_construction_letter;
           Alcotest.test_case "flatten fan item errors" `Quick
             test_parse_flatten_fan_errors;
+          Alcotest.test_case "a fan item takes up to" `Quick test_parse_fan_up_to;
           Alcotest.test_case "flatten double staying rejected" `Quick
             test_parse_flatten_double_staying_rejected;
           Alcotest.test_case "flatten double emergent rejected" `Quick

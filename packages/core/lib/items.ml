@@ -263,7 +263,7 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       span )
 
 (* A fan item takes rays: a line or a construction, each with an optional
-   letter (BEP-0055). *)
+   letter (BEP-0055), and at most one `up to` (BEP-0079). *)
 let fan (at : point_operand option) (items : raw_item list)
     (bind : (string * Error.span) option) (span : Error.span) : fan =
   (match (at, bind) with
@@ -271,18 +271,23 @@ let fan (at : point_operand option) (items : raw_item list)
       Error.fail ~hint:"drop at or as" sp
         "a fan names its vertex with at or binds it with as, not both"
   | _ -> ());
+  let up_to = ref None in
   let ray it =
     match it with
-    | RiLine (lo, mv, sp) -> { fray = MLine lo; fdir = mv; fspan = sp }
-    | RiConstruction (c, mv, sp) -> { fray = MConstruction c; fdir = mv; fspan = sp }
+    | RiLine (lo, mv, sp) -> Some { fray = MLine lo; fdir = mv; fspan = sp }
+    | RiConstruction (c, mv, sp) -> Some { fray = MConstruction c; fdir = mv; fspan = sp }
+    | RiUpTo (fa, sp) ->
+        slot "fan" "up to" up_to sp fa;
+        None
     | it ->
         Error.fail ~hint:"put it beside the fan, as an item of the flatten"
           (span_of it)
-          (Printf.sprintf "a fan takes rays only, not a (%s) item" (head_of it))
+          (Printf.sprintf "a fan takes rays and up to only, not a (%s) item"
+             (head_of it))
   in
-  let rays = List.map ray items in
+  let rays = List.filter_map ray items in
   if rays = [] then Error.fail span "a fan needs at least one ray";
-  { fan_at = at; fan_rays = rays; fan_as = bind; fan_span = span }
+  { fan_at = at; fan_rays = rays; fan_up_to = !up_to; fan_as = bind; fan_span = span }
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "flatten" in
