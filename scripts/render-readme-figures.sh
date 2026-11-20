@@ -34,7 +34,7 @@ for bel in "${programs[@]}"; do
   for view in cp folded; do
     svg="${bel%.bel}-$view.svg"
     mkdir -p "$out/$(dirname "$svg")"
-    beloch fold "$bel" | bun "$fold2svg" - "$out/$svg" --view "$view" --legend --plain
+    beloch fold "$bel" | bun "$fold2svg" - "$out/$svg" --view "$view" --plain
     if [[ "$out" != . ]] && ! cmp -s "$out/$svg" "$svg"; then
       echo "stale: $svg (run scripts/render-readme-figures.sh)" >&2
       stale=1
