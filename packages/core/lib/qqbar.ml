@@ -59,9 +59,13 @@ let minpoly (x : t) : Poly.t =
    starts small because the LLL cost grows with the precision and the
    coordinates of fold geometry are a few bits wide: FLINT's own advice is
    to call this repeatedly with increasing precision. The 4096 and 65536
-   rungs remain for coordinates with large heights; a value outside ℚ(gen)
-   walks the whole ladder, so the callers try a generator that can hold
-   both operands first. *)
+   rungs remain for coordinates with large heights. Before them, the degree
+   of gen + x rules out a value outside ℚ(gen): every element of ℚ(gen) has
+   a degree dividing that of gen, and gen + x lies in ℚ(gen) when x does.
+   The sum costs a millisecond at degree 9, where the 65536 rung of a miss
+   costs half a second. A value outside ℚ(gen) whose sum passes that test
+   still walks the whole ladder, so the callers try a generator that can
+   hold both operands first. *)
 let express_over ~(gen : t) (x : t) : Poly.t option =
   let parse a = Poly.of_list (Array.to_list (Array.map Q.of_string a)) in
   let rec go = function
@@ -71,7 +75,11 @@ let express_over ~(gen : t) (x : t) : Poly.t option =
         | Some a -> Some (parse a)
         | None -> go rest)
   in
-  go [ 16; 64; 256; 1024; 4096; 65536 ]
+  match go [ 16; 64; 256; 1024 ] with
+  | Some _ as r -> r
+  | None ->
+      if degree gen mod degree (add gen x) <> 0 then None
+      else go [ 4096; 65536 ]
 
 let enclosure (x : t) ~(prec : int) : Q.t * Q.t =
   let a, b, e = enclosure_strs x prec in

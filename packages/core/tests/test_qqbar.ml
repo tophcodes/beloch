@@ -85,7 +85,16 @@ let test_express_over () =
   (* cbrt2 NOT in Q(sqrt2): None *)
   let c2 = List.hd (Qqbar.real_roots_of_poly (Poly.of_list (List.map q ["-2";"0";"0";"1"]))) in
   Alcotest.(check bool) "cbrt2 not in Q(sqrt2)" true
-    (Qqbar.express_over ~gen:s2 c2 = None)
+    (Qqbar.express_over ~gen:s2 c2 = None);
+  (* a degree-9 field holds the cubic ∛2 and not the cubic ∛5 *)
+  let cbrt k =
+    List.hd (Qqbar.real_roots_of_poly (Poly.of_list (List.map q [ "-" ^ k; "0"; "0"; "1" ])))
+  in
+  let g9 = Qqbar.add c2 (cbrt "3") in
+  Alcotest.(check bool) "cbrt2 in Q(cbrt2 + cbrt3)" true
+    (Qqbar.express_over ~gen:g9 c2 <> None);
+  Alcotest.(check bool) "cbrt5 not in Q(cbrt2 + cbrt3)" true
+    (Qqbar.express_over ~gen:g9 (cbrt "5") = None)
 
 let () =
   Alcotest.run "beloch-qqbar"
