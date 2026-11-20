@@ -74,3 +74,15 @@ jobs:
           save: false
       - name: Check
         run: nix develop --command check
+
+  # A pull request that changes an interface the maintainer has reviewed
+  # turns this job red, and it stays red until he records the new hash
+  # (ADR-0080). It runs on every pull request, outside `check`, so the red
+  # check names the review it waits for.
+  reviewed-interfaces:
+    name: reviewed-interfaces
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare the reviewed interfaces with their recorded hashes
+        run: bash scripts/check-reviewed-interfaces.sh

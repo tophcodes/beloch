@@ -63,10 +63,8 @@ Inside the devshell (`nix develop`, or direnv):
 - `check` builds the kernel and runs its suites, the bun suites of
   `packages/render-2d`, `packages/runtime` and `packages/www`, the type
   check (`tsc`) of `packages/render-2d` and `packages/runtime`, the prose
-  lint at level error, the check that every program states its credits
-  (ADR-0068), and the check that every reviewed interface still matches
-  the hash the maintainer recorded for it (ADR-0080). Run it after the last
-  edit and before every push.
+  lint at level error and the check that every program states its credits
+  (ADR-0068). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README
   drawings against their programs, the script tests (`bun test scripts`) and
   the site build.
@@ -81,6 +79,12 @@ changes only Markdown that no suite reads. A push to `main` that touches the
 site, the kernel, `docs/reference/`, `examples/`, `scripts/` or the flake runs
 `check-all` in the deploy job, which deploys the site when it passes; any
 other push to `main` runs only the commit subject check.
+
+On every pull request, CI also runs the job `reviewed-interfaces`, which
+fails when a pull request changes an interface whose hash the maintainer
+recorded (ADR-0080). Its red check asks for his review, and no local check
+runs it. An agent writes the hash list, `packages/core/reviewed.sha256`,
+only with his approval.
 
 The kernel suites have known failures, held against
 `scripts/known-failures.txt`; anything beyond them fails the check.
