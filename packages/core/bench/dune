@@ -10,3 +10,7 @@
  (name bench_fold)
  (modules bench_fold)
  (libraries beloch unix))
+(executable
+ (name bench_field)
+ (modules bench_field)
+ (libraries beloch zarith unix))
