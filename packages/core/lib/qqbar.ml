@@ -29,6 +29,7 @@ external enclosure_strs : t -> int -> string * string * string
 external real_roots_strs : string array -> t array = "ml_qqbar_real_roots"
 external roots_qqbar_poly_raw : t array -> t array option
   = "ml_qqbar_roots_qqbar_poly"
+external evaluate_strs : string array -> t -> t = "ml_qqbar_evaluate_fmpq_poly"
 
 let of_q (q : Q.t) : t = of_q_str (Q.to_string q)
 let to_q (x : t) : Q.t option =
@@ -80,6 +81,12 @@ let express_over ~(gen : t) (x : t) : Poly.t option =
   | None ->
       if degree gen mod degree (add gen x) <> 0 then None
       else go [ 4096; 65536 ]
+
+(* p(x) exactly, in one FLINT call: FLINT computes the minimal polynomial
+   of the result once, where Horner's rule over [add] and [mul] would
+   compute one for every intermediate value. *)
+let evaluate (p : Poly.t) (x : t) : t =
+  evaluate_strs (Array.map Q.to_string p) x
 
 let enclosure (x : t) ~(prec : int) : Q.t * Q.t =
   let a, b, e = enclosure_strs x prec in

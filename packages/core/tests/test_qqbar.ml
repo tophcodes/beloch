@@ -96,6 +96,14 @@ let test_express_over () =
   Alcotest.(check bool) "cbrt5 not in Q(cbrt2 + cbrt3)" true
     (Qqbar.express_over ~gen:g9 (cbrt "5") = None)
 
+let test_evaluate () =
+  let q = Q.of_string in
+  let s2 = Qqbar.sqrt (Qqbar.of_q (q "2")) in
+  let p = Poly.of_list [ q "3"; q "5/2"; q "-1/3" ] in
+  Alcotest.(check bool) "3 + 5/2 x - 1/3 x^2 at sqrt2" true
+    (Qqbar.equal (Qqbar.evaluate p s2)
+       (Qqbar.add (Qqbar.of_q (q "7/3")) (Qqbar.mul (Qqbar.of_q (q "5/2")) s2)))
+
 let () =
   Alcotest.run "beloch-qqbar"
     [
@@ -106,5 +114,6 @@ let () =
           Alcotest.test_case "real roots" `Quick test_real_roots;
           Alcotest.test_case "minpoly + enclosure" `Quick test_minpoly_enclosure;
           Alcotest.test_case "express_over" `Quick test_express_over;
+          Alcotest.test_case "evaluate" `Quick test_evaluate;
         ] );
     ]

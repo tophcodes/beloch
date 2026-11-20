@@ -151,14 +151,7 @@ let to_qq (x : t) : Qqbar.t =
   match x with
   | Rat q -> Qqbar.of_q q
   | Qq q -> q
-  | Field { gen; coords } ->
-      (* Horner: coords(α) *)
-      let alpha = qq_of_gen gen in
-      let acc = ref (Qqbar.of_q Q.zero) in
-      for i = Poly.degree coords downto 0 do
-        acc := Qqbar.add (Qqbar.mul !acc alpha) (Qqbar.of_q coords.(i))
-      done;
-      !acc
+  | Field { gen; coords } -> Qqbar.evaluate coords (qq_of_gen gen)
 
 (* refine a generator's isolating interval once: keep the half where the sign changes. *)
 let refine_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
