@@ -4,7 +4,8 @@
 ; valley and the center line --ac & .a a valley: the two valleys lie apart,
 ; and the rays fold a swivel fold (BEP-0061). These letters leave 2 states,
 ; which differ in the side of two faces against two others. No item of the
-; fan picks between them, so the statement is ambiguous.
+; fan picks between them, so the statement is ambiguous; an over item
+; decides it (flatten-swivel-over.bel).
 
 paper square
 mark (through .a .c) as --ac
