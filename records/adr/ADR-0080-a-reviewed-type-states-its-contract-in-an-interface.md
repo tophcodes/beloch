@@ -63,15 +63,19 @@ declares a `private` type holds that type, the functions that build its
 values and the functions that read them, and nothing else.
 
 **The check holds a hash for each reviewed interface.** A list in the
-repository records one SHA-256 hash per reviewed `.mli`. `check` fails
-when a listed file no longer matches its hash, so a change to a reviewed
-contract turns the pull request red until the maintainer approves it by
-writing the new hash. An agent changes the list only with his approval: a
-hook in the repository's agent settings asks him before every call that
-writes the list, the check, the hook or the settings that run it, and he
-approves the call once he has reviewed the change. An `.mli` that is not on the
-list has not been reviewed. Implementation files carry no hash: their
-tests and their size keep them reviewable.
+repository records one SHA-256 hash per reviewed `.mli`. On every pull
+request, the CI job `reviewed-interfaces` fails when a listed file no
+longer matches its hash, and it stays red until the maintainer approves the
+change by writing the new hash. The job runs apart from `check`, so its red
+check tells him that the pull request waits for his review of an
+interface. `check` and the other local steps leave the hashes alone, and an
+agent works on a reviewed interface without being stopped before the
+review. An agent writes the list only with his approval: a hook in the
+repository's agent settings asks him before every call that writes the list,
+and he approves the call once he has reviewed the change. A call that
+reads the list passes the hook. An `.mli` that is not on the list has not
+been reviewed. Implementation files carry no hash: their tests and their
+size keep them reviewable.
 
 **This record amends [[ADR-0018]] for reviewed types.** A reviewed type is
 transparent or `private` in its interface. A type stays abstract only where
@@ -112,6 +116,10 @@ its representation may change without its callers noticing.
 - A reviewed type moves out of the large implementation file that defines
   it today into a module of its own; a separate issue covers splitting the
   kernel into smaller modules.
-- The hook reads a shell command as text. A command that assembles a
-  guarded path instead of naming it passes the hook, and the check in
-  `check` is what catches the changed interface then.
+- The hook reads a shell command as text. It asks for a redirection into
+  the list and for the commands it knows to write a file. A command that
+  assembles the path of the list instead of naming it, or writes through a
+  command the hook does not know, passes the hook, and the CI job
+  `reviewed-interfaces` catches the changed interface then.
+- The hook guards the list alone. A change to the check, the hook or the
+  agent settings is reviewed in its pull request like any other script.
