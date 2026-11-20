@@ -1,0 +1,37 @@
+@author "Claude (Anthropic)"
+
+; The waterbomb base through both layers of a rectangle folded in half, with
+; the mountain midline --m across the spine, the other orientation from
+; flatten-waterbomb-both-layers.bel. The side triangles at the spine fold
+; inward with the spine between them, and the one of the back layer lies
+; inside the one of the front layer. On the paper, --m runs straight across
+; the spine from one layer's vertex to the other's; each fan folds only its
+; own half of it, and the back layer takes the letter of --m the other way
+; round like every other ray (BEP-0079). The triangle along --cd stays, and
+; the triangle along --ab turns over onto it.
+
+paper rectangle 2 1
+fold (map .a onto .b) as --spine
+.s0 = --spine * --ab
+.s1 = free on --spine from .s0 at 1
+.sm = free on --spine from .s0 at 1/2
+mark (through .b .s1) as --d1
+mark (through .s0 .c) as --d2
+mark (map .s0 onto .s1) as --m
+.n = (--d1 & .a) * --d2
+flatten (fan at .n (--d1 & --ab valley) (--d1 & .s1 valley)
+                   (--d2 & .s0 valley) (--d2 & --cd valley)
+                   (--m & --spine mountain) (--m \ --spine mountain)
+                   (up to #[.b]))
+        (staying .s1 .c)
+
+; assert steps = 2
+; assert faces = 12
+; assert .n = (3/2, 1/2)
+; assert .c = (2, 1)
+; assert .d = (2, 1)
+; assert .a = (2, 1)
+; assert .b = (2, 1)
+; assert .s0 = (1, 1)
+; assert .s1 = (1, 1)
+; assert .sm = (3/2, 1)
