@@ -1552,7 +1552,8 @@ and the constraints:
 - a letter for a ray: of the hinges of the ray's crease on that ray that do
   not open, the one whose face on the clockwise side lies lowest has that
   letter;
-- one sector over another: the two pieces are so ordered;
+- one point over another: the face that holds the first lies above the
+  face that holds the second, and the two overlap ([[BEP-0082]]);
 - the stayer, which only fixes where the result lies on the table.
 
 A ray may run along hinges of $T$ that are already folded, as the spine of
@@ -1577,7 +1578,7 @@ A vertex given with a flap $\Psi$ stands for one vertex per layer under
 $O$, from the topmost layer down to the
 layers of $\Psi$: the paper point under $O$ in each, with the same rays.
 The layers of that stack keep their order relative to each other in every
-sector, except where a constraint orders two sectors the other way. A
+sector, except where a constraint orders two faces the other way. A
 letter names the side of the paper a crease folds toward, so a layer that
 faces the other way than the topmost layer takes each letter of the rays
 the other way round. Where the stayer holds a face of the stack, the parts

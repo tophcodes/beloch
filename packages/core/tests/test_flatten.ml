@@ -520,6 +520,59 @@ let test_flatten_no_flat_hinge_splits_taco () =
     done
   done
 
+
+(* The swivel fold of collapse/flatten-swivel-over.bel: an over item compares
+   the two faces that hold its points (BEP-0082). Each direction keeps one
+   state, the two states differ, and in each the face of the upper point lies
+   above the face of the lower one. The face of .z overlaps the face of .p in
+   neither state, so an over item on them holds in none. *)
+let swivel_src over =
+  "paper square\n\
+   mark (through .a .c) as --ac\n\
+   mark (through .b .d) as --bd\n\
+   mark (map --ab onto --cd) as --h\n\
+   mark (map --da onto --bc) as --v\n\
+   mark (align (--h onto --ac) (heading --h)) as --s\n\
+   mark (align (--h onto --bd) (heading --h)) as --t\n\
+   .q = free on --ab from .a at 1/4\n\
+   .z = free on --cd from .c at 1/4\n\
+   .f = free on --da from .a at 1/4\n\
+   .g = free on --bc from .b at 1/4\n\
+   mark (through .f .b) as --fb\n\
+   mark (through .a .g) as --ag\n\
+   .p = free on --fb from .f at 1/10\n\
+   .w = free on --ag from .a at 9/10\n\
+   flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
+   (--bd & .b mountain) (--bd & .d)\n\
+   flatten (--h & --da) (--s & --da mountain) (--t & --da valley) (--ac & .a \
+   valley) (staying .q)"
+  ^ over ^ "\n"
+
+let face_of (fd : Eval.folded) name =
+  let _, pt, _, _ = List.find (fun (n, _, _, _) -> n = name) fd.Eval.named_points in
+  let faces = Fold_state.faces fd.Eval.state in
+  match
+    List.filter
+      (fun i -> Geom.in_convex_polygon faces.(i) pt)
+      (List.init (Array.length faces) Fun.id)
+  with
+  | [ i ] -> i
+  | l -> Alcotest.failf "%s lies in %d faces" name (List.length l)
+
+let test_flatten_over_compares_named_faces () =
+  let eval over = Eval.eval_folded (Beloch.parse ~filename:"t.bel" (swivel_src over)) in
+  let up = eval " (.p over .w)" and down = eval " (.w over .p)" in
+  let rel fd a b = Fold_state.rel fd.Eval.state (face_of fd a) (face_of fd b) in
+  Alcotest.(check bool) ".p over .w: the face of .p lies above" true
+    (rel up "p" "w" = Fold_state.Above);
+  Alcotest.(check bool) ".w over .p: the face of .w lies above" true
+    (rel down "w" "p" = Fold_state.Above);
+  Alcotest.(check bool) "the two directions keep different states" false
+    (Fold_state.same_order up.Eval.state down.Eval.state);
+  Alcotest.(check bool) "the faces of .p and .z lie apart" true
+    (rel up "p" "z" = Fold_state.Apart && rel down "p" "z" = Fold_state.Apart);
+  expect_error "contradictory `over`" (fun () -> eval " (.p over .z)")
+
 let () =
   Alcotest.run "flatten bind"
     [
@@ -570,5 +623,7 @@ let () =
             test_flatten_mv_patterns_beyond_maekawa;
           Alcotest.test_case "no flat hinge splits a taco (two-ear fish)"
             `Quick test_flatten_no_flat_hinge_splits_taco;
+          Alcotest.test_case "over compares the faces of its points"
+            `Quick test_flatten_over_compares_named_faces;
         ] );
     ]

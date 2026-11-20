@@ -790,13 +790,12 @@ let mk_sector_geoms ?tip_rule (g : Fold_state.t) ~(o : Geom.point)
 (* The states of one [sector_geom] for the letter of each element: every
    layer order of its geometry that keeps the side of two faces of one piece,
    gives each element its letter at the hinges [sg_letters] names, satisfies
-   the non-crossing conditions ([Fold_state.orders]) and puts the faces of
-   each upper sector of [over] above the faces of its lower sector they
-   overlap. A sector of [over] is the faces of the named face's sector that
-   move with it. *)
+   the non-crossing conditions ([Fold_state.orders]) and puts the upper face
+   of each pair of [over] above its lower face. The two faces must overlap:
+   a pair that lies apart holds in no state. Only the named faces are
+   compared, so a flap can lie between two layers of one piece (BEP-0082). *)
 let pipeline_solve (sg : sector_geom) ~(valley : bool array)
     ~(over : (int * int) list) : (Fold_state.t list, string) result =
-  let nf = sg.sg_nf in
   let g = sg.sg_before in
   (* a valley puts the face across the ray above the face on its clockwise
      side, as seen from that side's final face *)
@@ -819,23 +818,9 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
       match Fold_state.orders ~marks:sg.sg_marks geo ~kept ~fixed with
       | Error _ | Ok [] -> Error e_selfint
       | Ok states -> (
-          let same_group a b =
-            sg.sg_sec.(a) = sg.sg_sec.(b) && sg.sg_piece.(a) = sg.sg_piece.(b)
-          in
           let over_ok st =
             List.for_all
-              (fun (up, lo) ->
-                same_group up lo
-                ||
-                let ok = ref true in
-                for i = 0 to nf - 1 do
-                  if same_group i up then
-                    for j = 0 to nf - 1 do
-                      if same_group j lo && Fold_state.rel st i j = Fold_state.Below then
-                        ok := false
-                    done
-                done;
-                !ok)
+              (fun (up, lo) -> Fold_state.rel st up lo = Fold_state.Above)
               over
           in
           match List.filter over_ok states with
