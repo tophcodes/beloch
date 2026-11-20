@@ -270,7 +270,7 @@ placement a menu of four entries.
 | extent | the whole line, between two points, at a point ([[reference/model#def-mark\|def-mark]]) | `mark` |
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([[reference/model#def-letter\|def-letter]]) | `flatten`, `reverse` |
-| order | one sector over another | `flatten` |
+| order | the face that holds one point over the face that holds another | `flatten` |
 | selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([[reference/model#def-selection\|def-selection]]) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `heading`: `align` |
 
 Line and crease are two sorts under one sigil, and the binding tells them

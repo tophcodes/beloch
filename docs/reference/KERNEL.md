@@ -534,7 +534,10 @@ the stayer (Sectors, below).
    where the anchor surrounds O), the stayer sector's admissibility
    (checks 12, 13 and 17–19), the closure of the paper paths where the
    anchor does not surround O, then, per pattern, Maekawa itself where it
-   does, self-intersection, and `over`. A failing pattern contributes one
+   does, self-intersection, and `over`. An `over` pair holds where the face
+   of its upper point overlaps the face of its lower point and lies above
+   it; no other face of their pieces is compared ([[BEP-0082]]). A failing
+   pattern contributes one
    of `` Maekawa violated by the stated assignment `` / `` assignment
    forces self-intersection `` / `` contradictory `over` `` to a
    failure pool; a succeeding one becomes a **realization**, deduped

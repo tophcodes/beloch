@@ -443,7 +443,8 @@ flat-foldability for a sheet of many vertices is NP-hard
 **Items.** A *ray* item names a piece of a marked crease at the vertex,
 `(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
-orders two sectors in the result, `(staying .p …)` names the stayer,
+puts the face that holds `.p` above the face that holds `.q`, and the two
+must overlap ([[BEP-0082]]), `(staying .p …)` names the stayer,
 the part of the paper that keeps its place, and `(emergent beside .p)`
 names where the emergent ray of an odd fan lies. Every item is a condition
 that narrows the set of states. `staying` and `emergent` stand at most
