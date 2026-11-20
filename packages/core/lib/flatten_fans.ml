@@ -492,17 +492,28 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               Fan_paper.line_faces pre_st ~v ~p ~far:r.far
           | starts ->
               (* every piece through the vertex, and the pieces on its paper
-                 line beyond it *)
+                 line beyond it that lie as far from the vertex on the table
+                 as on the paper. A piece the paper line reaches across a
+                 folded edge lies nearer on the table: where a ray crosses
+                 the folded edge of an `up to` stack, that piece belongs to
+                 the fan of the layer behind. *)
               let lines =
                 List.map (fun (s : Fold_state.crease_segment) ->
                     Geom.line_through s.Fold_state.pa s.Fold_state.pb)
                   starts
+              in
+              let unfolded (s : Fold_state.crease_segment) =
+                Num.equal (dot v s.Fold_state.ta s.Fold_state.ta)
+                  (dot p s.Fold_state.pa s.Fold_state.pa)
+                && Num.equal (dot v s.Fold_state.tb s.Fold_state.tb)
+                     (dot p s.Fold_state.pb s.Fold_state.pb)
               in
               List.concat_map
                 (fun (s : Fold_state.crease_segment) ->
                   if
                     on_ray s
                     && fst s.Fold_state.faces >= 0
+                    && unfolded s
                     && List.exists
                          (fun pl ->
                            Geom.side_of_line pl s.Fold_state.pa = 0
