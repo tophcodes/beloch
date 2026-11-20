@@ -480,9 +480,9 @@ let check_tacos ?(decided = fun _ _ -> true) (geo : geometry) (p : placed)
       if
         p.p_folded.(i) && p.p_folded.(j)
         && a <> c && a <> d && b <> c && b <> d
-        && overlaps i j
         && decided a c && decided c b && decided a d && decided d b
         && between a c b <> between a d b
+        && overlaps i j
       then raise (V (Taco_taco (i, j)))
     done
   done;
@@ -504,8 +504,8 @@ let check_tacos ?(decided = fun _ _ -> true) (geo : geometry) (p : placed)
       if
         p.p_folded.(i) && (not p.p_folded.(j)) && d >= 0
         && a <> c && a <> d && b <> c && b <> d
-        && overlaps i j
         && (between a c b || between a d b)
+        && overlaps i j
       then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
     done
   done
@@ -963,6 +963,19 @@ let inherit_order (g : t) ~(prov : State.provenance option)
   match geometry ~base:g.base ~faces:faces' ~hinges:hinges' ~root:root' () with
   | Error v -> fail_of_violation prov v
   | Ok geo -> (
+      (* a child lies inside its parent on the table, so two children of one
+         face, or of two faces that lie apart, lie apart too: [build] reads
+         them without the exact overlap test *)
+      (match geo.g_placed with
+       | Ok p ->
+           let n = Array.length faces' in
+           for i = 0 to n - 1 do
+             for j = i + 1 to n - 1 do
+               if parent.(i) = parent.(j) || side g parent.(i) parent.(j) = 0
+               then p.p_overlap.(i).(j) <- Some false
+             done
+           done
+       | Error _ -> ());
       try
         build ~marks:g.marks ~cycles:false geo ~side:(fun i j ->
             side g parent.(i) parent.(j) > 0)
@@ -1442,6 +1455,13 @@ let subdivide_paper_segment ?crease_id (g : t) ((a, b) : Geom.point * Geom.point
      whole *)
   let cut_of fi =
     let f = g.faces.(fi) in
+    (* a face with no vertex on one side of the line and fewer than three on
+       it has no part of three vertices on that side, so it stays whole
+       without the exact clip *)
+    let sides = Array.map (Geom.side_of_line paper_axis) f in
+    let count s = Array.fold_left (fun n x -> if x = s then n + 1 else n) 0 sides in
+    if (count 1 = 0 || count (-1) = 0) && count 0 < 3 then None
+    else
     let part k =
       let sub = Geom.clip_convex_halfplane paper_axis k f in
       if Array.length sub >= 3 then Some sub else None
@@ -1627,6 +1647,21 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
       let fix pr above =
         Layer_sides.relate uf (Layer_sides.Side (pr, false)) (Known above) ~why:Layer_cycle
       in
+      let clipped = Hashtbl.create 16 in
+      (* [m] clipped to [a], [None] when no area remains *)
+      let clip_to m a =
+        match Hashtbl.find_opt clipped ((m * n) + a) with
+        | Some r -> r
+        | None ->
+            let r = clip_convex p.p_ccw_tps.(m) p.p_ccw_tps.(a) in
+            let r =
+              if Array.length r >= 3 && Num.sign (Geom.signed_area r) <> 0
+              then Some r
+              else None
+            in
+            Hashtbl.replace clipped ((m * n) + a) r;
+            r
+      in
       (* whether [s], the anchor [a] and the moved face [m] share a region of
          positive area: asked only where the three pairs overlap, then [m]
          clipped to [a] and the result against [s], exactly *)
@@ -1635,10 +1670,9 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
           (name s, name m, name a) (fun () ->
             overlap s a && overlap m a
             &&
-            let r = clip_convex p.p_ccw_tps.(m) p.p_ccw_tps.(a) in
-            Array.length r >= 3
-            && Num.sign (Geom.signed_area r) <> 0
-            && Geom.convex_overlap p.p_ccw_tps.(s) r)
+            match clip_to m a with
+            | Some r -> Geom.convex_overlap p.p_ccw_tps.(s) r
+            | None -> false)
       in
       let seeded =
         List.fold_left
