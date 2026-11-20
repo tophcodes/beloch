@@ -544,6 +544,11 @@ let test_field_degree4_nested_sqrt () =
 let check_subfield ~name ~(big : Num.t) ~(sub : Num.t)
     ~(sub_of_big : Num.t -> Num.t) =
   let s = sub_of_big big in
+  Alcotest.(check bool) (name ^ ": the subfield value is held over big") true
+    (match s with
+    | Num.Field { gen; _ } ->
+        Poly.degree gen.Num.mu = Qqbar.degree (Num.to_qq big)
+    | _ -> false);
   Alcotest.(check bool) (name ^ ": the two holdings are equal") true
     (Num.equal s sub);
   let third = Num.of_q (Q.of_ints 1 3) in

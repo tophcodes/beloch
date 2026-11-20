@@ -264,11 +264,22 @@ let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
               (* tighten isolated exactly one root of s in (lo,hi) *)
               assert false))
 
-(* The largest degree a Qq is upgraded to a Field generator at. Degree 4 is
-   what a square root nested in a quadratic field produces (an axiom-5 or
-   axiom-6 crease on a √2 base: √(4 − 2√2)); a value above the cap stays Qq
-   and pays qqbar's canonicalizing arithmetic on every operation. *)
-let field_degree_cap = 4
+(* The largest degree a Qq is upgraded to a Field generator at. A value
+   above the cap stays Qq and pays qqbar's canonicalizing arithmetic on
+   every operation. Folding produces degree 9 (an axiom-7 crease on points
+   of a cubic field) and degree 12 (a cubic over the crane's quartic field).
+
+   Known ceiling: bench/bench_field.ml finds Field faster than qqbar at
+   every degree from 2 to 12 for every operation it times except a single
+   inverse and the sign, which qqbar reads off the minimal polynomial and
+   the enclosure it stores. A Field addition or multiplication costs under
+   20 µs at each of those degrees, where qqbar's costs 15 µs at degree 2
+   and 0.1 to 0.3 s at degree 12, and a chain of inverses runs 6 to 19
+   times faster although its coordinates grow to thousands of bits. Above
+   12 nothing is measured. No program in the corpus produces a value above
+   degree 9, so degrees 10 to 12 rest on the benchmark and on the tests of
+   composite degrees in tests/test_num.ml alone. *)
+let field_degree_cap = 12
 
 (* Upgrade an irrational Qq of degree ≤ [field_degree_cap] to the Field fast
    path. Sound at any degree: FLINT's canonical minimal polynomial is
@@ -423,8 +434,10 @@ let embedding ~(into : gen) (beta : gen) : Poly.t option =
    ℚ(β) does not embed and its degree is prime (2 or 3), neither does x: an
    irrational x ∈ ℚ(β) generates a subfield of degree > 1 dividing a prime,
    so ℚ(x) = ℚ(β), and expressing x on its own would repeat the embedding
-   search. At degree 4 x may generate a quadratic subfield that does embed,
-   so x is expressed on its own then, as is a Qq above [field_degree_cap].
+   search. At a composite degree (4, 6, 8, 9, 10, 12) x may generate a
+   proper subfield that does embed, such as the cubic ℚ(∛2) inside the
+   degree-9 ℚ(∛(1 + ∛2)), so x is expressed on its own then, as is x at a
+   prime degree above 3 and a Qq above [field_degree_cap].
    [express_over] is exact (FLINT re-verifies), so a Some result is always
    the true coordinates. *)
 let coords_over (g : gen) (x : t) : Poly.t option =
