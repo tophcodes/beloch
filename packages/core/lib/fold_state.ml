@@ -1647,6 +1647,21 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
       let fix pr above =
         Layer_sides.relate uf (Layer_sides.Side (pr, false)) (Known above) ~why:Layer_cycle
       in
+      let clipped = Hashtbl.create 16 in
+      (* [m] clipped to [a], [None] when no area remains *)
+      let clip_to m a =
+        match Hashtbl.find_opt clipped ((m * n) + a) with
+        | Some r -> r
+        | None ->
+            let r = clip_convex p.p_ccw_tps.(m) p.p_ccw_tps.(a) in
+            let r =
+              if Array.length r >= 3 && Num.sign (Geom.signed_area r) <> 0
+              then Some r
+              else None
+            in
+            Hashtbl.replace clipped ((m * n) + a) r;
+            r
+      in
       (* whether [s], the anchor [a] and the moved face [m] share a region of
          positive area: asked only where the three pairs overlap, then [m]
          clipped to [a] and the result against [s], exactly *)
@@ -1655,10 +1670,9 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
           (name s, name m, name a) (fun () ->
             overlap s a && overlap m a
             &&
-            let r = clip_convex p.p_ccw_tps.(m) p.p_ccw_tps.(a) in
-            Array.length r >= 3
-            && Num.sign (Geom.signed_area r) <> 0
-            && Geom.convex_overlap p.p_ccw_tps.(s) r)
+            match clip_to m a with
+            | Some r -> Geom.convex_overlap p.p_ccw_tps.(s) r
+            | None -> false)
       in
       let seeded =
         List.fold_left
