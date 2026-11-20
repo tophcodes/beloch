@@ -86,6 +86,18 @@ Optimization targets (see `records/notes/2026-07-03-calcium-pe-spike.md`):
    `eval_p` evaluations of degree-32 true roots (~1.75s each). Only
    tower/number-field arithmetic in ℚ(γ, z) would cut it.
 
+## Field against qqbar
+
+`bench_field` times one addition, multiplication, inverse and sign, and
+two chains of 12 steps, on the same values held as `Field` and as `Qq`,
+for each degree from 2 to 12. It is the measurement behind
+`Num.field_degree_cap`: run it before moving the cap.
+
+```sh
+dune exec packages/core/bench/bench_field.exe            # degrees 2 to 12
+dune exec packages/core/bench/bench_field.exe -- 9 12    # chosen degrees
+```
+
 ## Profile
 
 `profile.sh` answers two questions about the kernel: where the time goes, and

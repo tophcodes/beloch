@@ -59,9 +59,20 @@ let n = Num.of_int
    same number held two ways: [Num.sqrt] gives a FLINT-backed [Qq], [Num.make]
    on x² − k a [Field] over its own generator. [Cbrt] is a cubic [Field];
    [Quartic] is √(2 + √2), degree 4 (what an axiom-5 crease on a √2 base
-   produces); [Quintic] is the real root of x⁵ − x − 1, degree 5, above
-   [Num.field_degree_cap], so it never leaves [Qq]. *)
-type atom = Sqrt of int | Root2 of int | Cbrt of int | Quartic | Quintic
+   produces); [Quintic] is the real root of x⁵ − x − 1, degree 5. [Sextic]
+   is ∛(1 + √2), degree 6 over the quadratic subfield ℚ(√2); [Octic] is
+   √(2 + √(2 + √2)), degree 8 over the quartic subfield ℚ(√(2 + √2)); [Nonic]
+   is ∛(1 + ∛2), degree 9 over the cubic subfield ℚ(∛2), the shape of a
+   second axiom-7 crease on the points of a first. *)
+type atom =
+  | Sqrt of int
+  | Root2 of int
+  | Cbrt of int
+  | Quartic
+  | Quintic
+  | Sextic
+  | Octic
+  | Nonic
 
 type expr =
   | Lit of int * int  (** the rational n/d *)
@@ -80,6 +91,12 @@ let atom_value_uncached = function
   | Quartic ->
       Num.make (poly [ 2; 0; -4; 0; 1 ]) (Q.of_ints 9 5) (Q.of_ints 19 10)
   | Quintic -> Num.make (poly [ -1; -1; 0; 0; 0; 1 ]) Q.one (Q.of_int 2)
+  | Sextic -> Num.make (poly [ -1; 0; 0; -2; 0; 0; 1 ]) Q.one (Q.of_int 2)
+  | Octic ->
+      Num.make (poly [ 2; 0; -16; 0; 20; 0; -8; 0; 1 ]) (Q.of_ints 19 10)
+        (Q.of_int 2)
+  | Nonic ->
+      Num.make (poly [ -3; 0; 0; 3; 0; 0; -3; 0; 0; 1 ]) Q.one (Q.of_int 2)
 
 let atom_cache : (atom, Num.t) Hashtbl.t = Hashtbl.create 16
 
@@ -107,6 +124,9 @@ let atom_str = function
   | Cbrt k -> Printf.sprintf "cbrt(%d)" k
   | Quartic -> "sqrt(2+sqrt2)"
   | Quintic -> "quintic"
+  | Sextic -> "cbrt(1+sqrt2)"
+  | Octic -> "sqrt(2+sqrt(2+sqrt2))"
+  | Nonic -> "cbrt(1+cbrt2)"
 
 let rec expr_str = function
   | Lit (a, 1) -> string_of_int a
@@ -135,23 +155,34 @@ let atom : atom G.t =
       (2, G.map (fun k -> Cbrt k) (G.oneof_list [ 2; 3 ]));
       (1, G.return Quartic);
       (1, G.return Quintic);
+      (1, G.return Sextic);
+      (1, G.return Octic);
+      (1, G.return Nonic);
     ]
+
+(* The atoms an atom of degree 4 or more is drawn with: its subfields. *)
+let subfields = function
+  | Quartic | Sextic -> [ Sqrt 2; Root2 2 ]
+  | Octic -> [ Sqrt 2; Root2 2; Quartic ]
+  | Nonic -> [ Cbrt 2 ]
+  | Sqrt _ | Root2 _ | Cbrt _ | Quintic -> []
 
 (* One irrational per case, or in half of the cases two, which is where
    [Num] has to find a common field or fall back to qqbar. Mixing two fields
    costs a lattice search per new generator ([Qqbar.express_over]), tenths
-   of a second, and the degree of the compositum drives FLINT's cost, so the
-   quartic √(2 + √2) is paired only with √2, the field it contains (the
-   crane's case); with √6 it makes degree 8, a second per property. *)
+   of a second, and the degree of the compositum drives FLINT's cost, so an
+   atom of composite degree is paired only with an atom of a subfield it
+   contains (√(2 + √2) with √2 is the crane's case); √(2 + √2) with √6 makes
+   degree 8, a second per property. These pairs are where one value of the
+   subfield is held over the larger generator and another over its own. *)
 let atoms : atom list G.t =
   G.(
     let* a = atom and* b = atom and* two = bool in
-    match (a, b) with
+    match (subfields a, subfields b) with
     | _ when not two -> return [ a ]
-    | Quartic, (Sqrt 2 | Root2 2) | (Sqrt 2 | Root2 2), Quartic ->
-        return [ a; b ]
-    | Quartic, _ | _, Quartic -> return [ a ]
-    | _ -> return [ a; b ])
+    | (_ :: _ as l), _ -> map (fun s -> [ a; s ]) (oneof_list l)
+    | [], (_ :: _ as l) -> return (if List.mem a l then [ a; b ] else [ b ])
+    | [], [] -> return [ a; b ])
 
 let lit : expr G.t =
   G.map2

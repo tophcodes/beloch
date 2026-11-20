@@ -292,3 +292,28 @@ CAMLprim value ml_qqbar_roots_qqbar_poly(value coeffs) {
   Store_field(res, 0, arr);
   CAMLreturn(res);
 }
+
+/* p(x) for a polynomial p with rational coefficients, given low-first as
+   "num/den" strings. */
+CAMLprim value ml_qqbar_evaluate_fmpq_poly(value coeffs, value x) {
+  CAMLparam2(coeffs, x);
+  CAMLlocal1(r);
+  slong n = Wosize_val(coeffs);
+  fmpq_poly_t p;
+  fmpq_poly_init(p);
+  fmpq_t c;
+  fmpq_init(c);
+  for (slong i = 0; i < n; i++) {
+    if (fmpq_set_str(c, String_val(Field(coeffs, i)), 10) != 0) {
+      fmpq_clear(c);
+      fmpq_poly_clear(p);
+      caml_failwith("Qqbar.evaluate: bad rational string");
+    }
+    fmpq_poly_set_coeff_fmpq(p, i, c);
+  }
+  fmpq_clear(c);
+  r = alloc_qqbar();
+  qqbar_evaluate_fmpq_poly(Qqbar_val(r), p, Qqbar_val(x));
+  fmpq_poly_clear(p);
+  CAMLreturn(r);
+}

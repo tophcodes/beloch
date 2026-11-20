@@ -1,0 +1,32 @@
+@author "Claude (Anthropic)"
+
+; Two axiom-7 creases, the second through points the first placed. Messer's
+; cube-root crease --cub crosses the edges at .x and .y, whose coordinates
+; have degree 3; the cubic of --cub2 has coefficients in that field, so its
+; roots have degree 9. The number kernel holds them over one generator of
+; degree 9 and evaluates the program in under a second.
+
+paper square
+mark (map .a onto .b) as --vm
+._mb = --vm * --ab
+._mt = --vm * --cd
+mark (through .a .c) as --ac
+mark (through .d .b) as --db
+mark (through .d ._mb) as --d_mb
+mark (through .a ._mt) as --a_mt
+mark (through .c ._mb) as --c_mb
+mark (through .b ._mt) as --b_mt
+._pq1 = --d_mb * --ac
+._pq2 = --a_mt * --db
+--pq = (through ._pq1 ._pq2)
+._rs1 = --c_mb * --db
+._rs2 = --b_mt * --ac
+mark (through ._rs1 ._rs2) as --rs
+.s    = --rs * --cd
+mark (map .c onto --ab and .s onto --pq) as --cub
+.x = --cub * --bc
+.y = --cub * --da
+mark (through .x .a) as --xa
+mark (map .d onto --xa and .y onto --vm) as --cub2
+
+; assert faces = 1

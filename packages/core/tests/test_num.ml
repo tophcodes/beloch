@@ -536,6 +536,84 @@ let test_field_degree4_nested_sqrt () =
   Alcotest.(check int) "max is the last term" 1 (Num.compare !acc (n 2828));
   check_under "2000 mixed degree-2/degree-4 ops" 1.0 dt
 
+(* A field of composite degree holds a proper subfield. [big] generates it,
+   [sub] is the subfield's generator held over its own field, and [sub_of_big]
+   computes the same number from [big], so it lands in ℚ([big]). Mixing them
+   crosses between the two generators in both directions; every sum, product,
+   inverse and sign has to agree with qqbar on the same operands. *)
+let check_subfield ~name ~(big : Num.t) ~(sub : Num.t)
+    ~(sub_of_big : Num.t -> Num.t) =
+  let s = sub_of_big big in
+  Alcotest.(check bool) (name ^ ": the subfield value is held over big") true
+    (match s with
+    | Num.Field { gen; _ } ->
+        Poly.degree gen.Num.mu = Qqbar.degree (Num.to_qq big)
+    | _ -> false);
+  Alcotest.(check bool) (name ^ ": the two holdings are equal") true
+    (Num.equal s sub);
+  let third = Num.of_q (Q.of_ints 1 3) in
+  let lhs =
+    [ big; s; Num.add big sub; Num.mul big sub;
+      Num.inv (Num.add big (Num.mul third sub)) ]
+  in
+  let rhs = [ sub; Num.mul sub sub; Num.add Num.one (Num.mul third sub); s ] in
+  List.iter
+    (fun a ->
+      List.iter
+        (fun b ->
+          let qa = Num.to_qq a and qb = Num.to_qq b in
+          Alcotest.(check bool) (name ^ ": a + b agrees with qqbar") true
+            (Qqbar.equal (Num.to_qq (Num.add a b)) (Qqbar.add qa qb));
+          Alcotest.(check bool) (name ^ ": a * b agrees with qqbar") true
+            (Qqbar.equal (Num.to_qq (Num.mul a b)) (Qqbar.mul qa qb));
+          Alcotest.(check int) (name ^ ": sign (a - b) agrees with qqbar")
+            (Qqbar.sign_re (Qqbar.sub qa qb))
+            (Num.sign (Num.sub a b)))
+        rhs;
+      Alcotest.(check bool) (name ^ ": 1/a agrees with qqbar") true
+        (Qqbar.equal (Num.to_qq (Num.inv a)) (Qqbar.inv (Num.to_qq a))))
+    lhs
+
+let test_field_degree9_cubic_subfield () =
+  (* ∛(1 + ∛2), root of (x³ − 1)³ − 2; ∛2 = x³ − 1 *)
+  let big = Num.make (qp [ -3; 0; 0; 3; 0; 0; -3; 0; 0; 1 ]) Q.one (Q.of_int 2) in
+  let sub = Num.make (qp [ -2; 0; 0; 1 ]) Q.one (Q.of_int 2) in
+  check_subfield ~name:"degree 9" ~big ~sub ~sub_of_big:(fun x ->
+      Num.sub (Num.mul x (Num.mul x x)) Num.one)
+
+let test_field_degree6_subfields () =
+  (* ∛(1 + √2), root of (x³ − 1)² − 2; √2 = x³ − 1 *)
+  let big = Num.make (qp [ -1; 0; 0; -2; 0; 0; 1 ]) Q.one (Q.of_int 2) in
+  check_subfield ~name:"degree 6, quadratic subfield" ~big
+    ~sub:(Num.sqrt (n 2)) ~sub_of_big:(fun x ->
+      Num.sub (Num.mul x (Num.mul x x)) Num.one);
+  (* √(1 + ∛2), root of (x² − 1)³ − 2; ∛2 = x² − 1 *)
+  let big = Num.make (qp [ -3; 0; 3; 0; -3; 0; 1 ]) Q.one (Q.of_int 2) in
+  check_subfield ~name:"degree 6, cubic subfield" ~big
+    ~sub:(Num.make (qp [ -2; 0; 0; 1 ]) Q.one (Q.of_int 2))
+    ~sub_of_big:(fun x -> Num.sub (Num.mul x x) Num.one)
+
+let test_field_degree8_quartic_subfield () =
+  (* √(2 + √(2 + √2)), root of ((x² − 2)² − 2)² − 2; √(2 + √2) = x² − 2 *)
+  let big =
+    Num.make (qp [ 2; 0; -16; 0; 20; 0; -8; 0; 1 ]) (Q.of_ints 19 10) (Q.of_int 2)
+  in
+  check_subfield ~name:"degree 8" ~big
+    ~sub:(Num.sqrt (Num.add (n 2) (Num.sqrt (n 2))))
+    ~sub_of_big:(fun x -> Num.sub (Num.mul x x) (n 2))
+
+let test_field_degree12_quartic_subfield () =
+  (* ∛(1 + √(2 + √2)), a cubic over the quartic field of the crane's kind:
+     root of y⁴ − 4y² + 2 with y = x³ − 1; √(2 + √2) = x³ − 1 *)
+  let big =
+    Num.make (qp [ -1; 0; 0; 4; 0; 0; 2; 0; 0; -4; 0; 0; 1 ])
+      (Q.of_ints 13 10) (Q.of_ints 3 2)
+  in
+  Alcotest.(check int) "degree 12" 12 (Qqbar.degree (Num.to_qq big));
+  check_subfield ~name:"degree 12" ~big
+    ~sub:(Num.sqrt (Num.add (n 2) (Num.sqrt (n 2))))
+    ~sub_of_big:(fun x -> Num.sub (Num.mul x (Num.mul x x)) Num.one)
+
 (* The crane through step 14 (tests/cases/fold/crane-leg-narrowing.bel):
    the end-to-end guard for the same path, four folds whose overlap tests
    run in the degree-4 field. Took a minute with degree-4 values kept in
@@ -779,6 +857,14 @@ let () =
           Alcotest.test_case "compare" `Quick test_field_compare;
           Alcotest.test_case "degree-4 nested sqrt stays in the field (#13)"
             `Quick test_field_degree4_nested_sqrt;
+          Alcotest.test_case "degree 9 with a cubic subfield" `Quick
+            test_field_degree9_cubic_subfield;
+          Alcotest.test_case "degree 6 with a quadratic or a cubic subfield"
+            `Quick test_field_degree6_subfields;
+          Alcotest.test_case "degree 8 with a quartic subfield" `Quick
+            test_field_degree8_quartic_subfield;
+          Alcotest.test_case "degree 12 with a quartic subfield" `Quick
+            test_field_degree12_quartic_subfield;
           Alcotest.test_case "crane through step 14 fast (#13)" `Slow
             test_field_degree4_crane_fast;
         ] );
