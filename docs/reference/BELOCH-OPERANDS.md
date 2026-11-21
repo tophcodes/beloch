@@ -115,7 +115,6 @@ the reads that pick pieces out of a bundle by incidence
 | `--l & --a` | the pieces whose span holds the crossing of `--a` with `--l` |
 | `--l & #[.p .q …]` | the pieces that lie on that flap (Flaps, below) |
 | `--l \ c` | the pieces `--l & c` drops |
-| `[--l --m …]` | every piece of every listed bundle, as one bundle |
 
 Filtering is incidence: `&` keeps the pieces the constraint is *on*. The
 side items `toward` and `moving` name a side of a fold line, which is a

@@ -550,7 +550,7 @@ let reference_writes =
     "flatten (--ba \\ .a) (--bc \\ .c) as --r";
     "flip";
     "--l = (map --a onto --b) (toward .p)";
-    "--x = [--ea --eb] & .a";
+    "--x = --ea & .a";
     "fold (align (.a onto .c)) (moving .a)";
     "fold (align (through .m) (through .n)) (moving .b) (under .p)";
     "mark (align (--ab onto --cd)) (on #[.c]) (between .a .m) (mountain)";
@@ -624,15 +624,11 @@ let test_parse_diff () =
       ()
   | _ -> Alcotest.fail "expected up to --l \\ .c (LFilter Drop)"
 
-let test_parse_union () =
-  match parse1 "fold (map .p onto .q) (up to [--x --y])" with
-  | Ast.Fold
-      ( _, _,
-        { up_to = Some (Ast.FlapLine (Ast.LUnion ([ Ast.LNamed _; Ast.LNamed _ ], _)));
-          _ },
-        _ ) ->
-      ()
-  | _ -> Alcotest.fail "expected up to [--x --y] (LUnion of 2)"
+(* BEP-0084: a program unites no bundles; the bracket names no read. *)
+let test_parse_no_union () =
+  expect_error_hint "a bare [ opens no read"
+    "a meet is .[--l --m], a join --[.p .q], a flap #[.p .q]" (fun () ->
+      parse1 "fold (map .p onto .q) (up to [--x --y])")
 
 let test_parse_bind_bundle () =
   let prog =
@@ -1236,7 +1232,7 @@ let () =
           Alcotest.test_case "flap bracket #[]" `Quick test_parse_flap_bracket;
           Alcotest.test_case "filter chain &" `Quick test_parse_filter_chain;
           Alcotest.test_case "diff \\" `Quick test_parse_diff;
-          Alcotest.test_case "union []" `Quick test_parse_union;
+          Alcotest.test_case "no union []" `Quick test_parse_no_union;
           Alcotest.test_case "bind bundle" `Quick test_parse_bind_bundle;
           Alcotest.test_case "fold along an existing crease" `Quick
             test_parse_fold_along;

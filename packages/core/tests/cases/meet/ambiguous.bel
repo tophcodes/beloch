@@ -1,8 +1,11 @@
 @author "Claude (Anthropic)"
 
-; The union of two edges crosses the vertical midline twice.
+; A crease marked through two layers lies on two paper lines, and both
+; cross the vertical midline.
 paper square
 mark (map .a onto .b) as --m
-.p = [--ab --cd] * --m
+fold (map --ab onto --cd) (moving .a) as --f
+mark (map --cd onto --f) as --q
+.p = --q * --m
 
-; expect error "(1/2, 0) and (1/2, 1)"
+; expect error "(1/2, 3/4) and (1/2, 1/4)"

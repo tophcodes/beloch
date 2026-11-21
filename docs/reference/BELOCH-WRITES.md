@@ -207,17 +207,18 @@ program has scored, without restating its construction. The crease has to
 lie on one line under the layers the fold reaches (`` the crease is bent
 under the moving flaps ``, hint `` select a straight segment with `&` or
 move fewer flaps ``, [[reference/beloch-operands#filters]]), and it is
-one crease: a union is refused (`` fold folds along one existing crease; a
-union spans several ``). With `up to` and `into`, a crease marked through
-every layer folds some of them and keeps its name (The output clause,
-below).
+one crease: the bundle a `flatten` binds is refused (`` --x is a bundle,
+not a single crease ``, hint `` restrict it with & or \ ``). With `up to`
+and `into`, a crease marked through every layer folds some of them and
+keeps its name (The output clause, below).
 
 ```{.bel .frag}
-mark (through .a .c) as --ac
-mark (through .b .d) as --bd
-fold ([--ac --bd]) (moving .a)
+mark (map --cd onto --ab) as --h
+mark (map --bc onto --da) as --v
+flatten (--h & --bc valley) (--h & --da valley) (--v & --ab valley) (--v & --cd mountain) (staying .d) as --x
+fold (--x) (moving .b)
 
-; expect error "a union spans several"
+; expect error "--x is a bundle, not a single crease"
 ```
 
 ## `unfold`
@@ -669,7 +670,7 @@ items says what becomes of it, for every verb:
   into --d` folds some layers of a crease marked through all of them and
   keeps one name for the material. The new material must lie on the table
   line of a segment of `--l`; material on another line is a crease of its
-  own, and `[--l --m]` is the read that unites two.
+  own.
 - no clause: an anonymous crease, addressable by incidence only.
 
 `=` binds the value of a read and nothing else, so the sort of a name is

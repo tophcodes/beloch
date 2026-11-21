@@ -60,7 +60,6 @@ line_operand  := CREASE_NAME
                | "--[" constraint+ "]"                       ; the join of every constraint
                | line_operand "&" constraint                 ; filter
                | line_operand "\" constraint                 ; drop
-               | "[" line_operand+ "]"                       ; union
                | "(" line_operand ")"
 constraint    := point_operand | CREASE_NAME | "#[" point_operand+ "]"
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
