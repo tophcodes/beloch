@@ -23,7 +23,7 @@ fold (map .d onto .c) as --l                ; step 2: left corner up to the top
 ; between the side corners. .q, the point step 4 lands on, is bound before
 ; step 3 bends the center crease --bd.
 .o = --r * --l
---mid = (through .o .c)
+mark (through .o .c) as --mid
 .sr = --r * --bc                            ; right side corner
 .sl = --l * --cd                            ; left side corner
 .er = --r * --ab
@@ -40,7 +40,7 @@ fold (map .a onto .q) (moving .a) (up to #[.a]) as --s4      ; step 4
 
 ; step 5: the corner of the back layer down onto the line between the
 ; side corners, which leaves a strip of step 4 showing above it
---hd = (through .sl .sr)
+mark (through .sl .sr) as --hd
 fold (map .c onto --hd perp --mid) (moving .c) as --s5      ; step 5
 
 ; step 6: the top edge down by 1.2 cm. The right edge runs at 45 degrees

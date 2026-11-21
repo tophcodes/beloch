@@ -63,10 +63,10 @@ crease several flaps share needs `on` with a second point to settle the
 flap (`` .m lies on a crease shared by 2 flaps ``, hint `` name the flap
 with #[...] ``).
 
-A line bound by `=` has no material until a `mark` scores it, and the meet
-reads material only ([[reference/beloch-operands#points]]): a line that
-serves to locate a point is marked, with `(at …)` where it is to subdivide
-nothing, and a line that only feeds a construction stays a value.
+A construction scores nothing until a write takes it, and the meet reads
+material only ([[reference/beloch-operands#points]]): a line that serves to
+locate a point or to feed a later construction is marked, with `(at …)`
+where it is to subdivide nothing.
 
 ```{.bel .prelude name=midline}
 paper square
@@ -618,7 +618,7 @@ fold (map .a onto .c) as --bd
 reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 .o = --h * --v
---mid = (through .c .o)
+mark (through .c .o) as --mid
 .sr = --ab * --h
 .sl = --da * --v
 flatten (fan (--h & .sr) (map .sr onto --mid through .a valley) as .r)
@@ -673,15 +673,15 @@ items says what becomes of it, for every verb:
   own.
 - no clause: an anonymous crease, addressable by incidence only.
 
-`=` binds the value of a read and nothing else, so the sort of a name is
-visible at its binding: `--l = (map .a onto .c)` is a line with no
-material, `fold (map .a onto .c) as --l` is a crease. A value bound by `=`
-is a snapshot and takes no `into`; a new value is a new binding.
+`=` binds a read and nothing else: a point, or a selection from the
+creases already there. A construction stands only inside a write,
+`fold (map .a onto .c) as --l`, since `--l = (map .a onto .c)` would bind
+a line no write scored (`` --l = (…) binds no crease ``). A selection
+bound by `=` takes no `into`; a new value is a new binding.
 
 `into` takes a crease the program has scored: a name no statement bound
 (`` --zz is not bound ``, hint `` write as --zz to name a new crease ``), a
-line bound by `=` (`` into needs a crease; --l is a line ``), a selection
-from other creases (`` into needs a crease of its own; --s is a selection
+selection from other creases (`` into needs a crease of its own; --s is a selection
 from others ``) and a paper edge (`` into needs a scored crease; --ab is a
 paper edge ``) are errors, and so is new material off every segment of the
 crease (`` the material this scores lies on no segment of --ac ``, hint

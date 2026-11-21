@@ -10,7 +10,7 @@ shape band(w h) {
   mark (through .a .c) as --diag
   --lower = --diag & .a
   .p = free on --da from .a by h
-  --mid = (map .a onto .p)
+  mark (map .a onto .p) as --mid
   fold (perp --da through .p) (moving .d)
   trim to .a
 }

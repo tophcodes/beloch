@@ -18,7 +18,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".c" ],
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:4:1-30",
+      "span": "orient-axis.bel:4:1-30",
       "statement": 0,
       "name": "bd",
       "crease_id": 0
@@ -32,7 +32,7 @@
         "name": "bd",
         "axiom": "axiom2",
         "sources": [ ".a", ".c" ],
-        "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:4:1-30",
+        "span": "orient-axis.bel:4:1-30",
         "segments": [
           {
             "faces": [ 0, 1 ],
@@ -46,13 +46,11 @@
     "faces": {
       "0": {
         "vertices": [ [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ] ],
-        "flap": 0,
-        "rank": 0
+        "flap": 0
       },
       "1": {
         "vertices": [ [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 0.0, 1.0 ] ],
-        "flap": 1,
-        "rank": 1
+        "flap": 1
       }
     },
     "points": {
@@ -152,18 +150,42 @@
       "kind": "fold",
       "parent": null,
       "source_line": 4,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:4:1-30",
+      "span": "orient-axis.bel:4:1-30",
       "frame_index": 1,
       "kept_marks": []
     },
     {
-      "mark": null,
-      "kind": "bind",
+      "mark": {
+        "kind": "seg",
+        "a": [ 1.0, 0.0 ],
+        "b": [ 0.0, 1.0 ],
+        "line": [ 1.0, 1.0, 1.0 ],
+        "intent": "V",
+        "crease_id": 1
+      },
+      "kind": "mark",
       "parent": null,
       "source_line": 6,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:6:1-22",
+      "span": "orient-axis.bel:6:1-28",
       "frame_index": 1,
-      "kept_marks": []
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
     }
   ],
   "beloch:references": [],
@@ -174,12 +196,9 @@
       "target": "program",
       "frame_index": 0,
       "source_line": 1,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:1:1-2:1",
+      "span": "orient-axis.bel:1:1-2:1",
       "args": [
-        {
-          "text": "Claude (Anthropic)",
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:1:9-29"
-        }
+        { "text": "Claude (Anthropic)", "span": "orient-axis.bel:1:9-29" }
       ]
     },
     {
@@ -188,20 +207,17 @@
       "target": [ 0, 0 ],
       "frame_index": 0,
       "source_line": 3,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:3:1-4:1",
+      "span": "orient-axis.bel:3:1-4:1",
       "args": [
         {
           "point": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:3:9-11"
+          "span": "orient-axis.bel:3:9-11"
         },
         {
           "point": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:3:12-14"
+          "span": "orient-axis.bel:3:12-14"
         },
-        {
-          "word": "up",
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:3:15-17"
-        }
+        { "word": "up", "span": "orient-axis.bel:3:15-17" }
       ]
     },
     {
@@ -210,16 +226,13 @@
       "target": [ 1, 1 ],
       "frame_index": 1,
       "source_line": 5,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:5:1-6:1",
+      "span": "orient-axis.bel:5:1-6:1",
       "args": [
         {
           "line": { "coeffs": [ 1.0, 1.0, 1.0 ], "crease_id": 0 },
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:5:9-13"
+          "span": "orient-axis.bel:5:9-13"
         },
-        {
-          "word": "vertical",
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:5:14-22"
-        }
+        { "word": "vertical", "span": "orient-axis.bel:5:14-22" }
       ]
     }
   ],
@@ -265,7 +278,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".c" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-axis.bel:4:1-30",
+          "span": "orient-axis.bel:4:1-30",
           "statement": 0,
           "name": "bd",
           "crease_id": 0

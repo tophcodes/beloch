@@ -36,7 +36,7 @@ let keeping_item (ctx : Ctx.ctx) (span : Error.span) ~(spine_str : string)
   let paper_line_of name cv =
     match cv with
     | Ctx.Edge (_, l) -> Some l
-    | Ctx.Material _ | Ctx.Mark _ | Ctx.Frozen _ -> (
+    | Ctx.Material _ | Ctx.Mark _ -> (
         try
           Some
             (fst

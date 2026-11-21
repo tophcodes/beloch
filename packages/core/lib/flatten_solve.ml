@@ -17,7 +17,7 @@ let resolve_elems (ctx : Ctx.ctx) ~(elems : Ast.collapse_elem list)
   let rec force_material (lo : Ast.line_operand) =
     match lo with
     | Ast.LNamed cr ->
-        ignore (Resolve.crease_of ctx cr ~slot:"a flatten ray" cr.Ast.cspan);
+        ignore (lookup_crease ctx cr);
         ignore (Resolve.material_cid ctx cr)
     | Ast.LFilter (b, _, _) -> force_material b
     | Ast.LUnion (los, _) -> List.iter force_material los

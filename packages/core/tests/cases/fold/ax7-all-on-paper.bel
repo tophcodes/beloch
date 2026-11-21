@@ -7,6 +7,6 @@
 
 paper square
 mark (map .a onto .b) as --vm             ; vertical midline x = 1/2
---x = (map .a onto --cd and .c onto --vm)
+mark (map .a onto --cd and .c onto --vm) as --x
 
 ; expect error "no fold of map .a onto --cd and .c onto --vm carries out all its alignments at once"

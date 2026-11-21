@@ -8,6 +8,6 @@
 paper square
 mark (through .a .c) as --ac
 .o = free on --ac from .a at 1/2        ; the sheet center, (1/2, 1/2)
---x = (map .a onto --bc through .o)
+mark (map .a onto --bc through .o) as --x
 
 ; expect error "map .a onto --bc through .o is ambiguous: 2 folds carry it out, all landing on the paper"

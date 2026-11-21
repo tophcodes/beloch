@@ -76,7 +76,7 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
   let l, chords_opt =
     match line with
     | Ast.LNamed cr -> (
-        match Resolve.crease_of ctx cr ~slot:"free on" cr.Ast.cspan with
+        match lookup_crease ctx cr with
         | Bundle expr -> Resolve.resolve_paper_line ctx expr
         | cv -> Resolve.paper_line_of_crease ctx ~name:cr.Ast.cname cr.Ast.cspan cv)
     | _ -> Resolve.resolve_paper_line ctx line
@@ -227,20 +227,56 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
         (fun k _ -> land_name ~kind:`Line ~shadow:false ~espan:span k k)
         inst.ilines)
 
+(* A selection passed to a line parameter holds the selected material in the
+   body (BEP-0083), and the body's closed scope cannot see the caller's names.
+   [capture_line] copies every crease and point the selection names into the
+   body scope under fresh temp names ([_#0], [_#1], …: the lexer reads no [#]
+   in a name, and a temp is never exported) and returns the selection over
+   those names, so the parameter resolves as a [Bundle] exactly as the
+   selection did in the caller. *)
+let capture_line (ctx : Ctx.ctx) (body : Ctx.scope) (lo : Ast.line_operand) :
+    Ast.line_operand =
+  let fresh =
+    let n = ref 0 in
+    fun () ->
+      let k = Printf.sprintf "_#%d" !n in
+      incr n;
+      k
+  in
+  let crease (cr : Ast.crease_ref) =
+    let k = fresh () in
+    Hashtbl.replace body.lines k (lookup_crease ctx cr);
+    { cr with Ast.cname = k }
+  in
+  let point (po : Ast.point_operand) (sp : Error.span) =
+    let k = fresh () in
+    Hashtbl.replace body.points k (Resolve.resolve_point ctx po);
+    Ast.PNamed { Ast.name = k; span = sp }
+  in
+  let point_span = function
+    | Ast.PNamed r -> r.Ast.span
+    | Ast.PSelect (_, sp) -> sp
+  in
+  let rec line = function
+    | Ast.LNamed cr -> Ast.LNamed (crease cr)
+    | Ast.LFilter (b, Ast.Keep s, sp) -> Ast.LFilter (line b, Ast.Keep (sel s), sp)
+    | Ast.LFilter (b, Ast.Drop s, sp) -> Ast.LFilter (line b, Ast.Drop (sel s), sp)
+    | Ast.LUnion (bs, sp) -> Ast.LUnion (List.map line bs, sp)
+    | Ast.LSelect (ss, sp) -> Ast.LSelect (List.map sel ss, sp)
+  and sel = function
+    | Ast.SelPoint po -> Ast.SelPoint (point po (point_span po))
+    | Ast.SelLine l -> Ast.SelLine (line l)
+    | Ast.SelFlap (Ast.FByPoints (pos, sp)) ->
+        Ast.SelFlap (Ast.FByPoints (List.map (fun po -> point po (point_span po)) pos, sp))
+  in
+  line lo
+
 let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
   | Ast.Annotation a ->
       ctx.annots_pending <- Annotation.resolve ctx a :: ctx.annots_pending
   | Ast.BindBundle (name, expr, span) ->
       bind_crease ctx name span (Bundle expr)
-  | Ast.BindLine (n, c, sides, span) ->
-      (* pure value: resolve the construction to a line, bind Frozen, no
-         subdivide *)
-      let axis =
-        (Axiom.select ctx span (snd (Axiom.axis_of ctx span c)) ~fold:false sides)
-          .Axiom.line
-      in
-      bind_crease ctx n span (Frozen axis)
   | Ast.Mark (out, m, ext, dir, layer_opt, sides, span) ->
       Action.eval_mark ctx out m ext dir layer_opt sides span
   | Ast.Fold (out, m, fs, span) -> Action.eval_fold ctx out m fs span
@@ -305,13 +341,13 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
       | `Point, Ast.APoint po ->
           Hashtbl.replace body_scope.points p.Ast.pname (Resolve.resolve_point ctx po)
       | `Line, Ast.ALine lo ->
-          (* a named crease argument stays material inside the body
-             (cross needs its marks); only constructed lines freeze *)
+          (* a crease name passes its binding; a selection passes the
+             material it selects (BEP-0083) *)
           let cv =
             match lo with
             | Ast.LNamed cr -> lookup_crease ctx cr
             | Ast.LFilter _ | Ast.LUnion _ | Ast.LSelect _ ->
-                Frozen (Resolve.resolve_line ctx lo)
+                Bundle (capture_line ctx body_scope lo)
           in
           Hashtbl.replace body_scope.lines p.Ast.pname cv
       | `Point, Ast.ALine _ ->
@@ -447,7 +483,6 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
         else
           let frame, stmt = step_of_line k in
           match cv with
-          | Frozen l -> (k, l, frame, stmt) :: acc
           | Mark (_, l) -> (k, l, frame, stmt) :: acc
           | Material (cid, l_orig) -> (
               match Fold_state.crease_axis !(ctx.state) cid l_orig with
@@ -471,7 +506,7 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
         else
           match cv with
           | Material (cid, _) | Mark (cid, _) -> (k, cid) :: acc
-          | Frozen _ | Bundle _ | Edge _ -> acc)
+          | Bundle _ | Edge _ -> acc)
       root_scope.lines []
     |> List.sort (fun (a, _) (b, _) -> String.compare a b)
   in
@@ -614,8 +649,6 @@ let trimmed_names (bctx : Ctx.ctx) (flap : int list) (sheet : Sheet.t) :
               match Fold_state.mark_chords st cid with
               | (a, b) :: _ -> Some (Ctx.Mark (cid, Geom.line_through a b))
               | [] -> None)
-          | Ctx.Frozen l -> (
-              match Sheet.clip sheet l with Some _ -> Some cv | None -> None)
           | Ctx.Bundle _ -> Some cv
         in
         Option.map (fun cv -> (k, cv)) carried)

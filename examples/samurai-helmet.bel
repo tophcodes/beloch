@@ -21,7 +21,7 @@ fold (map .b onto .a) as --r                ; step 2: right corner down to the b
 ; line through the side corners .sl and .sr. `up to` names the lower layer
 ; of each flap, so the square under it stays.
 .o = --r * --l
---mid = (through .o .c)
+mark (through .o .c) as --mid
 .sl = --l * --da                            ; left side corner
 .sr = --r * --ab                            ; right side corner
 .el = --l * --cd                            ; the side corners again, on the front layer

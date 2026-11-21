@@ -16,7 +16,7 @@ squash (--ac & --bc onto --bd) as --s2
 flip
 
 .o = --ac * --bd
---mid = (through .c .o)
+mark (through .c .o) as --mid
 
 ; the four side corners
 .sr = --ab * --s1

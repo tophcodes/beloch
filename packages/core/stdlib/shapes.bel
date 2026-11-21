@@ -24,8 +24,8 @@ shape rectangle(w h) {
 ; to --da, lies at height w/sqrt(2).
 shape silver(w) {
   paper square w
-  --_bd = (through .b .d)
-  --_bisector = (map .a onto --_bd through .b)
+  mark (through .b .d) (at .b) as --_bd
+  mark (map .a onto --_bd through .b) (at .b) as --_bisector
   fold (map .d onto --_bisector perp --da) (moving .d) as --top
   .q = --top * --bc
   .r = --top * --da
@@ -40,7 +40,8 @@ shape silver(w) {
 ; of the triangle, so the trim names its flap by two corners.
 shape triangle(s) {
   paper square s
-  --_mid = (map .a onto .d)
+  ._m = free on --da from .a at 1/2
+  mark (map .a onto .d) (at ._m) as --_mid
   fold (map .d onto --_mid through .a) (moving .d) as --left
   .t = free on --left from .a by s
   fold (through .b .t) (moving .c) as --right

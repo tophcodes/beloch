@@ -3,4 +3,4 @@ paper square
 @orient .d .b up
 fold (map .a onto .c) as --bd
 @orient --bd vertical
---k = (through .b .d)
+mark (through .b .d) as --k

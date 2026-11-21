@@ -128,7 +128,7 @@ fold (map .a onto .c) as --bd
 reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 .o = --h * --v
---mid = (through .c .o)
+mark (through .c .o) as --mid
 
 @step sides
 @orient .o .c down

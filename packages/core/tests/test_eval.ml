@@ -152,8 +152,8 @@ let test_eval_map_through_none_on_paper () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --ac = (through .a .c)\n\
-               --x = (map .c onto --ac through .a)\n")))
+               mark (through .a .c) as --ac\n\
+               mark (map .c onto --ac through .a) as --x\n")))
 
 let test_eval_map_through_same_point () =
   expect_error "same point" (fun () ->
@@ -972,12 +972,12 @@ let test_eval_temp_crease_unnamed () =
        (Fold_state.hinges fd.Eval.state))
 
 let test_eval_def_never_runs () =
-  let fd = eval_src "def bad() {\n  --x = (through .a .a)\n}\n" in
+  let fd = eval_src "def bad() {\n  mark (through .a .a) as --x\n}\n" in
   Alcotest.(check int) "no edges" 0 (Array.length (Fold_state.hinges fd.Eval.state))
 
 let test_eval_apply_closed_scope () =
   expect_error "undefined point .a" (fun () ->
-      eval_src "def d() {\n  --x = (through .a .b)\n}\napply d()\n")
+      eval_src "def d() {\n  mark (through .a .b) as --x\n}\napply d()\n")
 
 let test_eval_apply_binds_params () =
   let fd =
@@ -989,12 +989,12 @@ let test_eval_apply_binds_params () =
 
 let test_eval_apply_arity_error () =
   expect_error "argument" (fun () ->
-      eval_src "def diag(.p .q) {\n  --d = (through .p .q)\n}\napply diag(.a)\n")
+      eval_src "def diag(.p .q) {\n  mark (through .p .q) as --d\n}\napply diag(.a)\n")
 
 let test_eval_apply_kind_error () =
   expect_error "point argument" (fun () ->
       eval_src
-        "def d(.p) {\n  --x = (perp --ab through .p)\n}\n\
+        "def d(.p) {\n  mark (perp --ab through .p) as --x\n}\n\
          apply d(--ab)\n")
 
 let test_eval_apply_undefined_def () =
@@ -1011,7 +1011,7 @@ let test_eval_dup_param_error () =
 let test_eval_dup_instance_error () =
   expect_error "already bound" (fun () ->
       eval_src
-        "def d(.p .q) {\n  --x = (through .p .q)\n}\n\
+        "def d(.p .q) {\n  mark (through .p .q) as --x\n}\n\
          $i = apply d(.a .c)\n$i = apply d(.b .d)\n")
 
 let prov_of (fd : Eval.folded) : State.provenance list =
@@ -1105,7 +1105,7 @@ let test_eval_member_undefined_instance () =
 let def_d =
   "def d(.p .q .r) {\n\
   \  mark (through .p .q) as --l1\n\
-  \  --l2 = (through .p .r)\n\
+  \  mark (through .p .r) as --l2\n\
   \  mark (through .q .r) as --qr\n\
   \  .m = --l1 * --qr\n\
    }\n\
@@ -1479,7 +1479,7 @@ let test_select_no_sightline () =
 
 (* --l = <motion> is a pure value binding: no subdivide, no material *)
 let test_new_value_binding_no_material () =
-  let fd = eval_src "--l = (map .a onto .c)\n" in
+  let fd = eval_src "mark (map .a onto .c) as --l\n" in
   Alcotest.(check int) "one face: no subdivide happened" 1
     (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "no edges: no material crease" 0
@@ -1783,14 +1783,6 @@ let test_output_bang_rebinds () =
     (Geom.same_line (line_of fd "f")
        (line_of (folded "paper square\nmark (through .b .d) as --g\n") "g"))
 
-let test_output_into_a_line () =
-  expect_error "into needs a crease; --l is a line" (fun () ->
-      ignore
-        (folded
-           "paper square\n\
-            --l = (through .a .c)\n\
-            mark (through .a .c) into --l\n"))
-
 let test_output_into_a_selection () =
   expect_error "into needs a crease of its own; --x is a selection from others"
     (fun () ->
@@ -1901,48 +1893,21 @@ let test_output_into_flatten_even () =
             flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
             mountain) (--v & #[.a] mountain) into --h\n"))
 
-(* ---- sorts: a line stands nowhere a crease is wanted ---- *)
+(* ---- sorts: a name with -- holds a crease (BEP-0083) ---- *)
 
-let line_prelude = "paper square\n--l = (through .a .c)\n"
-
-let sort_case slot src =
-  expect_error (Printf.sprintf "--l is a line; %s needs a crease" slot)
-    (fun () -> ignore (folded (line_prelude ^ src)))
-
-let test_sort_meet () =
-  sort_case "the meet"
-    "mark (through .b .d) as --m\n.x = --l * --m\n"
-
-let test_sort_filter () = sort_case "the filter" "mark (--l & .a)\n"
-let test_sort_fold_axis () = sort_case "the axis of fold" "fold (--l) (moving .a)\n"
-
-let test_sort_reverse_axis () =
-  sort_case "the axis of reverse" "reverse (--l) (moving .a)\n"
-
-let test_sort_flatten_ray () =
-  sort_case "a flatten ray"
-    "mark (through .b .d) as --m\nflatten (--l) (--m)\n"
-
-let test_sort_free_on () = sort_case "free on" ".p = free on --l from .a\n"
-
-let test_sort_flap_operand () =
-  sort_case "a flap operand" "fold (map .b onto .a) (moving --l)\n"
-
-(* A sort error is raised at the name, so an editor underlines the operand
-   rather than the whole statement. *)
-let test_sort_error_at_the_name () =
-  let src = line_prelude ^ "fold (--l) (moving .a)\n" in
-  match
-    (try
-       ignore (folded src);
-       None
-     with Error.Beloch_error ((st, _), _, _) -> Some st)
-  with
-  | None -> Alcotest.fail "expected a sort error"
-  | Some st ->
-      Alcotest.(check (pair int int))
-        "the span starts at --l" (3, 7)
-        (st.Lexing.pos_lnum, st.Lexing.pos_cnum - st.Lexing.pos_bol + 1)
+(* A selection passed to a line parameter holds the material it selects, so
+   the body meets it as it would meet the selection itself; a parameter that
+   held a bare line would refuse the meet. *)
+let test_sort_selection_argument_holds_material () =
+  ignore
+    (folded
+      "paper square\n\
+       mark (through .a .c) as --ac\n\
+       mark (through .b .d) as --bd\n\
+       def cut(--l --m) {\n\
+      \  mark (perp --m through (--l * --m)) as --p\n\
+       }\n\
+       $i = apply cut((--ac & .a) --bd)\n")
 
 (* the mirror: a crease projects to its table line, so it stands where a
    line is wanted *)
@@ -2071,10 +2036,9 @@ let test_mark_partial_every_layer () =
   let fd =
     folded
       (book
-     ^ "--k = (map --da onto --cd) (toward .f)\n\
-        .e = free on --m from .f at 1/2\n\
-        mark (--k) (between .d .e) as --x\n\
-        mark (--k) (at .d) as --y\n")
+     ^ ".e = free on --m from .f at 1/2\n\
+        mark (map --da onto --cd) (toward .f) (between .d .e) as --x\n\
+        mark (map --da onto --cd) (toward .f) (at .d) as --y\n")
   in
   let s (pt : Geom.point) = (Num.to_float pt.Geom.x, Num.to_float pt.Geom.y) in
   let marks = Array.to_list (Fold_state.marks fd.Eval.state) in
@@ -2455,7 +2419,6 @@ let () =
           Alcotest.test_case "as! on a free name" `Quick
             test_output_bang_on_free_name;
           Alcotest.test_case "as! rebinds" `Quick test_output_bang_rebinds;
-          Alcotest.test_case "into a line" `Quick test_output_into_a_line;
           Alcotest.test_case "into a selection" `Quick
             test_output_into_a_selection;
           Alcotest.test_case "into a paper edge" `Quick
@@ -2468,26 +2431,16 @@ let () =
             test_output_into_a_mark_keeps_one_id;
           Alcotest.test_case "into a material crease" `Quick
             test_output_into_a_material_crease;
-          Alcotest.test_case "sort: the meet" `Quick test_sort_meet;
-          Alcotest.test_case "sort: the filter" `Quick test_sort_filter;
-          Alcotest.test_case "sort: the axis of fold" `Quick
-            test_sort_fold_axis;
-          Alcotest.test_case "sort: the axis of reverse" `Quick
-            test_sort_reverse_axis;
-          Alcotest.test_case "sort: a flatten ray" `Quick test_sort_flatten_ray;
           Alcotest.test_case "into: flatten scores under the name" `Quick
             test_output_into_flatten_emergent;
           Alcotest.test_case "into: a flatten emergent off the line" `Quick
             test_output_into_flatten_off_the_line;
           Alcotest.test_case "into: an even flatten scores nothing" `Quick
             test_output_into_flatten_even;
-          Alcotest.test_case "sort errors land on the name" `Quick
-            test_sort_error_at_the_name;
-          Alcotest.test_case "sort: free on" `Quick test_sort_free_on;
-          Alcotest.test_case "sort: a flap operand" `Quick
-            test_sort_flap_operand;
           Alcotest.test_case "a crease stands where a line is wanted" `Quick
             test_sort_crease_where_a_line_is_wanted;
+          Alcotest.test_case "a selection argument holds its material" `Quick
+            test_sort_selection_argument_holds_material;
         ] );
       ( "every layer",
         [

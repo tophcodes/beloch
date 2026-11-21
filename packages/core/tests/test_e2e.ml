@@ -748,7 +748,7 @@ let test_beloch_statements_flat () =
   let src =
     "paper square\n\
      def half(.p .q) {\n\
-    \  --l = (through .p .q)\n\
+    \  mark (through .p .q) as --l\n\
     \  fold (map .p onto .q)\n\
      }\n\
      apply half(.a .b)\n\
@@ -759,7 +759,7 @@ let test_beloch_statements_flat () =
   let stmts = json |> member "beloch:statements" |> to_list in
   let kind_of j = j |> member "kind" |> to_string in
   Alcotest.(check (list string)) "def, then each apply ahead of its body"
-    [ "bind"; "apply"; "bind"; "fold"; "apply"; "bind"; "fold" ]
+    [ "bind"; "apply"; "mark"; "fold"; "apply"; "mark"; "fold" ]
     (List.map kind_of stmts);
   let parent_of j = j |> member "parent" |> to_option to_int in
   Alcotest.(check (list (option int))) "body entries name their apply"
@@ -1242,7 +1242,7 @@ let petal_by_steps =
    reverse (map .b onto .c) as --h\n\
    reverse (map .d onto .c) as --v\n\
    .o = --h * --v\n\
-   --mid = (through .c .o)\n\
+   mark (through .c .o) as --mid\n\
    .sr = --ab * --h\n\
    reverse (map .sr onto --mid through .a) as --kr\n\
    .sl = --da * --v\n\

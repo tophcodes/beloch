@@ -257,8 +257,8 @@ placement a menu of four entries.
 
 | type | values | slots |
 |---|---|---|
-| line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([[reference/model#def-line\|def-line]]) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
-| crease | a name bound by `as`: the material scored under that name ([[reference/model#def-bundle\|def-bundle]]), or a selection from one | the axis `(--d)` of `fold`, `unfold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
+| line | a construction, or a crease whose segments lie on one table line ([[reference/model#def-line\|def-line]]) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
+| crease | a name bound by `as`: the material scored under that name ([[reference/model#def-bundle\|def-bundle]]), or a selection from one | the axis `(--d)` of `fold`, `unfold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\`, `free on` |
 | flap | a point, a line, or `#[…]`, resolved by incidence ([[reference/model#def-selector\|def-selector]]) | `moving`, `up to`, `on`, the target of `over` and `under` |
 | sector | one or more points of the paper; the part of the paper a fan leaves in place whose closure holds them all ([[reference/model#def-flatten\|def-flatten]]) | `staying` |
 | point | a named or selected point | `at`, `between`, `toward` |
@@ -270,14 +270,15 @@ placement a menu of four entries.
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([[reference/model#def-letter\|def-letter]]) | `flatten`, `reverse` |
 | order | the face that holds one point over the face that holds another | `flatten` |
-| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([[reference/model#def-selection\|def-selection]]) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `heading`: `align` |
+| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([[reference/model#def-selection\|def-selection]]) | `toward` and `moving`: `mark`, `fold` and `reverse`; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `heading`: `align` |
 
-Line and crease are two sorts under one sigil, and the binding tells them
-apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a
-line is wanted by projection to its table line, which exists while its
-segments are collinear ([[BEP-0014]]) and is an error once a fold has bent it.
-A line stands nowhere a crease is wanted: it has no material until a
-`mark` scores it. The check needs no geometry, so a program's sorts can be
+Line and crease are two sorts, and the source tells them apart: a
+construction is a line, and a name with `--` holds a crease or a paper
+edge, since `=` binds no construction. A crease stands where a line is
+wanted by projection to its table line, which exists while its segments
+are collinear ([[BEP-0014]]) and is an error once a fold has bent it. A
+construction stands nowhere a crease is wanted: it has no material until a
+write scores it. The check needs no geometry, so a program's sorts can be
 verified before it is evaluated.
 
 ## Exactness

@@ -62,7 +62,6 @@ type crease_val =
       (* a materialized construction line backed by the mark layer: meetable
          by `*` (its chords live in Fold_state.marks), never subdividing the
          working arrangement. [int] is the mark's [mcrease_id]. *)
-  | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
          its expression, so the name behaves exactly like inlining it *)
@@ -206,7 +205,7 @@ let record_reference (ctx : ctx) (span : Error.span) (cv : crease_val) : unit =
   | Material (cid, _) | Mark (cid, _) ->
       ctx.references_rev <- RCrease (cid, span) :: ctx.references_rev
   | Edge (n, _) -> ctx.references_rev <- REdge (n, span) :: ctx.references_rev
-  | Frozen _ | Bundle _ -> ()
+  | Bundle _ -> ()
 
 let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : crease_val =
   match find_crease_by_name ctx cr.Ast.cname with
@@ -439,7 +438,7 @@ let kind_of_stmt : Ast.stmt -> stmt_kind = function
       SFold
   | Ast.Mark _ -> SMark
   | Ast.Apply (_, defname, _, _) -> SApply defname
-  | Ast.Annotation _ | Ast.BindLine _ | Ast.BindBundle _ | Ast.Point _
+  | Ast.Annotation _ | Ast.BindBundle _ | Ast.Point _
   | Ast.Def _ | Ast.Export _ ->
       SBind
 

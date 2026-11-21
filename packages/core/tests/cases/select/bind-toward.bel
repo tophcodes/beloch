@@ -7,7 +7,7 @@ paper square
 mark (map .a onto .b) as --v
 mark (map .a onto .d) as --h
 .u = free on --ab from .b at 1/5
---k = (map --v onto --h) (--v toward .u)
+mark (map --v onto --h) (--v toward .u) as --k
 mark (--k) as --m
 .x = --m * --ab
 

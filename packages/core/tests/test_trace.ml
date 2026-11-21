@@ -86,7 +86,7 @@ let test_paper_filter () =
    trace does not list it as one the paper removed. *)
 let test_axiom7_point_on_line () =
   let json, failed =
-    fold_traced "paper square\n--x = (map .a onto --ab and .c onto --da)\n"
+    fold_traced "paper square\nmark (map .a onto --ab and .c onto --da) as --x\n"
   in
   Alcotest.(check bool) "the program succeeds" false failed;
   let e =
@@ -120,7 +120,7 @@ let test_axiom5_bind () =
   let json, failed =
     fold_traced
       "paper square\nmark (map --ab onto --cd) as --h\n.m = --h * --da\n\
-       mark (through .m .c) as --mc\n--k = (map --h onto --mc)\n"
+       mark (through .m .c) as --mc\nmark (map --h onto --mc) as --k\n"
   in
   Alcotest.(check bool) "ambiguous without toward" true failed;
   let e = List.nth (entries json) 2 in

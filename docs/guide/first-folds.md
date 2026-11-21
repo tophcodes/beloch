@@ -292,11 +292,12 @@ cross on the paper:
 .o = --h * --v
 :::
 
-`=` binds a name to something computed from the paper as it is, and changes
+`=` binds a name to something read off the paper as it is, and changes
 nothing. That is the difference between the two ways to name: `as` names
-the crease a statement makes, `=` names a value the program reads off the
-paper. `--mid = (through .c .o)` binds a line with no crease under it yet,
-which a later fold can use as its fold line or its target.
+the crease a statement makes, `=` names a point or a selection the program
+reads off the paper. A line the program needs again is creased first:
+`mark (through .c .o) as --mid` scores it, and a later fold can use it as
+its fold line or its target.
 
 A point name belongs to the paper. `.o` is a spot on the sheet, and it
 travels with the paper wherever later folds take it. A construction such as

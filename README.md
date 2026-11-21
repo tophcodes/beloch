@@ -34,7 +34,7 @@ squash (--ac & --bc onto --bd) as --s2
 flip
 
 .o = --ac * --bd
---mid = (through .c .o)
+mark (through .c .o) as --mid
 .sr = --ab * --s1
 .sl = --da * --s1
 .br = --bc * --s2

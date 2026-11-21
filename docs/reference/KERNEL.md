@@ -185,7 +185,7 @@ alignment it belongs to is carried out by the other object.
 
 `Axiom.line_material` reads the bundle of a line in an alignment, a
 `toward` or a `moving`: for a crease its own segments, for a mark its
-extent, and for a line bound by `=` or a paper edge all the paper on it.
+extent, and for a paper edge all the paper on it.
 A state does not split its faces along a mark: `Fold_state` keeps each
 extent as a record in paper coordinates beside the faces, and
 `Fold_state.mark_material_segments` cuts the records into one table piece

@@ -11,14 +11,6 @@ val lstr : Ast.line_operand -> string
 val fstr : Ast.flap_arg -> string
 (** Render a flap argument back to source text. *)
 
-val crease_of :
-  Ctx.ctx -> Ast.crease_ref -> slot:string -> Error.span -> Ctx.crease_val
-(** The binding of [cr], when it is a crease. Fails with
-    ["--l is a line; <slot> needs a crease"] when the binding is
-    [Ctx.Frozen]. One sigil carries two sorts and the binding tells them
-    apart (docs/reference/BELOCH.md, Parameter types); the check reads the
-    constructor and no geometry, and sits at the slot that wants a crease. *)
-
 val into_crease : Ctx.ctx -> string -> Error.span -> int * (Geom.line -> unit)
 (** The crease `into NAME` scores onto: the id already bound to [NAME], plus
     the check that the write's axis lies on that crease's own material,

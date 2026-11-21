@@ -52,12 +52,10 @@ error naming its alignments.
 
 A construction holds what determines the line: its alignments and its
 `heading`. What determines the fold, `toward`, `moving` and the placement,
-are items of the statement that reads the construction ([[BEP-0031]]). A
-binding takes the side items as a write does, `--k = (map --v onto --h)
-(toward .b)`, so a bound line is selected the way a fold along it would
-be. A construction inside an expression takes no selection; it is bound
-first. A `toward` written inside a construction is an error, with the hint
-`write it as an item of the write: (toward .p)`.
+are items of the statement that reads the construction ([[BEP-0031]]):
+`mark (map --v onto --h) (toward .b) as --k` selects the line the way a
+fold along it would. A `toward` written inside a construction is an error,
+with the hint `write it as an item of the write: (toward .p)`.
 
 A construction over several fold lines names them and lets each alignment
 say which line folds: `(align --a --b (--a .p onto --l) (--b .q onto --m)
@@ -302,7 +300,7 @@ mark (map .m onto --ab perp --ac) as --p  ; .m lies on --ab already
 have two bisectors, perpendicular to each other. Two parallel lines have
 one midline, and two identical lines are an error, "lines are identical".
 A line's material is the segments of a crease, or the chord of the paper
-under a line bound by `=`. The kite base folds an edge onto the long
+under a paper edge. The kite base folds an edge onto the long
 diagonal; one bisector crosses the paper and the other touches it only at
 `.a`, so only the first is a candidate.
 

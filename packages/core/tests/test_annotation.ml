@@ -131,7 +131,7 @@ let test_emit () =
        @orient .o .c down\n\
        @yr:hold .o\n\
        @step\n\
-       --mid = (through .c .o)\n"
+       mark (through .c .o) as --mid\n"
   in
   let open Yojson.Safe.Util in
   let anns = annotations json in
@@ -319,7 +319,7 @@ let invariant_programs =
       "paper square\n\
        def half(.p .q) {\n\
       \  @step \"Fold it.\"\n\
-      \  --l = (through .p .q)\n\
+      \  mark (through .p .q) as --l\n\
       \  @call --l \"the line\"\n\
       \  fold (map .p onto .q)\n\
        }\n\

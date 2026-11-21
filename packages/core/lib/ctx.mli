@@ -77,7 +77,6 @@ type crease_val =
           meetable by [*] (its chords live in [Fold_state.marks]), never
           subdividing the working arrangement. [int] is the mark's
           [mcrease_id]. *)
-  | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (** A named crease bundle (`--x = --l & .c | [--a --b]`); resolves
           lazily as its expression, so the name behaves exactly like
