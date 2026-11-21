@@ -240,6 +240,22 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         pieces
     in
     List.iter (fun m -> ctx.state := Fold_state.add_mark !(ctx.state) m) ms;
+    (* a piece on a hinge that cuts no face changes nothing in this state or
+       any later one: remember it so that the frames skip its test *)
+    let st = !(ctx.state) in
+    let absorbed =
+      List.filter
+        (fun (m : Fold_state.mark) ->
+          match m.Fold_state.mgeom with
+          | Fold_state.MSeg (a, b) ->
+              Fold_state.mark_graduates st m
+              && not (Fold_state.paper_segment_cuts_a_face st (a, b))
+          | Fold_state.MPoint _ -> false)
+        ms
+    in
+    if absorbed <> [] then
+      Hashtbl.replace ctx.absorbed cid
+        (absorbed @ Option.value ~default:[] (Hashtbl.find_opt ctx.absorbed cid));
     let prior_kept =
       match ctx.statements_rev with
       | prev :: _ -> prev.sl_kept

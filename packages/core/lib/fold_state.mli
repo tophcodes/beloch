@@ -372,6 +372,10 @@ val subdivide_paper :
 (** Like [subdivide], but [paper_axis] is a PAPER-space line: every face it
     crosses is split, regardless of current table placement. *)
 
+val paper_segment_cuts_a_face : t -> Geom.point * Geom.point -> bool
+(** True when [subdivide_paper_segment] along the segment would split a
+    face of the state. *)
+
 val subdivide_paper_segment :
   ?crease_id:int ->
   t ->

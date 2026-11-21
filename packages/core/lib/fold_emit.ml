@@ -78,10 +78,17 @@ let beloch_edges_json edges : Yojson.Safe.t =
    Applied to BOTH the crease-pattern frame and each folded frame: fold-time
    algorithms never see it (emit-only). Partial (mid-segment) graduation is
    deferred: a whole mark graduates or it does not. *)
-let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
+let cp_display
+    ?(known : (Fold_state.t * (Fold_state.mark list * Fold_state.mark list)) list = [])
+    (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
+  (* [known] holds what the evaluation computed for its frames: the marks to
+     graduate, without those it found to cut no face, and the marks kept *)
   let grad, kept =
-    List.partition (Fold_state.mark_graduates st)
-      (Array.to_list (Fold_state.marks st))
+    match List.assq_opt st known with
+    | Some partition -> partition
+    | None ->
+        List.partition (Fold_state.mark_graduates st)
+          (Array.to_list (Fold_state.marks st))
   in
   let disp =
     List.fold_left
@@ -134,7 +141,7 @@ let fold_angles_json edges : Yojson.Safe.t list =
       | _ -> `Float 0.0)
     edges
 
-let folded_frame_of_state ?(display = cp_display) (sheet : Sheet.t)
+let folded_frame_of_state ?(display = fun st -> cp_display st) (sheet : Sheet.t)
     (named_points : (string * Geom.point) list)
     (state : Fold_state.t)
     (span : Error.span option) : Yojson.Safe.t =
@@ -597,6 +604,7 @@ let beloch_inspect_json (state : Fold_state.t)
 
 let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
   let sheet = fd.Eval.sheet in
+  let cp_display = cp_display ~known:fd.Eval.graduated in
   let disp, kept_marks = cp_display fd.Eval.state in
   (* the last frame holds the final state, already displayed as [disp] *)
   let display st =

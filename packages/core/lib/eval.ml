@@ -36,6 +36,9 @@ type folded = {
          line coefficients in [named_lines] lose (a folded crease's current
          line can coincide with another crease's line) *)
   frames : (Fold_state.t * Error.span option) list;
+  graduated : (Fold_state.t * (Fold_state.mark list * Fold_state.mark list)) list;
+      (* per frame, the marks to graduate and the marks kept, as the
+         evaluation computed them; see [Ctx.graduated_rev] *)
   statements : stmt_log_entry list;
   references : Ctx.reference list;
   annotations : Ctx.annot_entry list;
@@ -516,6 +519,7 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let statements = List.rev ctx.statements_rev in
   let free_points = List.rev ctx.free_points_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
+    graduated = ctx.graduated_rev;
     statements; free_points; sheet = ctx.sheet; unit_name = ctx.unit_name;
     references = List.rev ctx.references_rev;
     (* the annotations after the program's last statement belong to the final
