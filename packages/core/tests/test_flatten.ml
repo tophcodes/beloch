@@ -38,14 +38,14 @@ let test_flatten_bind_parses_and_evals () =
    [test_eval_dup_crease_error]'s `mark --x` / `mark --x`. This is the same
    "is this name bound" proof the rest of the suite uses (no dedicated
    Env/has_bundle accessor exists: [bind_crease]'s own dup-check is it).
-   Rebinding via a bundle expression (`[--h]`) rather than `mark`/axiom keeps this
+   Rebinding via a bundle expression (`--h`) rather than `mark`/axiom keeps this
    test purely about namespace occupancy: [bind_crease]'s dup-check fires
    before any geometry is evaluated, so it can't be confused with an
    unrelated axiom error. *)
 let test_flatten_bind_registers_name () =
   expect_error "already bound" (fun () ->
       Eval.eval_folded
-        (Beloch.parse ~filename:"t.bel" (vertex_src ^ "--r = [--h]\n")))
+        (Beloch.parse ~filename:"t.bel" (vertex_src ^ "--r = --h\n")))
 
 (* the bound name resolves as a genuine selectable bundle, not a dead label:
    filtering it down to one of its constituent rays (crease & flap, same
@@ -239,7 +239,7 @@ let test_flatten_derive_e2e () =
 let test_flatten_derive_registers_name () =
   expect_error "already bound" (fun () ->
       Eval.eval_folded
-        (Beloch.parse ~filename:"t.bel" (rabbit_ear_derive_src ^ "--ear = [--v]\n")))
+        (Beloch.parse ~filename:"t.bel" (rabbit_ear_derive_src ^ "--ear = --v\n")))
 
 (* The bound name in DERIVE mode must resolve to the EMERGENT crease,
    not the rays: so a meet-point selector against it (`.[--ear --da]`)

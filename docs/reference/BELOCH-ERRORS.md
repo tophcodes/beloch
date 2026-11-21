@@ -41,6 +41,7 @@ in angle brackets stands for what the program wrote in that place.
 |---|---|
 | `syntax error` | |
 | `unexpected character "<c>"` | |
+| `a bare [ opens no read` | `a meet is .[--l --m], a join --[.p .q], a flap #[.p .q]` |
 | `a text runs to its closing quote on the same line; \" and \\ are its only escapes` | |
 
 The parser reports the place where it stopped, and the grammar it holds

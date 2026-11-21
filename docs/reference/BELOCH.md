@@ -195,9 +195,8 @@ statement* is a verb followed by its arguments; its shape is given under
 [[reference/beloch-writes]].
 
 **Reads.** Constructions (below), selectors (`#[…]`, `*`, `--[…]`, `free
-on`), and the filter operators (`&`, `\`, `[…]`), which form a Boolean
-algebra on the segments of a bundle: intersection with an incidence
-predicate, difference, union ([[reference/beloch-operands]]).
+on`), and the filter operators (`&`, `\`), which keep or drop the segments of a
+bundle by an incidence predicate ([[reference/beloch-operands]]).
 
 **The meet and the filters.** The meet `--x * --y` is the one paper point
 its operands have in common, the filters `&`, `\` and `[…]` pick the

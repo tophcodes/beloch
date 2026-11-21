@@ -481,7 +481,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
             | Some c -> c
             | None ->
                 Error.fail span
-                  "fold folds along one existing crease; a union spans \
+                  "fold folds along one existing crease; the bundle spans \
                    several")
         | _ ->
             Error.fail

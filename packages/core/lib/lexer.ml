@@ -125,7 +125,6 @@ and program_token (buf : Sedlexing.lexbuf) : token =
   | '}' -> RBRACE
   | '(' -> LPAREN
   | ']' -> RBRACKET
-  | '[' -> LBRACKET
   | '&' -> AMP
   | '\\' -> BACKSLASH
   | '*' -> STAR
@@ -144,6 +143,10 @@ and program_token (buf : Sedlexing.lexbuf) : token =
       POINT (String.sub s 1 (String.length s - 1))
   | id -> IDENT (Sedlexing.Utf8.lexeme buf)
   | eof -> EOF
+  | '[' ->
+      Error.fail ~hint:"a meet is .[--l --m], a join --[.p .q], a flap #[.p .q]"
+        (Sedlexing.lexing_positions buf)
+        "a bare [ opens no read"
   | _ ->
       let start, finish = Sedlexing.lexing_positions buf in
       Error.fail (start, finish)

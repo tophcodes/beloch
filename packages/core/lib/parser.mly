@@ -87,7 +87,7 @@ let toward_inside (span : Error.span) : 'a =
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
-%token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
+%token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR FLAP_BRACKET
 %token EMERGENT BESIDE
 %token FLATTEN FAN SQUASH OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
 %token FREE ON FROM ALIGN HEADING INTO
@@ -370,7 +370,6 @@ align_object:
 line_object:
   | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
   | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
-  | LBRACKET line_list RBRACKET      { LUnion ($2, $loc) }
   | line_object AMP selector         { LFilter ($1, Keep $3, $loc) }
   | line_object BACKSLASH selector   { LFilter ($1, Drop $3, $loc) }
 
@@ -435,11 +434,7 @@ line_operand:
   | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
   | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
   | line_operand BACKSLASH selector { LFilter ($1, Drop $3, $loc) }
-  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
 
-line_list:
-  | line_operand           { [ $1 ] }
-  | line_operand line_list { $1 :: $2 }
 
 select_constraints:
   | selector                    { [ $1 ] }
