@@ -57,6 +57,9 @@ type folded = {
           line coefficients in [named_lines] lose (a folded crease's current
           line can coincide with another crease's line). *)
   frames : (Fold_state.t * Error.span option) list;
+  graduated : (Fold_state.t * (Fold_state.mark list * Fold_state.mark list)) list;
+      (** Per frame, the marks to graduate and the marks kept, as the
+          evaluation computed them; see [Ctx.graduated_rev]. *)
   statements : stmt_log_entry list;
   references : Ctx.reference list;
       (** Every resolved mention of a crease name, in source order: the

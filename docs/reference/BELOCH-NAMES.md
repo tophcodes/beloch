@@ -42,8 +42,8 @@ lists the names of that kind in scope, at most twelve before an ellipsis
 (`` undefined point .m ``, `` undefined crease --m ``,
 `` undefined instance $m ``).
 
-**Bindings.** `=` binds a point or a line to the value on its right, and
-the right side says which sort the name gets:
+**Bindings.** `=` binds a point to a read, and a name with `--` to a
+selection from the creases already there:
 
 ```{.bel .prelude name=lines}
 paper square
@@ -52,10 +52,9 @@ mark (through .b .d) as --bd
 ```
 
 ```{.bel .frag prelude=lines}
-.o  = --ac * --bd                   ; a point: the meet of two lines
+.o  = --ac * --bd                   ; a point: the meet of two creases
 .p  = free on --ac from .a at 1/4   ; a point: a free point
---m = (map --ab onto --cd)          ; a line: a construction, scoring nothing
---e = --ac & .o                     ; a line: a selection from a crease
+--e = --ac & .o                     ; a selection from a crease
 
 ; assert .o = (1/2, 1/2)
 ; assert faces = 1
@@ -63,12 +62,14 @@ mark (through .b .d) as --bd
 
 A point is bound by a meet ([[reference/beloch#reads-and-writes]]) or by
 `free on` ([[reference/beloch#free-points]]), and by nothing else: there is
-no way to give a second name to a point that has one. A line is bound by a
-construction, which computes the line and scores nothing, or by an operand
-that selects from the lines and creases already there
-([[reference/beloch-constructions]]). A crease is bound by the output clause
-of a write, `as --c` ([[reference/beloch-writes]]), and an
-instance by an application (below).
+no way to give a second name to a point that has one. A name with `--`
+holds a crease or a paper edge. A crease is bound by the output clause of
+a write, `as --c` ([[reference/beloch-writes]]), and `=` binds a selection
+from the creases and edges already there ([[reference/beloch-operands]]).
+A construction computes a line and scores nothing, so it stands only inside
+a write: `--l = (map .a onto .c)` is an error (`` --l = (…) binds no
+crease ``, hint `` score it with mark (…) as --l ``). An instance is bound
+by an application (below).
 
 **One binding per name.** Within one scope a name without the `_` prefix
 is bound at most once. A second binding is an error

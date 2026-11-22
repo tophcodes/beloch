@@ -25,7 +25,7 @@ def petal(--s --e .l .r .m .o) {
   .qr = free on --e from .r at 1/8
   .wl = (--s & #[.ql]) * --e                    ; the ends of the flap's sides
   .wr = (--s & #[.qr]) * --e
-  --mid = (through .o .l)
+  mark (through .o .l) as --mid
 
   ; step 9: each bottom edge onto the center line and back, through both
   ; layers of the flap
@@ -54,7 +54,7 @@ def petal(--s --e .l .r .m .o) {
 ; fold that .wl or .wr names, and the corner of the lifted petal it
 ; crosses. The outer edges --nl and --nr of the two legs are its creases.
 def narrow(.vl .vr .wl .wr .l .r .o) {
-  --mid = (through .o .l)
+  mark (through .o .l) as --mid
   fold (map --[.vl .l] onto --mid) (moving .vl) (up to #[.vl .l .wl]) as --nl
   fold (map --[.vr .r] onto --mid) (moving .vr) (up to #[.vr .r .wr]) as --nr
 }

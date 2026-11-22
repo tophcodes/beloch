@@ -156,7 +156,7 @@ let line_material (ctx : Ctx.ctx) (lo : Ast.line_operand) (la : Geom.line) :
       | Material (cid, _) -> of_segments (Fold_state.crease_segments !(ctx.state) cid)
       | Bundle _ -> of_segments (snd (Resolve.bundle_segments ctx (Ast.LNamed cr)))
       | Mark (cid, _) -> Fold_state.mark_material_segments !(ctx.state) cid
-      | Edge _ | Frozen _ -> Fold_state.line_material_segments !(ctx.state) la)
+      | Edge _ -> Fold_state.line_material_segments !(ctx.state) la)
   | Ast.LSelect _ -> Fold_state.line_material_segments !(ctx.state) la
   | (Ast.LFilter _ | Ast.LUnion _) as b -> of_segments (snd (Resolve.bundle_segments ctx b))
 
@@ -445,7 +445,7 @@ let moving_side (ctx : Ctx.ctx) (c : Geom.line) (fa : Ast.flap_arg)
   | Ast.FlapLine lo ->
       (* a flap operand is crease-sorted: a line bound by `=` is refused here *)
       (match lo with
-      | Ast.LNamed cr -> ignore (Resolve.crease_of ctx cr ~slot:"a flap operand" cr.Ast.cspan)
+      | Ast.LNamed cr -> ignore (lookup_crease ctx cr)
       | _ -> ());
       side_of_segs c (line_material ctx lo (Resolve.resolve_line ctx lo))
 

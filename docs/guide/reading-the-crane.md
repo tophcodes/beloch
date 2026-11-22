@@ -36,7 +36,7 @@ flip
 squash (--ac & --bc onto --bd) as --s2
 flip
 .o = --ac * --bd
---mid = (through .c .o)
+mark (through .c .o) as --mid
 :::
 
 The two folds leave a triangle four layers thick. Its top two layers are
@@ -56,8 +56,9 @@ On the table the base is a small square. The four corners of the sheet lie
 together at one of its corners, `.c`, the *loose corners*. The center of the
 sheet is the opposite corner, `.o`, the *closed tip*, where no paper edge
 reaches. `--mid` is the line between them, the *center line* of the base.
-It is bound with `=`, so it has no crease under it. The next folds bring
-paper onto it, and a line you only fold onto never needs to be scored.
+`mark` scores it so that later folds can name it, and since it lies on the
+diagonal creased before, the crease pattern gains no line. The next folds
+bring paper onto it.
 
 ## The side corners
 

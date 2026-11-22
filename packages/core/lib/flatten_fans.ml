@@ -59,7 +59,7 @@ let rec kept_points (ctx : Ctx.ctx) (lo : Ast.line_operand) : Geom.point list =
 let rec cut_named (ctx : Ctx.ctx) (lo : Ast.line_operand) : unit =
   match lo with
   | Ast.LNamed cr ->
-      ignore (Resolve.crease_of ctx cr ~slot:"a flatten ray" cr.Ast.cspan);
+      ignore (lookup_crease ctx cr);
       ignore (Resolve.material_cid ctx cr)
   | Ast.LFilter (b, _, _) -> cut_named ctx b
   | Ast.LUnion (los, _) -> List.iter (cut_named ctx) los

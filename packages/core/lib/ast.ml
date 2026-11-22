@@ -254,9 +254,6 @@ type annotation = {
 
 type stmt =
   | Annotation of annotation
-  | BindLine of string * construction * sides * Error.span
-      (* --l = (map .a onto .b) [(toward …)] [(moving …)] : bind a pure line
-         VALUE; no material effect *)
   | Mark of output * markable * extent * direction * flap_arg option * sides
             * Error.span
       (* mark (<construction>|(--l)) [(between .a .b) | (at .p)] [(mountain)]

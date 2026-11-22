@@ -151,12 +151,11 @@ What the language knows about a state and FOLD cannot say:
   meant then.
 - `beloch:vertices_names`, `beloch:named_points`, `beloch:named_lines` with
   `beloch:named_lines_frame`: the names a program gave to points and lines,
-  mapped to vertices and to lines. A line bound with `=` is given by its
-  coefficients on the table of the step its `step` names, step 0 being the
-  flat sheet. A crease is given by its line on the table of the last frame,
-  and a crease a later fold has bent has no entry; where a crease lies on the
-  paper is its edges, named in `beloch:edges`. `beloch:named_lines_frame`
-  reads `creasePattern` for both, which matches neither
+  mapped to vertices and to lines. A crease is given by its line on the
+  table of the last frame, and a crease a later fold has bent has no entry;
+  where a crease lies on the paper is its edges, named in `beloch:edges`.
+  `beloch:named_lines_frame` reads `creasePattern`, which does not match
+  the table of the last frame
   ([#81](https://github.com/tophcodes/beloch/issues/81)).
 - `beloch:marks`: reference marks that subdivide no face (`mark … at`,
   `mark … between` ending mid-face), which are creases in the language and no

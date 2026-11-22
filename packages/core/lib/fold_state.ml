@@ -1442,9 +1442,9 @@ let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
   in
   split_with_flat_hinges g ~cid ~prov ~cut_of
 
-let subdivide_paper_segment ?crease_id (g : t) ((a, b) : Geom.point * Geom.point)
-    ~(prov : State.provenance option) : t =
-  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+(* How the paper segment from [a] to [b] cuts face [fi] of [g]: its two
+   parts and the chord, or [None] where it leaves the face whole. *)
+let paper_segment_cut (g : t) ((a, b) : Geom.point * Geom.point) (fi : int) =
   let paper_axis = Geom.line_through a b in
   let within (p : Geom.point) =
     let t = Geom.seg_param (a, b) p in
@@ -1470,7 +1470,18 @@ let subdivide_paper_segment ?crease_id (g : t) ((a, b) : Geom.point * Geom.point
     | Some pp, Some pm, Some (p, q) when within p && within q -> Some (pp, pm, (p, q))
     | _ -> None
   in
-  split_with_flat_hinges g ~cid ~prov ~cut_of
+  cut_of fi
+
+let paper_segment_cuts_a_face (g : t) (seg : Geom.point * Geom.point) : bool =
+  let rec go fi =
+    fi < Array.length g.faces && (Option.is_some (paper_segment_cut g seg fi) || go (fi + 1))
+  in
+  go 0
+
+let subdivide_paper_segment ?crease_id (g : t) (seg : Geom.point * Geom.point)
+    ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  split_with_flat_hinges g ~cid ~prov ~cut_of:(paper_segment_cut g seg)
 
 (* Where a moved block lands after a fold. *)
 type placement = Top | Bottom | Over of int list | Under of int list
@@ -2989,8 +3000,16 @@ let paper_segment_pieces (g : t) ((pa, pb) : Geom.point * Geom.point) :
       { Geom.x = Num.add pa.Geom.x (Num.mul t (Num.sub pb.Geom.x pa.Geom.x));
         y = Num.add pa.Geom.y (Num.mul t (Num.sub pb.Geom.y pa.Geom.y)) }
     in
+    (* a face with every vertex strictly on one side of the line holds no
+       piece, which the signs tell without the exact clip *)
+    let off_line f =
+      let s0 = Geom.side_of_line l f.(0) in
+      s0 <> 0 && Array.for_all (fun p -> Geom.side_of_line l p = s0) f
+    in
     List.filter_map
       (fun i ->
+        if off_line g.faces.(i) then None
+        else
         match Geom.clip_line_to_convex l (ccw g.faces.(i)) with
         | None -> None
         | Some (u, v) ->

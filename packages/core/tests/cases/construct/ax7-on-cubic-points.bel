@@ -18,7 +18,7 @@ mark (through .c ._mb) as --c_mb
 mark (through .b ._mt) as --b_mt
 ._pq1 = --d_mb * --ac
 ._pq2 = --a_mt * --db
---pq = (through ._pq1 ._pq2)
+mark (through ._pq1 ._pq2) as --pq
 ._rs1 = --c_mb * --db
 ._rs2 = --b_mt * --ac
 mark (through ._rs1 ._rs2) as --rs

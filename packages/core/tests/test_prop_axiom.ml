@@ -347,7 +347,7 @@ let source (p : program) =
   ^ "mark (through .e1 .e2) as --m\n"
   ^ Printf.sprintf ".i1 = free on --m from .e1 at %d/%d\n" (fst p.inner)
       (snd p.inner)
-  ^ "--k = (through .e3 .i1)\n"
+  ^ "mark (through .e3 .i1) as --k\n"
   ^ Printf.sprintf "--res = %s%s\n" (construction p) toward
 
 let assoc4 name l =

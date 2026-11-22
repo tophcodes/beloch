@@ -16,7 +16,7 @@ reverse (map .b onto .c) as --h         ; preliminary base
 reverse (map .d onto .c) as --v
 
 .o = --h * --v                          ; apex O, the paper center
---mid = (through .c .o)                 ; center line of the base
+mark (through .c .o) as --mid           ; center line of the base
 
 .sr = --ab * --h                        ; front-right side corner: paper (1/2, 0), table (1, 1/2)
 reverse (map .sr onto --mid through .c)

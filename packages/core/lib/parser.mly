@@ -214,7 +214,7 @@ annot_arg:
   | BESIDE                           { { av = AvWord "beside"; av_span = $loc } }
 
 body_stmt:
-  (* value binding: pure geometry, no material *)
+  (* [--l = (…)]: parsed so that Items.bind can refuse it with a hint *)
   | CREASE EQ LPAREN construction_body RPAREN items
       { Items.bind $1 $4 $6 $loc }
   (* a bind takes the line operands an item takes, parenthesized or not; the

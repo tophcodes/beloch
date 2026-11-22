@@ -62,7 +62,6 @@ type crease_val =
       (* a materialized construction line backed by the mark layer: meetable
          by `*` (its chords live in Fold_state.marks), never subdividing the
          working arrangement. [int] is the mark's [mcrease_id]. *)
-  | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
          its expression, so the name behaves exactly like inlining it *)
@@ -143,6 +142,18 @@ type ctx = {
   mutable sheet : Sheet.t;
       (* the sheet the program opened: its unfolded state and outline *)
   mutable frames_rev : (Fold_state.t * Error.span option) list;
+  mutable graduated_rev :
+    (Fold_state.t * (Fold_state.mark list * Fold_state.mark list)) list;
+      (* per frame, computed once when the frame is pushed: the marks that
+         graduate and cut a face, and the marks that stay records. Looked up
+         by the state's physical identity, so an entry stays correct after
+         the frame list is rewound *)
+  absorbed : (int, Fold_state.mark list) Hashtbl.t;
+      (* pieces of a mark, by crease id, that lay on a hinge and cut no
+         face when recorded. A hinge stays a hinge in every later state of
+         the sheet, so such a piece graduates without effect in every frame
+         after it and needs no test; [Sheet.trim] makes new pieces, which
+         are tested again *)
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
   mutable references_rev : reference list;
@@ -206,7 +217,7 @@ let record_reference (ctx : ctx) (span : Error.span) (cv : crease_val) : unit =
   | Material (cid, _) | Mark (cid, _) ->
       ctx.references_rev <- RCrease (cid, span) :: ctx.references_rev
   | Edge (n, _) -> ctx.references_rev <- REdge (n, span) :: ctx.references_rev
-  | Frozen _ | Bundle _ -> ()
+  | Bundle _ -> ()
 
 let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : crease_val =
   match find_crease_by_name ctx cr.Ast.cname with
@@ -439,7 +450,7 @@ let kind_of_stmt : Ast.stmt -> stmt_kind = function
       SFold
   | Ast.Mark _ -> SMark
   | Ast.Apply (_, defname, _, _) -> SApply defname
-  | Ast.Annotation _ | Ast.BindLine _ | Ast.BindBundle _ | Ast.Point _
+  | Ast.Annotation _ | Ast.BindBundle _ | Ast.Point _
   | Ast.Def _ | Ast.Export _ ->
       SBind
 
@@ -480,6 +491,8 @@ let create () : ctx =
     state = ref sheet.Sheet.start;
     sheet;
     frames_rev = [];
+    graduated_rev = [];
+    absorbed = Hashtbl.create 16;
     statements_rev = [];
     free_points_rev = [];
     references_rev = [];
@@ -517,16 +530,26 @@ let push_apply (ctx : ctx) (defname : string) (sp : Error.span) : int =
     :: ctx.statements_rev;
   idx
 
+let is_absorbed (ctx : ctx) (m : Fold_state.mark) : bool =
+  match Hashtbl.find_opt ctx.absorbed m.Fold_state.mcrease_id with
+  | Some ms -> List.memq m ms
+  | None -> false
+
 let push_frame (ctx : ctx) (span : Error.span option) =
   ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;
   ctx.pending <- false;
   (match span with
   | Some sp ->
       let st = !(ctx.state) in
-      let kept =
-        Array.to_list (Fold_state.marks st)
-        |> List.filter (fun m -> not (Fold_state.mark_graduates st m))
+      let draw, kept =
+        Array.fold_right
+          (fun (m : Fold_state.mark) (draw, kept) ->
+            if is_absorbed ctx m then (draw, kept)
+            else if Fold_state.mark_graduates st m then (m :: draw, kept)
+            else (draw, m :: kept))
+          (Fold_state.marks st) ([], [])
       in
+      ctx.graduated_rev <- (st, (draw, kept)) :: ctx.graduated_rev;
       ctx.statements_rev <-
         { sl_kind = SFold; sl_span = sp;
           sl_frame_index = List.length ctx.frames_rev; sl_mark = None;

@@ -164,7 +164,7 @@ let crease_id_for (ctx : Ctx.ctx) (out : Ast.output) ~(fresh : unit -> int) :
         fun cv ->
           match cv with
           | Material _ -> promote_crease ctx n cv
-          | Frozen _ | Mark _ | Bundle _ | Edge _ -> () )
+          | Mark _ | Bundle _ | Edge _ -> () )
 
 (* Resolve a [markable] to either a fresh construction (axis, [provenance], the
    side that folds over where the side items fix it, and the implied anchor)
@@ -210,9 +210,8 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (ext : Ast.extent) (dir : Ast.direction) (layer_opt : Ast.flap_arg option)
     (sides : Ast.sides) (span : Error.span) : unit =
   let intent = intent_of dir in
-  (* a `mark` along an already-bound line records a material chord of its
-     own: the axis slot of `mark` is line-sorted, so a Frozen name stands
-     here where `fold`'s axis would refuse it. *)
+  (* a `mark` along an already-bound crease records a material chord of its
+     own *)
   let cid, bind_out, table_axis, prov =
     match resolve_markable ctx span out ~fold:false sides m with
     | `Fresh (cid, bind_out, axis, prov, _side_override, _implied) ->
@@ -241,6 +240,22 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         pieces
     in
     List.iter (fun m -> ctx.state := Fold_state.add_mark !(ctx.state) m) ms;
+    (* a piece on a hinge that cuts no face changes nothing in this state or
+       any later one: remember it so that the frames skip its test *)
+    let st = !(ctx.state) in
+    let absorbed =
+      List.filter
+        (fun (m : Fold_state.mark) ->
+          match m.Fold_state.mgeom with
+          | Fold_state.MSeg (a, b) ->
+              Fold_state.mark_graduates st m
+              && not (Fold_state.paper_segment_cuts_a_face st (a, b))
+          | Fold_state.MPoint _ -> false)
+        ms
+    in
+    if absorbed <> [] then
+      Hashtbl.replace ctx.absorbed cid
+        (absorbed @ Option.value ~default:[] (Hashtbl.find_opt ctx.absorbed cid));
     let prior_kept =
       match ctx.statements_rev with
       | prev :: _ -> prev.sl_kept
@@ -424,7 +439,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
   | `Existing (Ast.LNamed cr)
-    when (match Resolve.crease_of ctx cr ~slot:"the axis of fold" cr.Ast.cspan with
+    when (match lookup_crease ctx cr with
           | Mark _ -> true
           | _ -> false) ->
       (* fold along a MARK: marks never subdivide, so there is no existing
@@ -474,7 +489,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       let along =
         match lo with
         | Ast.LNamed cr ->
-            ignore (Resolve.crease_of ctx cr ~slot:"the axis of fold" cr.Ast.cspan);
+            ignore (lookup_crease ctx cr);
             Resolve.material_cid ctx cr
         | Ast.LFilter _ | Ast.LUnion _ -> (
             match fst (Resolve.bundle_segments ctx lo) with
@@ -607,8 +622,7 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         (match lo with
         | Ast.LNamed cr ->
             ignore
-              (Resolve.crease_of ctx cr ~slot:"the axis of reverse"
-                 cr.Ast.cspan)
+              (lookup_crease ctx cr)
         | _ -> ());
         let axis = Resolve.resolve_line ctx lo in
         let side = Axiom.fold_side_of_line ctx span axis sides in
@@ -697,7 +711,7 @@ let eval_unfold (ctx : Ctx.ctx) (lo : Ast.line_operand) (fs : Ast.fold_spec)
     (span : Error.span) : unit =
   (match lo with
   | Ast.LNamed cr ->
-      ignore (Resolve.crease_of ctx cr ~slot:"the axis of unfold" cr.Ast.cspan)
+      ignore (lookup_crease ctx cr)
   | _ -> ());
   let axis = Resolve.resolve_line ctx lo in
   let st = !(ctx.state) in

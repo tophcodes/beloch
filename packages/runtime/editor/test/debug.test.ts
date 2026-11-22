@@ -2,9 +2,8 @@ import { test, expect } from "bun:test";
 import { parseFold, type FoldScene } from "@beloch/scene";
 import { debugTargets } from "../src/index";
 
-// bindings.bel, beside the fixture: two marks that bind `--ac` and `--bd`, a
-// construction line `--vert` that never becomes a crease, the point `.mid`
-// where the two marks meet, and two folds.
+// bindings.bel, beside the fixture: three marks that bind `--ac`, `--bd` and
+// `--vert`, the point `.mid` where the first two meet, and two folds.
 const scene: FoldScene = parseFold(
   await Bun.file(new URL("./fixtures/bindings.fold", import.meta.url)).text(),
 );
@@ -32,20 +31,14 @@ const boxes = targets.filter(boxable);
 
 test("every binding the program makes is offered as a target", () => {
   expect(targets.map((t) => t.spelling)).toEqual([
-    // line 3 and 4: the marks bind `--ac` and `--bd`, so their creases are
-    // targets under those names rather than under the statement.
-    "--ac", "--bd",
-    // line 5 and 6: the construction line and the point.
-    "--vert", ".mid",
+    // lines 3 to 5: the marks bind `--ac`, `--bd` and `--vert`, so their
+    // creases are targets under those names rather than under the statement.
+    "--ac", "--bd", "--vert",
+    // line 6: the point.
+    ".mid",
     // line 7 and 8: the folds bind no name, so each statement is its own target.
     null, null,
   ]);
-});
-
-test("a construction line that never becomes a crease is named by its name", () => {
-  const vert = targets.find((t) => t.spelling === "--vert");
-  expect(vert!.entity).toEqual({ kind: "construction", name: "vert" });
-  expect(spanText(vert!)).toBe("--vert = (map .a onto .b)");
 });
 
 test("a named line the paper carries is named by its crease", () => {
@@ -62,8 +55,8 @@ test("a named point is named by the vertex it sits on", () => {
 test("a write that bound no name is a target for the crease it scored", () => {
   const folds = targets.filter((t) => t.spelling === null);
   expect(folds.map((t) => t.entity)).toEqual([
-    { kind: "crease", creaseId: "2" },
     { kind: "crease", creaseId: "3" },
+    { kind: "crease", creaseId: "4" },
   ]);
   // The whole statement, which is all the source says about that crease.
   expect(folds[0]!.span).toEqual({ fromLine: 7, fromCol: 1, toLine: 7, toCol: 26 });
@@ -106,6 +99,6 @@ test("what the sheet brings comes before what the program folds", () => {
 // What the stepper marks in the editor: the line of the statement the drawing
 // stands at, which is the write's own line at every step, the mark included.
 test("a step stands for the line of its own statement", () => {
-  expect(scene.writes.map((w) => w.sourceLine)).toEqual([3, 4, 7, 8]);
-  expect(scene.writes.map((w) => w.kind)).toEqual(["mark", "mark", "fold", "fold"]);
+  expect(scene.writes.map((w) => w.sourceLine)).toEqual([3, 4, 5, 7, 8]);
+  expect(scene.writes.map((w) => w.kind)).toEqual(["mark", "mark", "mark", "fold", "fold"]);
 });

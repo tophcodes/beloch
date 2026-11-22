@@ -5,4 +5,4 @@ mark (map --da onto --bc) as --m
 .t = free on --m from .s at 1/4
 fold (map --da onto --m)
 fold (map --bc onto --m)
---k = (perp --m through .t)
+mark (perp --m through .t) as --k

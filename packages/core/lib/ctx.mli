@@ -77,7 +77,6 @@ type crease_val =
           meetable by [*] (its chords live in [Fold_state.marks]), never
           subdividing the working arrangement. [int] is the mark's
           [mcrease_id]. *)
-  | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (** A named crease bundle (`--x = --l & .c | [--a --b]`); resolves
           lazily as its expression, so the name behaves exactly like
@@ -141,6 +140,18 @@ type ctx = {
   mutable sheet : Sheet.t;
       (** The sheet the program opened: its unfolded state and outline. *)
   mutable frames_rev : (Fold_state.t * Error.span option) list;
+  mutable graduated_rev :
+    (Fold_state.t * (Fold_state.mark list * Fold_state.mark list)) list;
+      (** Per frame, computed once when the frame is pushed: the marks that
+         graduate and cut a face, and the marks that stay records. Looked up
+         by the state's physical identity, so an entry stays correct after
+         the frame list is rewound. *)
+  absorbed : (int, Fold_state.mark list) Hashtbl.t;
+      (** Pieces of a mark, by crease id, that lay on a hinge and cut no
+         face when recorded. A hinge stays a hinge in every later state of
+         the sheet, so such a piece graduates without effect in every frame
+         after it and needs no test; [Sheet.trim] makes new pieces, which
+         are tested again. *)
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
   mutable references_rev : reference list;

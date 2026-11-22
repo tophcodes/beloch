@@ -153,10 +153,9 @@ mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
 flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 .m = free on --bd from .b at 1/4
---s = (perp --bd through .m)
-mark (--s) (on #[.a]) as --sm
-.e = --sm * --h
-.f = --sm * --v
+mark (perp --bd through .m) (on #[.a]) as --s
+.e = --s * --h
+.f = --s * --v
 :::
 
 A segment of positive length shared by the boundaries of two faces $A$ and
@@ -518,7 +517,7 @@ values; they are what bundles are made of.
 
 ::: {.figure #fig-segment caption="`--s` meets each of the two flaps in a segment, and the crease `--h` is a segment along the hinge where the flaps join." views="cp folded" highlight="--s --h"}
 paper square
---s = (map .a onto .b)
+mark (map .a onto .b) as --s
 fold (map .a onto .d) as --h
 :::
 
@@ -556,12 +555,13 @@ is the union of all segments whose table image lies on $\ell$: the paper
 that $f$ sends onto $\ell$, isolated points aside. It is a bundle with one
 piece per flap that $\ell$ crosses, because $f$ is an isometry on each flap
 and the flaps are finitely many. A table line is what a construction
-computes; the value a program holds is its material.
+computes; a write scores its material, and the crease it scores is what
+a program names.
 :::
 
-::: {.figure #fig-line caption="The material of the table line `--l` is one piece per flap it crosses: on the paper the two lie on either side of the crease, on the table they land on the same stretch of `--l`." views="cp folded" highlight="--l"}
+::: {.figure #fig-line caption="The crease `--l` is one piece per flap it crosses: on the paper the two lie on either side of the crease, on the table they land on the same stretch of `--l`." views="cp folded" highlight="--l"}
 paper square
---l = (through .a .c)
+mark (through .a .c) as --l
 fold (map .a onto .c)
 :::
 
@@ -582,8 +582,8 @@ A line is needed at two places only: as the axis of a write (§5), and as an
 argument of an alignment ([#def-alignment]). Both take a bundle and use its
 line, so a line off the paper never arises, and a bundle that is not
 straight cannot serve. Nothing in the language holds a table line across
-states: `--l = (map .a onto .b)`, then a fold, then `mark (--l)` scores the
-pieces of `--l` where they lie after the fold, bent or not.
+states: a name with `--` holds a crease ([#def-crease]) or a paper edge,
+and a fold across a crease bends it.
 :::
 
 ::: {.term #term-line name="line"}
@@ -1451,7 +1451,7 @@ fold (map --d onto --da) as --e
 .q = free on --cd from .c at 1/4
 reverse (map .a onto .d) (--e & .q valley) as --r
 .p = free on --cd from .d at 1/4
---top = (through .d .p)
+mark (through .d .p) as --top
 :::
 
 ::: {.figure #fig-reverse-open-outer caption="The same square with a mountain on the inner hinge: the tip opens below its outermost layer. Only the outer hinge 5|6 turns, the inner one, 7|8, keeps its letter, and the three inner layers of the lower half go in as one block, 8, 7, 6 between 2 and 5." views="side" along="--top"}
@@ -1461,7 +1461,7 @@ fold (map --d onto --da) as --e
 .q = free on --cd from .c at 1/4
 reverse (map .a onto .d) (--e & .q mountain) as --r
 .p = free on --cd from .d at 1/4
---top = (through .d .p)
+mark (through .d .p) as --top
 :::
 
 ::: {.corollary #cor-reverse-letters name="letters of a reverse fold" uses="def-reverse def-letter cor-fold-letters def-reflection"}

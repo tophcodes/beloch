@@ -35,17 +35,6 @@ and fstr (fa : Ast.flap_arg) : string =
   | Ast.FlapSpec (Ast.FByPoints (pts, _)) ->
       Printf.sprintf "#[%s]" (String.concat " " (List.map pstr pts))
 
-(* The sort check (docs/reference/BELOCH.md, Parameter types): a slot that wants a
-   crease reads the binding's constructor and nothing else. A [Frozen] name
-   is a line, and a line has no material until a `mark` scores it. *)
-let crease_of (ctx : Ctx.ctx) (cr : Ast.crease_ref) ~(slot : string)
-    (span : Error.span) : crease_val =
-  match lookup_crease ctx cr with
-  | Frozen _ ->
-      Error.fail span
-        (Printf.sprintf "--%s is a line; %s needs a crease" cr.Ast.cname slot)
-  | cv -> cv
-
 (* the table line of a crease or paper edge whose pieces [crease_axis] or
    [edge_axis] classified; [bent_hint] names the narrowing the caller's
    operand accepts *)
@@ -79,7 +68,6 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
            ~bent_hint:
              (Printf.sprintf "narrow it to one piece with &, e.g. --%s & .p"
                 name)
-  | Frozen l -> l
   | Mark (cid, line) -> (
       match Fold_state.mark_axis_current !(ctx.state) cid with
       | `Line l -> l
@@ -113,9 +101,6 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
   | Bundle _ ->
       Error.fail ~hint:"restrict it to one segment with & or \\" span
         (Printf.sprintf "--%s is a bundle" name)
-  | Frozen _ ->
-      Error.fail span
-        (Printf.sprintf "--%s is a line; the meet needs a crease" name)
   | Mark (cid, line) ->
       (* meet is a paper-space construction; a mark is always straight in the
          material frame (folding only bends it in table space), so use its
@@ -327,10 +312,6 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
   | Bundle _ ->
       Error.fail ~hint:"restrict it with & or \\" cr.Ast.cspan
         (Printf.sprintf "--%s is a bundle, not a single crease" cr.Ast.cname)
-  | Frozen _ ->
-      Error.fail cr.Ast.cspan
-        (Printf.sprintf "--%s is a line; the filter needs a crease"
-           cr.Ast.cname)
   | Edge _ ->
       Error.fail cr.Ast.cspan
         (Printf.sprintf "--%s is a paper edge, not a crease with segments"
@@ -521,10 +502,6 @@ and meet_pieces (ctx : Ctx.ctx) (lo : Ast.line_operand) : meet_piece list =
   | Ast.LNamed cr -> (
       match lookup_crease ctx cr with
       | Bundle expr -> meet_pieces ctx expr
-      | Frozen _ ->
-          Error.fail cr.Ast.cspan
-            (Printf.sprintf "--%s is a line; the meet needs a crease"
-               cr.Ast.cname)
       | Edge (_, line) -> [ Whole line ]
       | Mark (cid, _) ->
           List.map
@@ -627,7 +604,7 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
       let candidates =
         match lo with
         | Ast.LNamed cr ->
-            ignore (crease_of ctx cr ~slot:"a flap operand" cr.Ast.cspan);
+            ignore (lookup_crease ctx cr);
             let cid = material_cid ctx cr in
             Fold_state.crease_segments !(ctx.state) cid
             |> List.concat_map (fun (s : Fold_state.crease_segment) ->
@@ -773,7 +750,7 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
   | Ast.FlapLine lo -> (
       match lo with
       | Ast.LNamed cr ->
-          ignore (crease_of ctx cr ~slot:"a flap operand" cr.Ast.cspan);
+          ignore (lookup_crease ctx cr);
           let cid = material_cid ctx cr in
           let st = !(ctx.state) in
           Fold_state.TargetHinged
@@ -866,15 +843,13 @@ let crease_carries (ctx : Ctx.ctx) (cv : crease_val) (axis : Geom.line) : bool =
       | `Line l -> Geom.same_line axis l
       | `Empty -> Geom.same_line axis line
       | `Bent | `Collapsed -> false)
-  | Frozen _ | Bundle _ | Edge _ -> false
+  | Bundle _ | Edge _ -> false
 
 let into_crease (ctx : Ctx.ctx) (n : string) (sp : Error.span) :
     int * (Geom.line -> unit) =
   let cv =
     match Ctx.find_crease_by_name ctx n with
     | Some ((Material _ | Mark _) as cv) -> cv
-    | Some (Frozen _) ->
-        Error.fail sp (Printf.sprintf "into needs a crease; --%s is a line" n)
     | Some (Bundle _) ->
         Error.fail sp
           (Printf.sprintf

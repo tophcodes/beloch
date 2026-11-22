@@ -26,7 +26,7 @@ squash (--ac & --bc onto --bd) as --s2
 flip
 
 .o = --ac * --bd                        ; the paper center
---mid = (through .c .o)                 ; center line of the base
+mark (through .c .o) as --mid           ; center line of the base
 
 .sr = --ab * --s1                       ; the four side corners
 .sl = --da * --s1

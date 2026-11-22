@@ -32,7 +32,7 @@ flatten (--ac & .a mountain) (--ac & .c) (--fg & .f valley) (--fg & .g) (--hi & 
 
 ; the petal folds: each fan folds the side corner onto the center line,
 ; and binds Fisher's point where the kite crease meets the midline
---mid = (through .e .b)
+mark (through .e .b) as --mid
 flatten (fan (--fg & .f) (map .f onto --mid through .b valley) as .j)
         (fan (--hi & .h) (map .h onto --mid through .b valley) as .k)
         (staying .e) as --pf                     ; F6, F7, F11, F16-F18

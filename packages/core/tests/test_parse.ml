@@ -131,9 +131,6 @@ let mvstr (d : Ast.mv_constraint) : string =
 (* every part of a statement a permutation test compares, spans dropped *)
 let stmt_shape (s : Ast.stmt) : string =
   match s with
-  | Ast.BindLine (n, c, sd, _) ->
-      Printf.sprintf "bind --%s = (%s)%s" n (cstr c)
-        (sidestr sd.Ast.s_toward sd.Ast.s_moving)
   | Ast.BindBundle (n, l, _) -> Printf.sprintf "bundle --%s = %s" n (lstr l)
   | Ast.Mark (out, m, ext, dir, layer, sd, _) ->
       Printf.sprintf "mark %s %s extent=%s intent=%s on=%s%s" (outstr out)
@@ -224,8 +221,7 @@ let construction1 (src : string) : Ast.construction =
   match parse1 src with
   | Ast.Mark (_, Ast.MConstruction c, _, _, _, _, _)
   | Ast.Fold (_, Ast.MConstruction c, _, _)
-  | Ast.Reverse (_, Ast.MConstruction c, _, _)
-  | Ast.BindLine (_, c, _, _) ->
+  | Ast.Reverse (_, Ast.MConstruction c, _, _) ->
       c
   | _ -> Alcotest.fail ("expected a construction in: " ^ src)
 
@@ -245,14 +241,14 @@ let test_parse_named_and_anon () =
   let prog =
     parse_stmts ~filename:"t.bel"
       "paper square\n\
-       --d1 = (through .a .c)\n\
+       mark (through .a .c) as --d1\n\
        mark (map .b onto .d)\n\
        .center = --d1 * --d2\n"
   in
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-   Ast.BindLine ("d1", _, _, _);
+   Ast.Mark (Ast.Named ("d1", false, _), Ast.MConstruction _, Ast.Full, Ast.Valley, None, _, _);
    Ast.Mark (Ast.Anonymous, Ast.MConstruction _, Ast.Full, Ast.Valley, None, _, _);
    Ast.Point ("center", Ast.PsExpr (Ast.PSelect _), _);
   ] ->
@@ -340,7 +336,7 @@ let test_parse_flip () =
 
 let test_parse_eq_binding () =
   let prog =
-    parse_stmts ~filename:"t.bel" "paper square\n--d1 = (through .a .c)\n"
+    parse_stmts ~filename:"t.bel" "paper square\nmark (through .a .c) as --d1\n"
   in
   Alcotest.(check int) "one statement" 1 (List.length prog)
 
@@ -348,16 +344,16 @@ let test_parse_shorthand_rhs () =
   let prog =
     parse_stmts ~filename:"t.bel"
       "paper square\n\
-       --d = (through .a .c)\n\
+       mark (through .a .c) as --d\n\
        .m = --d * --ab\n\
-       --e = (through .a .c)\n"
+       mark (through .a .c) as --e\n"
   in
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-      Ast.BindLine ("d", _, _, _);
+      Ast.Mark (Ast.Named ("d", false, _), _, _, _, _, _, _);
       Ast.Point ("m", Ast.PsExpr (Ast.PSelect _), _);
-      Ast.BindLine ("e", _, _, _);
+      Ast.Mark (Ast.Named ("e", false, _), _, _, _, _, _, _);
     ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape"
@@ -386,7 +382,7 @@ let test_parse_def () =
 let test_parse_def_zero_params () =
   match
     parse_stmts ~filename:"t.bel"
-      "paper square\ndef thirds() {\n  --pq = (through .x .y)\n}\n"
+      "paper square\ndef thirds() {\n  mark (through .x .y) as --pq\n}\n"
   with
   | [ Ast.Def ("thirds", [], [ _ ], _) ] -> ()
   | _ -> Alcotest.fail "expected zero-param Def"
@@ -454,8 +450,8 @@ let test_parse_meet_stmt () =
   let prog =
     parse_stmts ~filename:"t.bel"
       "paper square\n\
-       --d1 = (through .a .b)\n\
-       --d2 = (through .c .d)\n\
+       mark (through .a .b) as --d1\n\
+       mark (through .c .d) as --d2\n\
        .o = --d1 * --d2\n"
   in
   match List.rev prog with
@@ -475,9 +471,9 @@ let test_parse_meet_inline () =
 let spec_corpus =
   [
     ( "01_eq_binding",
-      "paper square\n--rs = (through .rs1 .rs2)\n.s   = --rs * --cd\n" );
+      "paper square\nmark (through .rs1 .rs2) as --rs\n.s   = --rs * --cd\n" );
     ( "02_shorthand_rhs",
-      "paper square\n.s  = --rs * --cd\n--e = (through .p1 .p2)\n" );
+      "paper square\n.s  = --rs * --cd\nmark (through .p1 .p2) as --e\n" );
     ( "03_def_petal",
       "paper square\ndef petal(.p .q --base) {\n\
       \  fold (map .p onto .q) (moving .p)\n\
@@ -491,25 +487,25 @@ let spec_corpus =
        export { .tip as .p1tip --pq as --p1pq } $p1\n\
        export { .tip as .p2tip --pq as --p2pq } $p2\n\
        fold (map .p1tip onto .p2tip)\n\
-       --d = (through .p1tip .p2tip)\n\
+       mark (through .p1tip .p2tip) as --d\n\
        .x  = --p1pq * --p2pq\n" );
     ( "06_export",
       "paper square\nexport { .tip --pq } $t\n\
        export { .tip as .left_tip } $t\nexport { .s! } $t\nexport $t\n" );
     ( "07_panels",
       "paper square\n._mb = --vm * --ab\n\
-       --pq = (through ._pq1 ._pq2)\n\
+       mark (through ._pq1 ._pq2) as --pq\n\
        fold (map .c onto --ab and .s onto --pq)\n" );
     ( "08_cube_root",
-      "paper square\n\n--vm = (map .a onto .b)\n\n\
+      "paper square\n\nmark (map .a onto .b) as --vm\n\n\
        ._mb  = --vm * --ab\n._mt  = --vm * --cd\n\
-       --ac = (through .a .c)\n--db = (through .d .b)\n\
-       --d_mb = (through .d ._mb)\n--a_mt = (through .a ._mt)\n\
-       --c_mb = (through .c ._mb)\n--b_mt = (through .b ._mt)\n\
+       mark (through .a .c) as --ac\nmark (through .d .b) as --db\n\
+       mark (through .d ._mb) as --d_mb\nmark (through .a ._mt) as --a_mt\n\
+       mark (through .c ._mb) as --c_mb\nmark (through .b ._mt) as --b_mt\n\
        ._pq1 = --d_mb * --ac\n\
-       ._pq2 = --a_mt * --db\n--pq  = (through ._pq1 ._pq2)\n\
+       ._pq2 = --a_mt * --db\nmark (through ._pq1 ._pq2) as --pq\n\
        ._rs1 = --c_mb * --db\n\
-       ._rs2 = --b_mt * --ac\n--rs  = (through ._rs1 ._rs2)\n\
+       ._rs2 = --b_mt * --ac\nmark (through ._rs1 ._rs2) as --rs\n\
        .s    = --rs * --cd\n\n\
        fold (map .c onto --ab and .s onto --pq)\n" );
     ( "09_petal_full",
@@ -524,7 +520,7 @@ let spec_corpus =
     ( "10_zero_params",
       "paper square\ndef thirds() {\n\
       \  ._mb = --vm * --ab\n\
-      \  --pq = (through ._mb .x)\n\
+      \  mark (through ._mb .x) as --pq\n\
        }\n$t = apply thirds()\nexport $t\n" );
   ]
 
@@ -549,7 +545,7 @@ let reference_writes =
     "flatten (--ea) (--ec) (--eb) (emergent beside .a) as --ear";
     "flatten (--ba \\ .a) (--bc \\ .c) as --r";
     "flip";
-    "--l = (map --a onto --b) (toward .p)";
+    "mark (map --a onto --b) (toward .p) as --l";
     "--x = --ea & .a";
     "fold (align (.a onto .c)) (moving .a)";
     "fold (align (through .m) (through .n)) (moving .b) (under .p)";
@@ -633,7 +629,7 @@ let test_parse_no_union () =
 let test_parse_bind_bundle () =
   let prog =
     parse_stmts ~filename:"t.bel"
-      "paper square\n--l = (through .a .b)\n--seg = --l & .c\n"
+      "paper square\nmark (through .a .b) as --l\n--seg = --l & .c\n"
   in
   match List.rev prog with
   | Ast.BindBundle ("seg", Ast.LFilter (Ast.LNamed _, Ast.Keep _, _), _) :: _ ->
@@ -660,7 +656,7 @@ let test_parse_line_select () =
 let test_parse_point_select () =
   let prog =
     parse_stmts ~filename:"t.bel"
-      "paper square\n--x = (through .a .b)\n--y = (through .c .d)\n.o = .[--x --y]\n"
+      "paper square\nmark (through .a .b) as --x\nmark (through .c .d) as --y\n.o = .[--x --y]\n"
   in
   match List.rev prog with
   | Ast.Point ("o", Ast.PsExpr (Ast.PSelect ([ Ast.LNamed _; Ast.LNamed _ ], _)), _)
@@ -685,8 +681,8 @@ let test_parse_filter_binds_before_meet () =
   let prog =
     parse_stmts ~filename:"t.bel"
       "paper square\n\
-       --l = (through .a .c)\n\
-       --s = (through .b .d)\n\
+       mark (through .a .c) as --l\n\
+       mark (through .b .d) as --s\n\
        .o = --l & .a * --s\n"
   in
   match List.rev prog with
@@ -981,16 +977,11 @@ let test_align_named_fold_lines_kept () =
     [ "--a .p onto --l"; "--b .q onto --m"; "--a .r onto --b .s" ]
     (alignments c)
 
-let test_bind_line_takes_a_construction () =
-  Alcotest.(check string)
-    "a line binding is a construction in parentheses"
-    "bind --l = (.a onto .c)"
-    (shape1 "--l = (map .a onto .c)")
-
-let test_bind_line_align () =
-  Alcotest.(check string)
-    "a line binding in canonical form" "bind --l = (--a onto --b) toward=.p"
-    (shape1 "--l = (align (--a onto --b)) (toward .p)")
+(* BEP-0083: a name with -- holds a crease, so [=] binds no construction *)
+let test_bind_line_refused () =
+  expect_error_hint "--l = (…) binds no crease"
+    "score it with mark (…) as --l" (fun () ->
+      parse1 "--l = (map .a onto .c)")
 
 (* ---- The output clause ---- *)
 
@@ -1296,10 +1287,8 @@ let () =
             test_toward_inside_refused;
           Alcotest.test_case "named fold lines are kept" `Quick
             test_align_named_fold_lines_kept;
-          Alcotest.test_case "a line binding takes a construction" `Quick
-            test_bind_line_takes_a_construction;
-          Alcotest.test_case "a line binding in canonical form" `Quick
-            test_bind_line_align;
+          Alcotest.test_case "= binds no construction" `Quick
+            test_bind_line_refused;
         ] );
       ( "item_errors",
         [

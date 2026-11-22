@@ -119,14 +119,14 @@ let sides_of toward moving : sides =
 
 (* ---- the six verbs, and the binding of a construction ---- *)
 
-let bind (name : string) (c : construction) (items : raw_item list)
+(* BEP-0083: a name with -- holds a crease, so [--l = (…)] scores nothing
+   and binds nothing. *)
+let bind (name : string) (_ : construction) (_ : raw_item list)
     (span : Error.span) : stmt =
-  let verb = "a binding" in
-  let toward = ref None and moving = ref None in
-  List.iter
-    (fun it -> if not (side_item verb ~toward ~moving it) then refuse verb it)
-    items;
-  BindLine (name, c, sides_of toward moving, span)
+  Error.fail
+    ~hint:(Printf.sprintf "score it with mark (…) as --%s" name)
+    span
+    (Printf.sprintf "--%s = (…) binds no crease" name)
 
 let mark (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "mark" in

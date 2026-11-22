@@ -22,7 +22,7 @@ fold (map .a onto .b)                       ; left half over, raw edges at the r
 fold (through .p .q) (moving .h)            ; left half of the stack over again
 fold (through .r .s) (moving .b) (up to .b) (under .u) as --t
 
---cut = (perp --t through .e)
+mark (perp --t through .e) as --cut
 
 ; assert steps = 3
 ; assert faces = 6

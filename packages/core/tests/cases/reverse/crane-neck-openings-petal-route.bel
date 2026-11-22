@@ -16,7 +16,7 @@ reverse (map .b onto .c) as --h         ; preliminary base
 reverse (map .d onto .c) as --v
 
 .o = --h * --v                          ; the paper center
---mid = (through .c .o)                 ; center line of the base
+mark (through .c .o) as --mid           ; center line of the base
 
 .sr = --ab * --h                        ; the four side corners
 .sl = --da * --v

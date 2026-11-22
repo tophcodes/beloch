@@ -42,8 +42,7 @@ mark (map .a onto .b) as --m
 ```
 
 - An operand is a crease, or a paper edge such as `--ab`, which counts
-  as its side of the sheet. A line bound by `=` has no material and is no
-  operand of a meet (`` --l is a line; the meet needs a crease ``).
+  as its side of the sheet.
 - The common point lies on the material of every operand, endpoints
   included. Two creases whose lines cross beyond their material have no
   common point.
@@ -72,9 +71,9 @@ one meant ([[reference/beloch-errors#the-meet]]).
 
 ## Lines
 
-A line operand is a name, a join, a construction or a filter. A name
-bound by `=` is a line, a name bound by `as` is a crease, and a crease
-stands where a line is wanted as long as its pieces lie on one table line
+A line operand is a name, a join, a construction or a filter. A name holds
+a crease or a paper edge, and a crease stands where a line is wanted as
+long as its pieces lie on one table line
 ([[reference/beloch#parameter-types]]).
 
 The *join* `--[.p .q …]`, and `.p * .q` for two points, is the one
