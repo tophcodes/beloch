@@ -1,5 +1,6 @@
 // Whole-bundle crease highlight: a `--var`
-// named line is ONE crease_id whose segments are the bundle (BEP-0014) —
+// named line is ONE crease_id whose segments are the bundle (spec operands,
+// "A crease is a bundle of pieces") —
 // hovering any one segment must highlight every segment sharing that id,
 // across flaps/layers, not just the one under the cursor.
 //

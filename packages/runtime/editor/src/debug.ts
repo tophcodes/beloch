@@ -3,8 +3,9 @@
 // A reader debugging a program points at the line that binds `--mid` and wants
 // `--mid` in the drawing. That needs the map from statements to the values they
 // bind, which the document carries: every statement is logged with its span
-// (BEP-0026), and a named point, a named line and a crease each record the
-// statement that binds them.
+// (spec output, "The FOLD logs every executed statement in one flat list"),
+// and a named point, a named line and a crease each record the statement that
+// binds them.
 //
 // Free of the editor it serves, like the rest of this package: a target is a
 // span and the entity it names, and the host turns that into whatever it draws

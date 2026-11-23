@@ -5,11 +5,13 @@
 
 ; The traditional crane, flat. The preliminary base is folded as Randlett
 ; folds it, by two squash folds [randlett1961art, p. 69]; the first is held
-; by the layers its flap is hinged to (BEP-0057). The bird base is folded
-; by two petal folds, each one flatten of two fans (BEP-0055); it is the
-; state Ida's steps 2-10 reach by reverse folds [ida2020, Fig. 7.19]. Her
-; steps 11-17 follow. Her
-; steps 18 and 19 open the wings, which is 3D and out of scope (BEP-0015).
+; by the layers its flap is hinged to (spec squash, "The layers a flap is
+; hinged to hold its squash"). The bird base is folded by two petal folds,
+; each one flatten of two fans (spec multifold, "flatten folds several fans
+; in one motion"); it is the state Ida's steps 2-10 reach by reverse folds
+; [ida2020, Fig. 7.19]. Her steps 11-17 follow. Her steps 18 and 19 open
+; the wings, which is 3D and out of scope (spec folded-state, "Every folded
+; state is flat").
 ; Checked against her figures in records/notes/2026-09-25-crane-oracle.md.
 
 paper square

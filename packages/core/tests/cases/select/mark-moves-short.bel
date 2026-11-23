@@ -1,9 +1,10 @@
 @author "Claude (Anthropic)"
 
 ; A mark that moves carries out an alignment only with marked paper
-; (BEP-0033). The pinch runs from the middle of the bottom edge to the
-; center. The fold that moving --pinch keeps would land the point of the
-; pinch's line at height sqrt(3)/2 on .d, and the pinch does not reach it.
+; (spec operands, "A moved mark aligns only with marked paper"). The pinch
+; runs from the middle of the bottom edge to the center. The fold that moving
+; --pinch keeps would land the point of the pinch's line at height sqrt(3)/2
+; on .d, and the pinch does not reach it.
 
 paper square
 mark (through .a .c) as --ac

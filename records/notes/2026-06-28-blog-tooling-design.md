@@ -26,7 +26,7 @@ renderer (`beloch render` is a stub).
 
 ## Architecture
 
-A small TypeScript edge tool (per [[ADR-0001]]),
+A small TypeScript edge tool (per ADR-0001),
 living at `tools/blog/`. One user-facing command, `build`, plus an internal
 `fold2svg` module.
 

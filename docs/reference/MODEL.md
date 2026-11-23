@@ -891,7 +891,8 @@ of its own.
 [#def-construction] puts its alignments on one sought line, which is where
 the seven Huzita-Justin axioms live. The same alignments distributed over two
 lines sought at once give the 489 two-fold axioms [@alperin2006, §3, §4],
-which `packages/multifold` ([[ADR-0020]]) enumerates. A candidate is then a pair
+which `packages/multifold` (spec `architecture`, "The core never depends on
+the research package") enumerates. A candidate is then a pair
 of lines, a selection keeps one pair, and a write takes two axes and moves
 them together, so the definitions of candidate, selection and write all widen
 by the same step. Which of them the language will carry, and whether a
@@ -1488,7 +1489,8 @@ mountains. For a face-down $A'$ exchange the letters. $\square$
 
 ::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection def-bundle" defines="term-fan term-sector term-stayer term-emergent"}
 The write `flatten` takes a *vertex* $v$, a paper point, and folds at its
-table position $O = f(v)$ ([[BEP-0079]]). It takes a finite set of *rays*
+table position $O = f(v)$ (spec `multifold`, "A fan folds at a point of the
+paper"). It takes a finite set of *rays*
 and a set of constraints. A ray is a bundle
 ([#def-bundle]): the fan uses the pieces of the bundle that pass through
 $v$, each from $v$ to its other end, and a ray none of whose pieces passes
@@ -1507,7 +1509,8 @@ of the rays' directions, in the order in which the rays leave $v$ on the
 paper, counter-clockwise. The closure condition below applies only where
 $v$ lies inside the sheet. A vertex on the edge of the sheet has no
 condition at its vertex and no emergent ray; only the closure of its paper
-paths below applies ([[BEP-0044]]).
+paths below applies (spec `multifold`, "The closure condition at the vertex
+applies inside the sheet").
 
 - If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
   the identity; this is Kawasaki's condition that the alternating sum of the
@@ -1553,7 +1556,8 @@ and the constraints:
   not open, the one whose face on the clockwise side lies lowest has that
   letter;
 - one point over another: the face that holds the first lies above the
-  face that holds the second, and the two overlap ([[BEP-0082]]);
+  face that holds the second, and the two overlap (spec `multifold`, "An over
+  item orders the faces of its two points");
 - the stayer, which only fixes where the result lies on the table.
 
 A ray may run along hinges of $T$ that are already folded, as the spine of
@@ -1564,10 +1568,13 @@ other letter, and *opens* when it changes, as the spine of a squash does.
 Of all candidate states of all candidate fans, those whose faces lie on
 the table inside the convex hull of the state before the write are kept
 where there are any, and all of them where there are none
-([[BEP-0058]]). The constraints are conditions on that set: the letters,
+(spec `multifold`, "The outline ranks the states of every fan"). The constraints
+are conditions on that set: the letters,
 the `over` pairs, and for an odd $k$ a point $p$: the wedge of the table
 between two consecutive given rays that holds $f(p)$, edges included, holds
-the emergent ray ([[BEP-0061]], [[BEP-0078]]). The value
+the emergent ray (spec `multifold`, "Every item of a flatten is a condition on
+its states" and "emergent beside names the wedge of the emergent ray"). The
+value
 of the write is the one candidate state the constraints leave; it is
 undefined when none is left, when the states left differ in their stayer,
 or when more than one is left. The crease the write
@@ -1586,7 +1593,8 @@ that hold the faces of the other layers in the same sector stay with it.
 
 `flatten` also takes a finite set of vertices $v_1, \ldots, v_m$,
 $m \ge 2$, each with its rays, and folds them in one motion
-([[BEP-0055]]). A ray of $v_i$ runs from $v_i$ to the edge of the paper, or
+(spec `multifold`, "flatten folds several fans in one motion"). A ray of $v_i$
+runs from $v_i$ to the edge of the paper, or
 to another vertex $v_j$; the paper segment $v_i v_j$ is then a ray of both.
 For $m = 2$, when neither vertex has a ray on that segment, it is added to
 both, and the write scores it; for $m \ge 3$ no segment is added. Parts,
@@ -1598,8 +1606,9 @@ the write is undefined when more than one is left.
 
 `reverse` and `squash` hand the fan a point $O$ of the projective table in
 place of a vertex: a table point, or a point at infinity, one for each
-direction ([[BEP-0041]]); and an *anchor*, a flap $\Phi$ whose image meets
-the rays ([[BEP-0040]]). Their rays are segments of creases on lines
+direction; and an *anchor*, a flap $\Phi$ whose image meets
+the rays (spec `multifold`, "A reverse or squash fan sits at a point of the
+projective table"). Their rays are segments of creases on lines
 through $O$, from $O$ where $O$ lies on the image of $\Phi$ and from the
 edge of that image where it does not, to the other edge, no two of one
 crease in one direction. At a point at infinity the lines of the rays are
@@ -1614,7 +1623,8 @@ $\Phi$ in positive area. Score every face of $C$ along the rays' half-lines
 from $O$, and call the pieces outside $W_0$ the *candidates*. The tip $T$
 is the least set of candidates that contains the candidates of $\Phi$ and
 is closed under hinges of any angle between candidates
-([[BEP-0037]]). Motions and candidate states are as above, with the paths
+(spec `multifold`, "A fan with an anchor moves the tip of its anchor"). Motions
+and candidate states are as above, with the paths
 starting from a piece outside $T$.
 :::
 
@@ -1625,7 +1635,8 @@ is a bundle, and the fan uses its pieces through the vertex.
 
 ::: {.term #term-sector name="sector"}
 A piece of the tip between the hinges on the rays of a fan. It moves by the
-creases on its paper path from the stayer ([[BEP-0044]]).
+creases on its paper path from the stayer (spec `multifold`, "A fan moves each
+piece by the changing hinges on its paper path").
 :::
 
 ::: {.term #term-stayer name="stayer"}
@@ -1712,11 +1723,12 @@ stayer the wedge of $\Phi$ beyond the target's line away from $s$, and no
 letter: $s$ opens, each layer of the tip folds along its piece of the
 axis, and the hinge of $\Phi$ on the target's line folds. It is undefined
 when $\Phi$ has no hinge on the target's line, and when both ends of $s$
-lie inside the sheet ([[BEP-0038]]).
+lie inside the sheet (spec `squash`, "A spine with two inner ends is refused").
 
 Where no part of $\Phi$ lies beyond the target's line, $\Phi$ ends at
 hinges on that line, and the faces those hinges join to $\Phi$ and to the
-flap $\Phi'$ of the lower face at $s$ are the stayer ([[BEP-0057]]). The
+flap $\Phi'$ of the lower face at $s$ are the stayer (spec `squash`, "The
+layers a flap is hinged to hold its squash"). The
 tip is every piece of $\Phi$ and of $\Phi'$. $s$ opens, each of the two
 flaps folds along its piece of the axis, and each hinge on the target's
 line between the tip and the stayer changes or keeps; each choice is a

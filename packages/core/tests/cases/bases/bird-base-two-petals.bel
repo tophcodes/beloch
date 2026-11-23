@@ -1,12 +1,12 @@
 @author "Claude (Anthropic)"
 
 ; The bird base by two petal folds, each one flatten of two fans
-; (BEP-0055): the front flap of the preliminary base, then the back flap.
-; Each fan opens the half of a folded side edge toward its side corner and
-; folds the kite crease that brings the corner onto the center line; the
-; crease between the two vertices of each statement is derived. The state
-; is the one bird-base-petal.bel reaches by four reverse folds and two
-; valley folds.
+; (spec multifold, "flatten folds several fans in one motion"): the front flap
+; of the preliminary base, then the back flap. Each fan opens the half of a
+; folded side edge toward its side corner and folds the kite crease that
+; brings the corner onto the center line; the crease between the two vertices
+; of each statement is derived. The state is the one bird-base-petal.bel
+; reaches by four reverse folds and two valley folds.
 
 paper square
 

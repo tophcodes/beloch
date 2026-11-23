@@ -2,9 +2,10 @@
 
 ; A four-ray vertex near the corner of a book fold, scored on the upper layer
 ; alone. The rays end on the raw edges and none reaches the spine, so the
-; tip of the upper corner is that corner alone (BEP-0037): it folds onto
-; the top of the stack, and the lower corner stays flat at the bottom of
-; the stack, where it needs no rays.
+; tip of the upper corner is that corner alone (spec multifold, "A fan moves
+; every part the stayer does not hold"): it folds onto the top of the stack,
+; and the lower corner stays flat at the bottom of the stack, where it needs
+; no rays.
 
 paper square
 fold (map --ab onto --cd) (moving .a) as --m

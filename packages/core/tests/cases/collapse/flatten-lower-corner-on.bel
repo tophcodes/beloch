@@ -2,8 +2,9 @@
 
 ; The vertex of flatten-through-two-layers.bel, scored on the lower layer of
 ; the book alone. The rays meet at a point of the lower layer, so the fan
-; folds the lower corner alone (BEP-0079), and the upper corner stays in
-; place on top of the stack, where it needs no rays.
+; folds the lower corner alone (spec multifold, "A fan folds at a point of the
+; paper"), and the upper corner stays in place on top of the stack, where it
+; needs no rays.
 
 paper square
 fold (map --ab onto --cd) (moving .a) as --m

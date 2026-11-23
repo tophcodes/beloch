@@ -2,7 +2,8 @@
 
 ; An alignment is an incidence, so (--cd onto .a) is (.a onto --cd). With
 ; no side item the side of the first object folds over: here the edge --cd,
-; which lands on .a (BEP-0031).
+; which lands on .a (spec selection, "A write without side items folds the
+; side that carries out the construction").
 
 paper square
 fold (align (--cd onto .a) (perp --da))

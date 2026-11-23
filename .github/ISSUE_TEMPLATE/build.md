@@ -4,8 +4,8 @@ about: Work an agent can start without further input
 labels: kind:build
 ---
 
-<!-- Where this comes from: the issues and the record it follows, a branch it builds on. "No record" if none applies. -->
-Follow-up to #n and ADR-NNNN or BEP-NNNN.
+<!-- Where this comes from: the issues and the requirement or OpenSpec change it follows, a branch it builds on. "No requirement" if none applies. -->
+Follow-up to #n and `openspec/specs/<capability>/spec.md`, "Requirement: <name>".
 
 <!-- The problem, in prose: what a program or a reader runs into today. A short program and the output or error it gives, where one shows it. -->
 

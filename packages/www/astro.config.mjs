@@ -93,8 +93,10 @@ export default defineConfig({
 		'/tutorials/layers/': '/kernel/',
 	},
 	markdown: {
-		// remark-id-links turns `[[ADR-0032]]` and the other id links of ADR
-		// 0054 into links before any other plugin reads the text.
+		// remark-id-links turns the id links between documents,
+		// `[[reference/model#def-sheet]]` and the like (spec architecture, "A
+		// link between documents names an id"), into links before any other
+		// plugin reads the text.
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
 		// remark-model-blocks turns the `::: {.definition #id …}` fenced divs of

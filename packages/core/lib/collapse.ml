@@ -3,8 +3,9 @@
     (rabbit ear [hull2020, Thm 8.5]). Skips the 3D intermediate entirely:
     checks the end state exists (Kawasaki and Maekawa where the anchor
     surrounds O, the closure of the paper paths everywhere), moves each face
-    by the creases on its paper path (BEP-0044), enumerates valid layer
-    orders. *)
+    by the creases on its paper path (spec multifold,
+    "A fan moves each piece by the changing hinges on its paper path"),
+    enumerates valid layer orders. *)
 
 type elem = { cid : int; ea : Geom.point; eb : Geom.point; valley : bool }
 
@@ -28,7 +29,8 @@ let e_staying_several = "the staying points lie in more than one sector"
 let e_staying_off_anchor = "the staying sector holds no material of the anchor"
 
 (* The end of the error of a fan whose moving part holds a layer under the
-   vertex that no hinge of the fan folds (BEP-0079); the message names the
+   vertex that no hinge of the fan folds (spec multifold,
+   "A fan moves every part the stayer does not hold"); the message names the
    layer before it. *)
 let e_unfolded_layer = "no ray of the fan folds it"
 
@@ -36,7 +38,9 @@ let is_layer_error (m : string) : bool =
   let n = String.length e_unfolded_layer and l = String.length m in
   l >= n && String.sub m (l - n) n = e_unfolded_layer
 
-(* the hint that goes with an error string above, where it has one (ADR-0028) *)
+(* the hint that goes with an error string above, where it has one
+   (spec diagnostics,
+   "A rejected program is reported as a span, a message and an optional hint") *)
 let hint_of (m : string) : string option =
   if m = e_count then Some "use `fold` for n = 2"
   else if m = e_stayer_collinear then Some "add (staying .p)"
@@ -49,8 +53,9 @@ let hint_of (m : string) : string option =
    east origin. [Arc (pa, pb)] = the far tips of the two leading elements'
    folded rays; the stayer region is the <π CCW arc between them. [Faces fs] =
    the pre-collapse face indices carrying the stayed material. [Points ps] =
-   the table images of the points of `staying` (BEP-0048): the stayer is the
-   one sector whose closed wedge holds all of them. *)
+   the table images of the points of `staying` (spec multifold,
+   "staying names the part that holds every point"): the stayer is the one
+   sector whose closed wedge holds all of them. *)
 type stayer =
   | Arc of Geom.point * Geom.point
   | Faces of int list
@@ -222,7 +227,8 @@ let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
    runs through it: a layer the fan crosses without its rays scored on it.
    A sector no wider than a half-turn is convex and holds the polygon iff it
    holds every vertex. A wider one, which a fan has when its rays all lie in
-   one half-plane (BEP-0044), holds it iff no vertex lies strictly inside the
+   one half-plane (spec multifold, "The closure condition at the vertex
+   applies inside the sheet"), holds it iff no vertex lies strictly inside the
    opposite cone. That test can miss an edge that crosses the cone between
    two vertices; the layers of the tip are scored along every ray, so only a
    stationary layer can have such an edge, and it only feeds the stacking of
@@ -334,7 +340,7 @@ let admissible_sectors ~(stayer : stayer) (o : Geom.point)
 
 (* the sectors a run of the pipeline takes as stayer: [admissible_sectors],
    held to exactly one sector carrying material of the anchor under [Points]
-   (BEP-0048) *)
+   (spec multifold, "staying names the part that holds every point") *)
 let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
     (rays : (Geom.point * 'a) array) (sec_orig : int array) (nf : int) :
     (int list, string) result =
@@ -353,7 +359,8 @@ let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
       | _, [] -> Error e_stayer_dead
       | _ -> Ok sectors)
 
-(* The faces of the anchor flap (BEP-0040). [Some polys]: the faces lying in
+(* The faces of the anchor flap (spec multifold, "A reverse or squash fan
+   sits at a point of the projective table"). [Some polys]: the faces lying in
    those paper polygons, the faces of the flap `on` names before the state was
    scored further. [None]: the flap of a face under the table point [o] that
    no other face under [o] lies above. *)
@@ -390,7 +397,8 @@ let anchor_faces (g : Fold_state.t) (o : Geom.point)
    under [o] lies inside the sheet and on no folded hinge. Only there do the
    rays close a loop on the paper around one point, and Kawasaki's and
    Maekawa's conditions at [o] apply; elsewhere [Fold_state.make] checks
-   that the paper paths close (BEP-0044). *)
+   that the paper paths close (spec multifold,
+   "The closure condition at the vertex applies inside the sheet"). *)
 let surrounded (g : Fold_state.t) (o : Geom.point) (anchor : bool array) :
     bool =
   let nf = Array.length anchor in
@@ -420,7 +428,8 @@ let surrounded (g : Fold_state.t) (o : Geom.point) (anchor : bool array) :
 (* The rays of the fan, one per direction from [o] in CCW order, each with
    the first element pointing that way. Elements of different creases that
    point the same way are one ray, their hinges lying in different layers
-   (BEP-0044); the same crease twice in one direction is a duplicate ray. *)
+   (spec multifold, "The fan tries each hinge no item fixes both ways"); the
+   same crease twice in one direction is a duplicate ray. *)
 let rays_of (o : Geom.point) (es : elem list) :
     ((Geom.point * elem) array, string) result =
   let sorted = sort_ccw o es in
@@ -489,10 +498,11 @@ type sector_geom = {
          before the fold; every layer order of the fan is searched on it *)
 }
 
-(* The tip of the fan (BEP-0037) on rays rotated so that sector 0 is the
-   stayer: the candidates are the faces outside the stayer's wedge, and the
-   tip is the least set of candidates that holds the anchor's candidates and
-   is closed under hinges of any angle between candidates. *)
+(* The tip of the fan (spec multifold,
+   "A fan with an anchor moves the tip of its anchor") on rays rotated so that
+   sector 0 is the stayer: the candidates are the faces outside the stayer's
+   wedge, and the tip is the least set of candidates that holds the anchor's
+   candidates and is closed under hinges of any angle between candidates. *)
 let tip_of (g : Fold_state.t) ~(sec : int array) ~(anchor : bool array) :
     bool array =
   let nf = Array.length sec in
@@ -517,10 +527,11 @@ let tip_of (g : Fold_state.t) ~(sec : int array) ~(anchor : bool array) :
   done;
   tip
 
-(* How a hinge takes part in the fan (BEP-0044). [Keep]: off the fan's rays
-   or away from the tip, it keeps its angle. [Fold]: a flat hinge an element
-   names folds. [Try]: a folded hinge an element names keeps or opens, and a
-   hinge on a ray that no element names keeps or changes; the write tries
+(* How a hinge takes part in the fan (spec multifold,
+   "The fan tries each hinge no item fixes both ways"). [Keep]: off the fan's
+   rays or away from the tip, it keeps its angle. [Fold]: a flat hinge an
+   element names folds. [Try]: a folded hinge an element names keeps or opens,
+   and a hinge on a ray that no element names keeps or changes; the write tries
    both. *)
 type role = Keep | Fold | Try
 
@@ -706,8 +717,10 @@ let mk_sector_geoms ?tip_rule (g : Fold_state.t) ~(o : Geom.point)
         sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
   in
   (* [tip_rule] gives the tip, the hinges of the fan, and the hinges that
-     pass through the vertex on the paper (BEP-0079), or the error of a fan
-     it cannot fold; without it the tip is the anchor's (BEP-0037) *)
+     pass through the vertex on the paper (spec multifold,
+     "A ray folds the pieces of its bundle that pass through the vertex"), or
+     the error of a fan it cannot fold; without it the tip is the anchor's
+     (spec multifold, "A fan with an anchor moves the tip of its anchor") *)
   match
     match tip_rule with
     | Some f -> f g sec
@@ -793,7 +806,8 @@ let mk_sector_geoms ?tip_rule (g : Fold_state.t) ~(o : Geom.point)
    the non-crossing conditions ([Fold_state.orders]) and puts the upper face
    of each pair of [over] above its lower face. The two faces must overlap:
    a pair that lies apart holds in no state. Only the named faces are
-   compared, so a flap can lie between two layers of one piece (BEP-0082). *)
+   compared, so a flap can lie between two layers of one piece (spec
+   multifold, "An over item orders the faces of its two points"). *)
 let pipeline_solve (sg : sector_geom) ~(valley : bool array)
     ~(over : (int * int) list) : (Fold_state.t list, string) result =
   let g = sg.sg_before in
@@ -828,8 +842,9 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
           | l -> Ok l))
 
 (* The convex hull of every table polygon of [g]: the outline that ranks the
-   states a fan folds [g] to (BEP-0058). The last hull is kept, since every
-   state of one fan is tested against the same [g]. *)
+   states a fan folds [g] to (spec multifold,
+   "The outline ranks the states of every fan"). The last hull is kept, since
+   every state of one fan is tested against the same [g]. *)
 let hull_cache : (Fold_state.t * Geom.point array) option ref = ref None
 
 let table_hull (g : Fold_state.t) : Geom.point array =
@@ -855,7 +870,8 @@ let in_bounds (hull : Geom.point array) (gg : Fold_state.t) : bool =
   !ok
 
 (* The outline ranks the states a fan folds [g] to and removes none
-   (BEP-0058): those whose faces lie inside the outline of [g] where there
+   (spec multifold, "The outline ranks the states of every fan"): those whose
+   faces lie inside the outline of [g] where there
    are any, else all of them. [state] reads the state out of an element. *)
 let rank_by_outline (g : Fold_state.t) ~(state : 'a -> Fold_state.t)
     (rs : 'a list) : 'a list =

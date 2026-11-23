@@ -1,5 +1,6 @@
 (** `flatten` over fan items: several vertices folded in one motion
-    (BEP-0055; docs/reference/KERNEL.md, Fans). *)
+    (spec multifold, "flatten folds several fans in one motion";
+    docs/reference/KERNEL.md, Fans). *)
 
 open Ctx
 
@@ -274,7 +275,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let item_verts = Array.mapi (fun j f -> vertex_of ctx f item_ops.(j)) items in
   (* A fan with `up to` stands for one fan per layer under its table vertex,
      from the topmost down to the layer of the flap it names, each at the
-     paper point of its layer and with the same rays (BEP-0079). A layer is
+     paper point of its layer and with the same rays (spec multifold,
+     "A fan with up to folds every layer down to a flap"). A layer is
      the faces under the vertex that hold one paper point there; it lies
      above another where one of its faces lies above one of the other's. *)
   let layers_down (f : Ast.fan) (v : Geom.point) (fa : Ast.flap_arg) =
@@ -359,7 +361,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Error.fail fans.(j).Ast.fan_span "no ray of the fan starts at its vertex")
     given;
   (* the crease between two vertices: a ray of both fans, derived when the
-     program names it in neither (BEP-0055) *)
+     program names it in neither (spec multifold,
+     "A crease between two vertices is a ray of both fans") *)
   let derived_cid =
     lazy (match into with Some (cid, _) -> cid | None -> Fold_state.fresh_crease_id ())
   in
@@ -810,7 +813,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       overs
   in
   (* every realization of every pattern; the outline of the state before
-     the flatten ranks them below (BEP-0058) *)
+     the flatten ranks them below (spec multifold,
+     "The outline ranks the states of every fan") *)
   let results =
     List.map
       (fun pat ->

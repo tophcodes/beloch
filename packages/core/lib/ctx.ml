@@ -21,14 +21,16 @@ type stmt_log_entry = {
          [Fold_state.mark_graduates] against the just-folded state. *)
   sl_parent : int option;
       (* the entry of the [apply] this statement runs under, [None] at the
-         top level (BEP-0030) *)
+         top level (spec output,
+         "The FOLD logs every executed statement in one flat list") *)
 }
 
 (* An annotation with its arguments read against the state the statement
-   after it starts from (BEP-0029). [an_target] is that statement's entry in
-   the log, [-1] while the statement has not run yet and for an annotation at
-   the end of a statement list, which belongs to the state [an_frame_index]
-   its last statement left. *)
+   after it starts from (spec annotations,
+   "An annotation's value is a read against the next state"). [an_target] is
+   that statement's entry in the log, [-1] while the statement has not run yet
+   and for an annotation at the end of a statement list, which belongs to the
+   state [an_frame_index] its last statement left. *)
 type annot_value =
   | AvPoint of Geom.point * Geom.point  (* paper, table *)
   | AvLine of Geom.line * int option    (* the table line, crease id if a crease *)
@@ -426,10 +428,11 @@ let restore (ctx : ctx) (s : snapshot) : unit =
 
 (* A statement that moved the program and left the paper where it was: a
    point, a construction line, a bundle, a definition, an export, an apply
-   whose body folds nothing. The second axis counts these as well (BEP-0026),
-   so a reader of the program can be told what each statement
-   binds. It reads against the frame already on screen and carries the marks
-   the statement before it left dangling. *)
+   whose body folds nothing. The second axis counts these as well (spec
+   output, "The second axis counts every executed statement"), so a reader of
+   the program can be told what each statement binds. It reads against the frame
+   already on screen and carries the marks the statement before it left
+   dangling. *)
 let push_entry (ctx : ctx) (kind : stmt_kind) (sp : Error.span) =
   let kept =
     match ctx.statements_rev with prev :: _ -> prev.sl_kept | [] -> []

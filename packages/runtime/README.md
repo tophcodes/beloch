@@ -29,12 +29,12 @@ evaluates, so a consumer that never evaluates carries no evaluator.
 The **step**, from 0 to `writes.length`. 0 is the sheet before any statement
 ran; n means every write has been applied. The stepper stops where the paper
 changed, which a fold and a mark both do and a binding statement does not
-(BEP-0026). Frames are the renderer's business, reached through
+(spec `output`, "The first axis counts writes"). Frames are the renderer's business, reached through
 `writes[i].frameIndex`.
 
 The **selection** and the **hover**. A selection names entities by their
-identity: a crease is its bundle (BEP-0014), a paper boundary is its edge
-name. A settled selection outranks the pointer, so moving the cursor away
+identity: a crease is its bundle (spec `operands`, "A crease is a bundle of
+pieces"), a paper boundary is its edge name. A settled selection outranks the pointer, so moving the cursor away
 does not take the reader's answer with it.
 
 It holds no viewport. Pan, zoom and animation progress are the view's, because

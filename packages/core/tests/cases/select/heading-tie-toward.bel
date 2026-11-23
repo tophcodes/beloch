@@ -1,7 +1,8 @@
 @author "Claude (Anthropic)"
 
 ; heading --ab makes the same angle with both bisectors, so the tie passes on
-; to toward, which keeps the diagonal through .a and .c (BEP-0031).
+; to toward, which keeps the diagonal through .a and .c (spec selection,
+; "heading keeps the candidates nearest in direction").
 
 paper square
 mark (map .a onto .b) as --v

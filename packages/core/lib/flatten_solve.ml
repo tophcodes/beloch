@@ -169,9 +169,10 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   let pre_st = !(ctx.state) in
   let pre = Fold_state.faces pre_st in
-  (* The vertex on the paper (BEP-0079): the one paper point at which a piece
-     of every element passes over [o]. Where several remain, the anchor of a
-     squash picks the one on it; a flatten has no anchor and fails. *)
+  (* The vertex on the paper (spec multifold,
+     "A fan folds at a point of the paper"): the one paper point at which a
+     piece of every element passes over [o]. Where several remain, the anchor
+     of a squash picks the one on it; a flatten has no anchor and fails. *)
   let pv =
     let on_anchor = Collapse.anchor_faces pre_st o anchor in
     let on_it q =
@@ -485,7 +486,8 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       combos
   in
   (* the outline ranks the states of the statement, those of every
-     combination together, before any other stage sees them (BEP-0058) *)
+     combination together, before any other stage sees them (spec multifold,
+     "The outline ranks the states of every fan") *)
   let combo_runs =
     let ranked =
       Collapse.rank_by_outline pre_st
@@ -498,7 +500,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   (* `(emergent beside .p)`: the states whose emergent ray lies in a wedge of
      the given rays whose closure holds .p, a condition on the set
-     (BEP-0078) *)
+     (spec multifold, "emergent beside names the wedge of the emergent ray") *)
   let combo_runs =
     match emergent with
     | None -> combo_runs
@@ -638,9 +640,10 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       end)
   | [ r ] -> land_realization r
   | many
-    when (* the fan fixes its stayer before any selection stage runs (ADR
-            0048): states with different stayers leave the statement
-            ambiguous *)
+    when (* the fan fixes its stayer before any selection stage runs
+            (spec multifold,
+            "The stayer fixes where the result lies on the table"): states
+            with different stayers leave the statement ambiguous *)
          let stayer_of (st, _, (rays, emergent), _) =
            match
              Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent
@@ -663,8 +666,9 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (verb ^ " is ambiguous: its candidates hold different sectors still")
   | many ->
       (* more than one state left: the hint names the items that would
-         leave one (BEP-0061). A verb that wrote the rays itself gets no
-         hint. *)
+         leave one (spec multifold,
+         "Every item of a flatten is a condition on its states"). A verb that
+         wrote the rays itself gets no hint. *)
       if verb = "flatten" then
         let names =
           List.map2
@@ -708,9 +712,11 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       (fun (u, l) -> (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
       overs
   in
-  (* explicit staying (BEP-0048): points of the paper, whose table images
-     name the one sector that stays; ray order carries no stayer meaning
-     then. The sector itself is checked per candidate fan by the kernel. *)
+  (* explicit staying (spec multifold,
+     "staying names the part that holds every point"): points of the paper,
+     whose table images name the one sector that stays; ray order carries no
+     stayer meaning then. The sector itself is checked per candidate fan by the
+     kernel. *)
   let staying =
     Option.map
       (fun pos ->

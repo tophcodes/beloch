@@ -6,8 +6,9 @@
 ; three creases so that the leading pair is (--eb .b)(--ea .a): the arc is
 ; now a small folding sector, and the ear is anchored on material that has
 ; to move. Every state reaches past the sheet, so the outline ranks none
-; above another (BEP-0058), and both segments of --ea fold. Reordering the
-; items, and nothing else, turns a fold into an error.
+; above another (spec multifold, "The outline ranks the states of every fan"),
+; and both segments of --ea fold. Reordering the items, and nothing else,
+; turns a fold into an error.
 
 paper square
 

@@ -1,6 +1,8 @@
-// The id links of ADR-0054 and ADR-0062 on the site: `[[ADR-0032]]`,
-// `[[reference/model#def-sheet]]` and `[[guide/first-folds|the guide]]` in
-// prose become links. The index of documents and anchors is built from the
+// The id links between documents on the site (spec architecture, "A link
+// between documents names an id"): `[[reference/model#def-sheet]]`,
+// `[[notes/2026-06-28]]` and `[[guide/first-folds|the guide]]` in prose name
+// a page under docs/ or a journal entry under records/notes/ by kind/stem and
+// become links. The index of documents and anchors is built from the
 // checkout once per process by scripts/id-links.ts, which also carries the
 // check that every link resolves; a link that resolves to nothing fails the
 // build here, naming the file and the target.

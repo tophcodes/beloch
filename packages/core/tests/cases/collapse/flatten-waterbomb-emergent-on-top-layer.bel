@@ -3,7 +3,8 @@
 ; flatten-waterbomb-rays-on-top-layer.bel with one half of the median left
 ; out of the fan: five rays, and the sixth is the emergent ray that closes
 ; the vertex. The emergent ray runs through the layers that meet at the
-; vertex, the top layer alone (BEP-0079); the spine drags the bottom layer
+; vertex, the top layer alone (spec multifold, "An odd fan scores its emergent
+; ray through every layer at the vertex"); the spine drags the bottom layer
 ; along, and no ray of the fan folds it.
 
 paper rectangle 2 1

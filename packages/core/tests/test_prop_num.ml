@@ -1,7 +1,8 @@
-(* Property tests for the number kernel [Num] (ADR-0012, ADR-0013): the field
-   axioms, the sign, the order, and agreement with FLINT's qqbar arithmetic
-   as an oracle independent of [Num]'s rational and single-field fast
-   paths. Generators in arb.ml. *)
+(* Property tests for the number kernel [Num] (spec architecture, "A number
+   is rational, a field element or a qqbar value"): the field axioms, the
+   sign, the order, and agreement with FLINT's qqbar arithmetic as an oracle
+   independent of [Num]'s rational and single-field fast paths. Generators
+   in arb.ml. *)
 
 open Beloch
 

@@ -1,8 +1,7 @@
-// The id links between documents (ADR-0054, ADR-0062). A link `[[kind/stem]]`,
-// `[[kind/stem#anchor]]` or `[[kind/stem|text]]` names a page under docs/ or
-// a journal entry under records/ by its directory and its file stem,
-// case-folded; `[[ADR-0032]]` or `[[BEP-0037]]` names a record by the id its
-// file name starts with. In a table cell the pipe before the text is
+// The id links between documents (spec architecture, "A link between documents
+// names an id"). A link `[[kind/stem]]`, `[[kind/stem#anchor]]` or
+// `[[kind/stem|text]]` names a page under docs/ or a journal entry under
+// records/notes/ by its directory and its file stem, case-folded. In a table cell the pipe before the text is
 // escaped, `[[kind/stem\|text]]`, so the table keeps its columns. The index
 // built here maps every document to the page the site serves it on, or to
 // its file on GitHub when the site does not serve it, and lists the anchors
@@ -48,8 +47,6 @@ export type Resolved = { url: string; text: string; document: Document; anchor: 
 const DOCS = "docs";
 const RECORDS = "records";
 
-// A record of ADR-0062 is named by its kind and number, `ADR-0032` or `BEP-0037`.
-const RECORD_ID = /^(ADR|BEP)-(\d{4})/i;
 const CONTENT = join("packages", "www", "src", "content", "docs");
 
 // Files the check does not read.
@@ -65,7 +62,7 @@ function walk(dir: string): string[] {
 	return out.sort();
 }
 
-// Every Markdown file of both trees: the pages under docs/, the records under records/.
+// Every Markdown file of both trees: the pages under docs/, the journal entries under records/.
 function sources(root: string): string[] {
 	return [DOCS, RECORDS].flatMap((tree) => walk(join(root, tree)));
 }
@@ -104,10 +101,6 @@ export function idOf(path: string): string {
 	const rel = path.split(sep);
 	const kind = rel[1]!;
 	const stem = rel[rel.length - 1]!.replace(/\.md$/, "");
-	if (rel[0] === RECORDS) {
-		const m = RECORD_ID.exec(stem);
-		if (m) return `${m[1]!.toUpperCase()}-${m[2]}`;
-	}
 	return `${kind}/${stem.toLowerCase()}`;
 }
 
@@ -242,8 +235,6 @@ export function findLinks(source: string): Link[] {
 }
 
 export function parseTarget(target: string): { id: string; anchor: string | null } | null {
-	const r = /^(ADR|BEP)-(\d{4})(?:#(\S+))?$/i.exec(target);
-	if (r) return { id: `${r[1]!.toUpperCase()}-${r[2]}`, anchor: r[3] ?? null };
 	const m = /^([a-z]+)\/([^#\s]+)(?:#(\S+))?$/i.exec(target);
 	if (!m) return null;
 	return { id: `${m[1]!.toLowerCase()}/${m[2]!.toLowerCase()}`, anchor: m[3] ?? null };
@@ -251,13 +242,12 @@ export function parseTarget(target: string): { id: string; anchor: string | null
 
 export function defaultText(document: Document, anchor: string | null): string {
 	if (anchor !== null) return document.anchors[anchor] ?? anchor;
-	if (RECORD_ID.test(document.id)) return document.id;
 	return document.title;
 }
 
 export function resolve(index: Index, link: Pick<Link, "target" | "text">): Resolved | { error: string } {
 	const parsed = parseTarget(link.target);
-	if (!parsed) return { error: `[[${link.target}]] is no id; a link names kind/stem or a record such as ADR-0032, with #anchor after it` };
+	if (!parsed) return { error: `[[${link.target}]] is no id; a link names kind/stem, with #anchor after it` };
 	const document = index.documents[parsed.id];
 	if (!document) return { error: `[[${link.target}]] names no document; there is no ${parsed.id} under docs/ or records/` };
 	if (parsed.anchor !== null && !(parsed.anchor in document.anchors)) {

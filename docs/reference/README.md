@@ -1,7 +1,8 @@
 # Specification
 
-Beloch is specified by three documents, divided by role and reader (ADR
-0032). Every implementation is bound by them. Each document has one job and
+Beloch is specified by three documents, divided by role and reader
+(`openspec/specs/architecture/spec.md`, "Requirement: The reference pages
+divide by role"). Every implementation is bound by them. Each document has one job and
 refers to the others by statement id or section:
 
 - **`MODEL.md`**: what a program means. States, values, reads and writes as
@@ -10,8 +11,9 @@ refers to the others by statement id or section:
   of the model: one section per sort and per write, with the model
   statement it realizes, operand resolution, errors and a worked example.
   It spans several pages: `BELOCH.md` is the overview, each `BELOCH-*.md`
-  beside it is one page, and `BELOCH-GRAMMAR.md` holds the grammar (ADR
-  0045).
+  beside it is one page, and `BELOCH-GRAMMAR.md` holds the grammar
+  (`openspec/specs/architecture/spec.md`, "Requirement: The grammar of the
+  language stands on one page").
 - **`FOLD.md`**: the output format.
 
 The reference implementation is documented beside them and binds nothing:
@@ -25,8 +27,9 @@ Division of artifacts:
 
 - **`docs/reference/`**: *what* the language is, and how the reference implementation
   realizes it. Durable source of truth.
-- **`records/adr/`** and **`records/bep/`** (ADRs, BEPs): *why* a choice was
-  made. Point-in-time; a BEP names the sections of this tree it changed.
+- **`openspec/specs/`**: the binding requirements, one capability per
+  topic. They change through OpenSpec changes under `openspec/changes/`,
+  and the design of a change keeps the reason for it.
 - **Design documents** (per slice, disposable): *how* a slice is built. They
   are obsolete once the slice has landed and the documents here reflect it,
   and they are not kept in the working tree; the Git history holds them.

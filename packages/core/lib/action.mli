@@ -1,7 +1,7 @@
 (** The disposition verbs that write to the fold state: `mark`, `fold`,
-    `unfold` and `reverse` (BEP-0011), plus the checked-fold primitive `fold` and
-    `reverse` share. Every stateful function takes [(ctx : Ctx.ctx)] as its
-    first parameter. *)
+    `unfold` and `reverse` (spec folded-state, "Only a verb changes the
+    state"), plus the checked-fold primitive `fold` and `reverse` share. Every
+    stateful function takes [(ctx : Ctx.ctx)] as its first parameter. *)
 
 val crease_id_for :
   Ctx.ctx ->
@@ -38,7 +38,8 @@ val eval_unfold :
 (** Evaluate an `unfold` statement: turn the selected layers over a line
     that every one of them lies on one side of, opening the folded hinges on
     it between them and the layers that stay (docs/reference/MODEL.md, def-fold;
-    BEP-0053). *)
+    spec folds,
+    "unfold turns its layers as one block and opens the hinges on the axis"). *)
 
 val eval_reverse :
   Ctx.ctx ->

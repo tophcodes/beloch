@@ -303,8 +303,9 @@ export default function remarkModelBlocks(
 				order.push({ block, id: block.id, kind: "figure" });
 				continue;
 			}
-			// The body is parsed apart from the page, so the id links of ADR-0054
-			// are resolved here; the other plugins have nothing to do in it.
+			// The body is parsed apart from the page, so the id links between
+			// documents (spec architecture, "A link between documents names an
+			// id") are resolved here; the other plugins have nothing to do in it.
 			const body = processor.parse(block.body).children;
 			linkIds({ type: "root", children: body }, getIndex, file?.path);
 			if (block.classes.includes("term")) {

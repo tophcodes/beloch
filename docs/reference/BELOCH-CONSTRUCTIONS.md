@@ -52,7 +52,8 @@ error naming its alignments.
 
 A construction holds what determines the line: its alignments and its
 `heading`. What determines the fold, `toward`, `moving` and the placement,
-are items of the statement that reads the construction ([[BEP-0031]]):
+are items of the statement that reads the construction (spec `selection`, "A
+construction is one of the seven alignment sets"):
 `mark (map --v onto --h) (toward .b) as --k` selects the line the way a
 fold along it would. A `toward` written inside a construction is an error,
 with the hint `write it as an item of the write: (toward .p)`.
@@ -78,7 +79,8 @@ decided and waits for the first two-fold construction the kernel can solve.
 
 The axioms carry the numbers of Justin's table [@justin1986, §8.1], which
 orders the seven operations by algebraic power: the number of an axiom is
-the rung of the number ladder its construction needs ([[ADR-0012]]).
+the rung of the number ladder its construction needs (spec `architecture`,
+"Rational input stays rational through axioms 1 to 4").
 Two other schemes are in use and line up with neither Justin's nor each
 other; the table maps them.
 

@@ -1,4 +1,5 @@
-(** A reverse fold through the fan (BEP-0077). *)
+(** A reverse fold through the fan (spec layer-order,
+    "A reverse fold gives three units per opening"). *)
 
 val attempts :
   cid:int ->

@@ -7,8 +7,8 @@
 ; with .c at the top and .a at the bottom, so "down" below means toward .a.
 ; It gives no paper size. Where it leaves a position to the eye (steps 4
 ; and 5), a free point carries it. The diagram's last picture opens the
-; helmet, which is 3D and out of scope (BEP-0015); the program stops at
-; step 7.
+; helmet, which is 3D and out of scope (spec folded-state, "Every folded
+; state is flat"); the program stops at step 7.
 
 paper square
 

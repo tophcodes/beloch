@@ -2,8 +2,8 @@
 
 ; The pinch of mark-moves-short.bel, made from the center to the top edge:
 ; it reaches the point of its line at height sqrt(3)/2, so the fold that
-; moves it lands that point on .d (BEP-0033). The side of the pinch folds
-; over, and .a and .d stay.
+; moves it lands that point on .d (spec operands, "A moved mark aligns only
+; with marked paper"). The side of the pinch folds over, and .a and .d stay.
 
 paper square
 mark (through .a .c) as --ac

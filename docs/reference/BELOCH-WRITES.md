@@ -17,7 +17,8 @@ delimited on both sides and classified by its head.
 of the axis that stays, `toward`, and the side that folds over, `moving`,
 and select among the candidates of a construction by them
 ([[reference/beloch-constructions#selection]]). `flatten` takes no side
-item: its items are conditions on its states ([[BEP-0061]]). A fan
+item: its items are conditions on its states (spec `multifold`, "Every item of a
+flatten is a condition on its states"). A fan
 of `flatten` folds at a point of the paper, its vertex, and the layers
 that meet there; the other layers under the vertex stay where they lie and
 need no rays ([[reference/model#def-flatten|def-flatten]]). `flatten`
@@ -43,7 +44,9 @@ output, and a `(mountain)` or `(valley)` item records the intent the crease
 pattern draws, which is no part of the state
 ([[reference/model#def-mark|def-mark]], [[reference/fold]]). Without `on`, a
 `mark` scores every layer under its line or its extent, one piece per
-layer; `(on …)` confines it to one flap ([[BEP-0036]], [[BEP-0039]]).
+layer; `(on …)` confines it to one flap (spec `folds`, "A mark without on
+scores every layer its line crosses" and "A mark with on scores the named flap
+alone").
 
 **Extent.** The extent of a mark is its whole line, the stretch
 `(between .p .q)` or the point `(at .p)`; each point lies on the mark's
@@ -52,7 +55,8 @@ apart (`` the mark's extent needs two distinct points ``). An extent that
 runs from boundary to boundary of its flap subdivides the flap; one that
 ends inside a face subdivides nothing and dangles there as a record, which
 later reads select and later folds carry like any material
-([[BEP-0033]]). A record is written to `beloch:marks` in the output,
+(spec `operands`, "The paper of a line is the bundle held under its name"). A
+record is written to `beloch:marks` in the output,
 and the crease pattern draws it apart from the creases
 ([[reference/fold]]). The extent lies on the paper
 (`` the mark's extent is not on the paper ``), and with `on` it stays on
@@ -181,7 +185,8 @@ fold (map .a onto .s) (moving .a) (up to .s)
 **Placement.** The moved block lands on top of the paper it folded from,
 or underneath with `(mountain)`. `(over <flap>)` and `(under <flap>)`
 slide it into the stack beside a flap that stays
-([[BEP-0052]]): the target lies where the block lands, and the block
+(spec `folds`, "A placed fold takes the layers between its depth and its
+target"): the target lies where the block lands, and the block
 goes right above or right below it. The direction of a placed fold follows
 from the placement, so `(mountain)` beside it is an error (`` a placed
 fold derives its direction ``, hint `` drop mountain ``). The target
@@ -279,9 +284,10 @@ fold (--q) (moving .b)
 
 `reverse` runs an inside or an outside reverse fold: the tip a line cuts
 off a folded edge turns through its spine, as two placed folds over one
-line ([[reference/model#def-reverse|def-reverse]], [[BEP-0043]]). It reads its axis
-from a construction the way `fold` does, the tip the axis cuts off implies
-the side, and `(outside)` asks for the outside reverse fold.
+line ([[reference/model#def-reverse|def-reverse]],
+spec `reverse-fold`, "A reverse fold opens its tip at one opening"). It reads
+its axis from a construction the way `fold` does, the tip the axis cuts off
+implies the side, and `(outside)` asks for the outside reverse fold.
 
 ```{.bel .frag prelude=triangle}
 reverse (map .b onto .c)
@@ -330,13 +336,15 @@ reverse (map .a onto .d) (--e & .q valley)
 
 `squash` opens a flap of two layers hinged at a folded edge, its *spine*,
 and presses it flat so that the spine lands on a target
-([[reference/model#def-squash|def-squash]], [[BEP-0038]]). It is a fan at
+([[reference/model#def-squash|def-squash]],
+spec `squash`, "squash takes a bare alignment of its spine"). It is a fan at
 the *vertex*, the end of the spine inside the paper: the spine opens, each
 layer of the flap folds along its piece of the axis, and the layer of the
 flap that the target line crosses folds along the target's crease. The
 two pieces of the axis are the flanks of the opened spine, and the squash
 folds both as valleys: of the states the fan folds flat in, the write
-keeps those with both flanks valleys ([[BEP-0061]]). The swivel fold
+keeps those with both flanks valleys (spec `squash`, "A squash folds both
+flanks as valleys"). The swivel fold
 on the same creases, with one flank a mountain, is a `flatten` with
 letters.
 
@@ -357,7 +365,8 @@ flap of the upper layer at that hinge, and its sector beyond the target
 line, away from the spine, stays. A flap that ends at the target line has
 no such sector: the layers it is hinged to on that line stay, both layers
 of the flap move, and each of those hinges keeps its fold or opens,
-whichever folds flat ([[BEP-0057]]). A squash folds toward the viewer:
+whichever folds flat (spec `squash`, "The layers a flap is hinged to hold its
+squash"). A squash folds toward the viewer:
 where the lower layer of the flap runs on beyond the target line and the
 upper one does not, the flap opens on the far side (`` the squash of <l>
 onto <target> folds from the other side of the model ``, hint `` flip
@@ -372,7 +381,8 @@ the items that keep one: the spine's line filtered by a line through its
 far end. A spine with both ends inside the paper has two vertices, and
 which one the squash takes is not decided (`` both ends of the spine on
 <l> lie inside the paper; which one is the vertex is not decided ``,
-[[BEP-0038]]). The crease the write scores is the axis, one crease with a piece on each
+spec `squash`, "A spine with two inner ends is refused"). The crease the write
+scores is the axis, one crease with a piece on each
 layer of the flap; a filter by flap, `--s & #[.p]`, picks the piece on the
 layer of `.p`. The checks the fan
 runs after that stand in the kernel's tables ([[reference/kernel#fan]]).
@@ -445,23 +455,26 @@ flat-foldability for a sheet of many vertices is NP-hard
 `(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
 puts the face that holds `.p` above the face that holds `.q`, and the two
-must overlap ([[BEP-0082]]), `(staying .p …)` names the stayer,
+must overlap (spec `multifold`, "An over item orders the faces of its two
+points"), `(staying .p …)` names the stayer,
 the part of the paper that keeps its place, and `(emergent beside .p)`
 names where the emergent ray of an odd fan lies. Every item is a condition
 that narrows the set of states. `staying` and `emergent` stand at most
 once (`` only one staying item per flatten ``, `` only one emergent item
 per flatten ``), and an item that rules nothing out is no error. `toward`
-is refused (`` flatten takes no (toward) item: an item is a condition
-(BEP-0061) ``, hint `` name the side of the emergent ray with (emergent
+is refused (`` flatten takes no (toward) item: an item is a condition ``,
+hint `` name the side of the emergent ray with (emergent
 beside .p), or give letters ``), and so is `on` (`` flatten takes no (on)
 item ``, hint `` name the part that stays with (staying .p), or the layers
 a fan folds with (up to <flap>) ``).
 
 **The emergent ray.** `(emergent beside .p)` keeps the states whose
 emergent ray lies in a wedge of the given rays that holds the table point
-of `.p`, the two rays that bound the wedge included ([[BEP-0078]]). The
+of `.p`, the two rays that bound the wedge included (spec `multifold`, "emergent
+beside names the wedge of the emergent ray"). The
 statement scores the emergent ray as it scores a ray given as a
-construction: in every layer that meets at the vertex ([[BEP-0079]]). On a
+construction: in every layer that meets at the vertex (spec `multifold`, "An odd
+fan scores its emergent ray through every layer at the vertex"). On a
 rabbit ear the emergent ray lies on one side of the middle ray or on the
 other, and a point on that side names it: `.a` for the ear that ends on
 `--ab`. A point on a given ray lies on the edge of two wedges and names
@@ -498,8 +511,9 @@ a material crease ``) are errors. The checks a flatten runs, with every
 message, stand in the kernel's tables ([[reference/kernel#fan]]).
 
 **Selection.** The value of a flatten is the one state its rays,
-letters, `over` items, stayer and emergent item leave ([[BEP-0061]],
-[[BEP-0078]]). More than one state left is an error (`` flatten is
+letters, `over` items, stayer and emergent item leave (spec `multifold`, "Every
+item of a flatten is a condition on its states" and "emergent beside names the
+wedge of the emergent ray"). More than one state left is an error (`` flatten is
 ambiguous: <n> realizations ``). Its hint names the items
 that would leave one state: for up to four states, for each state the
 letter of one ray that no other state shares, or the letters of two rays
@@ -566,8 +580,10 @@ flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
 ```
 
 **Fans.** A flatten folds several vertices in one move when its rays
-stand in fan items ([[BEP-0055]]). A fan item holds the rays of one
-vertex, a point of the paper ([[BEP-0079]]): `(fan at .p ray+)` names a
+stand in fan items (spec `multifold`, "flatten folds several fans in one
+motion"). A fan item holds the rays of one
+vertex, a point of the paper (spec `multifold`, "A fan folds at a point of the
+paper"): `(fan at .p ray+)` names a
 point the program has bound, and the statement fails when the rays do not
 pass through it (`` the rays of the fan do not meet at <point> ``);
 `(fan ray+ as .p)` binds the paper point where the rays meet. A ray is a
@@ -609,7 +625,8 @@ is scored on the layers its pieces cross.
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
-remove its states ([[BEP-0058]]). More than one state left is an error
+remove its states (spec `multifold`, "The outline ranks the states of every
+fan"). More than one state left is an error
 (`` flatten is ambiguous: <n> realizations ``), with the hint of a flatten
 of one fan.
 

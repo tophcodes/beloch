@@ -2,10 +2,10 @@
 
 ; flatten-waterbomb-both-layers.bel with its creases marked on the top layer
 ; alone. The vertex is the point of the top layer where the rays meet, and
-; the fan folds the top layer alone (BEP-0079). The spine joins the bottom
-; layer to a moving sector of the top layer, so the bottom layer moves, and
-; no ray of the fan folds it: the write is undefined, and the error names
-; the layer by its corner .a.
+; the fan folds the top layer alone (spec multifold, "A fan folds at a point of
+; the paper"). The spine joins the bottom layer to a moving sector of the top
+; layer, so the bottom layer moves, and no ray of the fan folds it: the write
+; is undefined, and the error names the layer by its corner .a.
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

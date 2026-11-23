@@ -1,8 +1,9 @@
 // Lighting the entities a command names, on the drawing that is up.
 //
-// A crease is a bundle (BEP-0014): every segment sharing its id lights at
-// once, across flaps and layers, rather than the one under the cursor. A paper
-// boundary carries no id, so its lines are found by geometry instead.
+// A crease is a bundle (spec operands, "A crease is a bundle of pieces"):
+// every segment sharing its id lights at once, across flaps and layers, rather
+// than the one under the cursor. A paper boundary carries no id, so its lines
+// are found by geometry instead.
 import type { FoldScene, Frame, InspectSegment } from "@beloch/scene";
 import { paperEdgeSegments, sceneLayout } from "@beloch/render-svg";
 import type { EntityRef, RenderCommand } from "@beloch/runtime";

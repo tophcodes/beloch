@@ -2,9 +2,10 @@
 
 ; The bird base of the crane: the preliminary base of
 ; preliminary-two-squashes.bel [randlett1961art, p. 69], then two petal
-; folds, each one flatten of two fans (BEP-0055). The state is the one
-; bird-base-petal.bel reaches by Ida's steps 2-10 [ida2020, Fig. 7.19],
-; turned a quarter on the table and with --ac scored flat.
+; folds, each one flatten of two fans (spec multifold, "flatten folds several
+; fans in one motion"). The state is the one bird-base-petal.bel reaches by
+; Ida's steps 2-10 [ida2020, Fig. 7.19], turned a quarter on the table and
+; with --ac scored flat.
 
 paper square
 fold (map .d onto .b) as --ac

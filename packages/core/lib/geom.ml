@@ -542,11 +542,11 @@ let clip_line_to_convex (l : line) (poly : point array) : (point * point) option
    its interior, not just graze along an edge? Deliberately STRICTER than
    [clip_line_to_convex]'s closed semantics: a line collinear with a polygon
    edge clips to that edge (positive length ⇒ Some there), but a crease lying
-   on the paper's own edge folds nothing (BEP-0014: an empty crease bundle is
-   not a fold). Test: clip, then check the segment's midpoint strictly inside
-   every edge (cross > 0, not ≥ 0): the midpoint suffices because the
-   polygon's interior is convex, so if it holds there it holds on the whole
-   open segment. *)
+   on the paper's own edge folds nothing (an empty crease bundle is not a
+   fold; spec operands, "A crease is a bundle of pieces"). Test: clip, then
+   check the segment's midpoint strictly inside every edge (cross > 0, not ≥ 0):
+   the midpoint suffices because the polygon's interior is convex, so if it
+   holds there it holds on the whole open segment. *)
 let midpoint_strictly_inside (poly : point array) (p : point) (r : point) : bool =
   let two = Num.of_int 2 in
   let mid = { x = Num.div (Num.add p.x r.x) two; y = Num.div (Num.add p.y r.y) two } in

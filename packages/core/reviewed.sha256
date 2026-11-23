@@ -1,2 +1,3 @@
-# The interfaces the maintainer has reviewed, one `sha256sum` line each (ADR-0080).
+# The interfaces the maintainer has reviewed, one `sha256sum` line each
+# (spec architecture, "The check holds the maintainer's hash of each reviewed interface").
 # Only the maintainer writes this file.

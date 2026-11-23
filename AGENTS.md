@@ -2,11 +2,12 @@
 
 Beloch writes origami folding sequences as programs over the Huzita-Justin
 axioms. It evaluates `.bel` source into one FOLD file with the folded state after
-every step; crease patterns and YR-style folding diagrams are renderings of it. `records/` holds what the project keeps
-for itself (`records/README.md`): ADRs in `records/adr/` decide how Beloch is
-built, BEPs in `records/bep/` decide what a program means, and the design
-journal is `records/notes/`. Read the ADRs and BEPs before proposing anything
-structural. The contracts live in `docs/reference/`: `MODEL.md` what a
+every step; crease patterns and YR-style folding diagrams are renderings of it.
+The specification is `openspec/specs/`, kept with OpenSpec: the capability
+`architecture` decides how Beloch is built, every other capability decides
+part of what a program means. Read the requirements of the capabilities a
+change touches before proposing anything structural. `records/` holds the
+design journal, `records/notes/` (`records/README.md`). `docs/reference/` holds the contracts: `MODEL.md` what a
 program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,
 binding no other implementation: `KERNEL.md` what `packages/core` realizes,
 `CLI.md` the `beloch` command.
@@ -16,9 +17,34 @@ binding no other implementation: `KERNEL.md` what `packages/core` realizes,
 Per-slice design documents are not kept in the working tree. They were
 point-in-time records of how one slice was built, they went stale as the code
 moved on, and code comments pointing into them taught readers things that had
-stopped being true. What a slice decided belongs in an ADR or a BEP, what it
-contracts in `docs/reference/`, and a dead end in an abandoned record. The documents themselves stay in the Git history;
+stopped being true. What a slice decides belongs in an OpenSpec change, what
+it contracts in `docs/reference/`, and a dead end in a journal entry. The documents themselves stay in the Git history;
 `git log --diff-filter=D --stat -- docs/superpowers/specs` finds them.
+
+An issue and an OpenSpec change divide the work:
+
+- An issue holds what is not decided yet: a question whose answer changes a
+  requirement or a scenario, a bug where the code breaks a requirement, and
+  work that changes no behavior (performance, refactoring, the site). A
+  change does not carry such a question; it is written once the issue has
+  answered it, and its pull request closes the issue.
+- A change holds decided behavior, under `openspec/changes/` (the
+  `openspec-propose` skill or `openspec new change`), with WHEN/THEN scenarios
+  for every requirement it adds or modifies. Its open questions are only those
+  the schema allows: answerable later without changing the specification, the
+  approach or the tasks.
+- A pull request carries a change with its code, or the change alone. With
+  code, the pull request archives the change in its last commit, so the change
+  reaches `main` archived and `openspec/specs/` updated. Alone, the change
+  reaches `main` open: decided and not built. The open changes on `main` are
+  the list of decided work, and no issue tracks them a second time; the pull
+  request that builds one archives it.
+
+`openspec/config.yaml` holds the rules of this repository, and
+`openspec validate --strict` checks a change. Code and docs point at a requirement as
+`openspec/specs/<capability>/spec.md`, "Requirement: <name>", or in a code
+comment as (spec <capability>, "<name>"). The devshell sets `DO_NOT_TRACK`,
+which turns off the usage report of the `openspec` command.
 
 A skill that writes a spec or a plan to `docs/superpowers/` writes it to the
 session scratchpad instead; the path is ignored. Progress and handoffs go in
@@ -32,8 +58,8 @@ to.
 - Before starting on an issue, look it up on the board. If it is closed or its
   Status is Done, stop and ask. Otherwise set its Status to In Progress.
 - A new issue starts from a template in `.github/ISSUE_TEMPLATE/`
-  (`gh issue create --template build|design|docs`), names the ADR or BEP it
-  follows from in its first line, and goes on the board with a Topic and one `kind:`
+  (`gh issue create --template build|design|docs`), names the requirement or
+  the OpenSpec change it follows from in its first line, and goes on the board with a Topic and one `kind:`
   label.
 - A pull request body names its issue with `Closes #n` when the pull request
   finishes it and `Refs #n` when it contributes to it, and the pull request
@@ -72,7 +98,8 @@ Inside the devshell (`nix develop`, or direnv):
   check (`tsc`) of `packages/render-2d` and `packages/runtime`, the script
   tests (`bun test scripts`, which render every figure of the documents),
   the prose lint at level error and the check that every program states its credits
-  (ADR-0068). Run it after the last edit and before every push.
+  (`openspec/specs/architecture/spec.md`, "Requirement: The repository's
+  check requires every program's credits"). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README
   drawings against their programs and the site build.
 
@@ -89,7 +116,8 @@ other push to `main` runs only the commit subject check.
 
 On every pull request, CI also runs the job `reviewed-interfaces`, which
 fails when a pull request changes an interface whose hash the maintainer
-recorded (ADR-0080). Its red check asks for his review, and no local check
+recorded (`openspec/specs/architecture/spec.md`, "Requirement: The check
+holds the maintainer's hash of each reviewed interface"). Its red check asks for his review, and no local check
 runs it. An agent writes the hash list, `packages/core/reviewed.sha256`,
 only with his approval.
 
@@ -100,8 +128,8 @@ Commit subjects are checked when they are pushed. The types and scopes are
 those `scripts/check-commit-subjects.sh` prints; a package's scope is its
 directory under `packages/` or its npm name without `@beloch/`.
 
-Everything reaches `main` through a pull request, an ADR's acceptance and a
-chore included: the ruleset on `main` requires the pull request check, and a
+Everything reaches `main` through a pull request, the archive of an OpenSpec
+change and a chore included: the ruleset on `main` requires the pull request check, and a
 commit that has not passed it is refused.
 
 A pull request of several commits lands as a merge commit, so every commit on
@@ -123,7 +151,7 @@ nothing about the script on the page.
 
 ## Sources & citations
 
-Full-text papers/books live in `refs/` (gitignored, because they are
+Full-text papers/books are kept in `refs/` (gitignored, because they are
 copyrighted). Each file is named by its BibTeX cite key, with both `.pdf` and
 an extracted `.txt`/`.md` (e.g. `refs/caruana2007.txt`). Machine-readable
 metadata is in `bibliography/references.bib`.

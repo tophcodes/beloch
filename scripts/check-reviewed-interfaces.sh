@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The interfaces the maintainer has reviewed keep the form he reviewed
-# (ADR-0080). packages/core/reviewed.sha256 lists one SHA-256 hash per
+# (spec architecture, "The check holds the maintainer's hash of each reviewed interface").
+# packages/core/reviewed.sha256 lists one SHA-256 hash per
 # reviewed .mli, in the format `sha256sum` prints; lines that start with `#`
 # are comments. The script fails when a listed file is gone or no longer
 # matches its hash, and names each such file.

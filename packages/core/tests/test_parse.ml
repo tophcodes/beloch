@@ -620,7 +620,8 @@ let test_parse_diff () =
       ()
   | _ -> Alcotest.fail "expected up to --l \\ .c (LFilter Drop)"
 
-(* BEP-0084: a program unites no bundles; the bracket names no read. *)
+(* A program unites no bundles (spec operands, "A program unites no
+   bundles"); the bracket names no read. *)
 let test_parse_no_union () =
   expect_error_hint "a bare [ opens no read"
     "a meet is .[--l --m], a join --[.p .q], a flap #[.p .q]" (fun () ->
@@ -731,7 +732,8 @@ let test_parse_flatten_toward_item () =
     "name the side of the emergent ray with (emergent beside .p), or give letters"
     (fun () -> parse_stmts ~filename:"t.bel" "paper square\nflatten (--a) (--b) (--c) (toward .s)\n")
 
-(* BEP-0055: fan items, with a construction as a ray, `at` and `as` *)
+(* Fan items, with a construction as a ray, `at` and `as` (spec multifold,
+   "A fan item names or binds its vertex") *)
 let test_parse_flatten_fan_items () =
   Alcotest.(check string)
     "two fans beside the statement's own items"
@@ -769,7 +771,7 @@ let test_parse_flatten_fan_errors () =
 
 
 (* A fan item takes one `up to`, a flatten of one fan item with it folds,
-   and a flatten takes no `on` (BEP-0079). *)
+   and a flatten takes no `on` (spec multifold, "flatten takes no on item"). *)
 let test_parse_fan_up_to () =
   (match parse_stmts ~filename:"t.bel" "paper square\nflatten (fan (--b) (--c) (up to #[.a]))\n" with
   | [ Ast.FlattenFans (_, [ f ], _, _, _) ] ->
@@ -878,7 +880,8 @@ let test_items_any_order_flatten () =
 
 (* axiom, prose spelling, align spelling, the alignment list the prose form
    fixes. The two spellings agree as multisets, which is what recognition
-   reads (BEP-0031). *)
+   reads (spec selection, "A construction is one of the seven alignment
+   sets"). *)
 let construction_pairs =
   [
     ( "axiom 1",
@@ -977,7 +980,8 @@ let test_align_named_fold_lines_kept () =
     [ "--a .p onto --l"; "--b .q onto --m"; "--a .r onto --b .s" ]
     (alignments c)
 
-(* BEP-0083: a name with -- holds a crease, so [=] binds no construction *)
+(* A name with -- holds a crease, so [=] binds no construction (spec names,
+   "`=` binds no construction") *)
 let test_bind_line_refused () =
   expect_error_hint "--l = (…) binds no crease"
     "score it with mark (…) as --l" (fun () ->
@@ -1107,7 +1111,8 @@ let test_err_placed_fold_rejects_mountain () =
       parse_stmts ~filename:"t.bel"
         "paper square\nfold (through .m .n) (mountain) (over .p)\n")
 
-(* `up to` names the flap a placed fold moves (BEP-0036) *)
+(* `up to` names the flap a placed fold moves (spec folds, "up to narrows a
+   fold to a flap and the layers outward of it") *)
 let test_placed_fold_takes_up_to () =
   ignore
     (parse_stmts ~filename:"t.bel"
