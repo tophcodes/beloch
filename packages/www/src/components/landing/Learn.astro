@@ -1,0 +1,87 @@
+---
+// "Learn it one fold at a time": the pages of the docs a visitor reads next,
+// in three columns.
+import Band from "../Band.astro";
+import { REPO_LINK } from "../../lib/nav-links";
+
+const COLUMNS = [
+  {
+    title: "Guide",
+    links: [
+      { label: "First folds", href: "/guide/first-folds/" },
+      { label: "Reading the crane", href: "/guide/reading-the-crane/" },
+    ],
+  },
+  {
+    title: "Reference",
+    links: [
+      { label: "Language", href: "/language/" },
+      { label: "Names and definitions", href: "/language/names/" },
+      { label: "Constructions", href: "/language/constructions/" },
+      { label: "Errors", href: "/language/errors/" },
+      { label: "Output format", href: "/output/" },
+    ],
+  },
+  {
+    title: "Tools",
+    links: [
+      { label: "Playground", href: "/playground/" },
+      { label: "Command-line interface", href: "/cli/" },
+      { label: "VS Code extension", href: `${REPO_LINK.href}/tree/main/packages/vscode` },
+      { label: "Source on GitHub", href: REPO_LINK.href },
+    ],
+  },
+];
+---
+
+<Band tone="band">
+  <div class="learn">
+    <h2 class="l-h2">Learn it one fold at a time.</h2>
+    <div class="learn-cols">
+      {COLUMNS.map((c) => (
+        <nav class="learn-col" aria-label={c.title}>
+          <h3>{c.title}</h3>
+          {c.links.map((l) => <a href={l.href}>{l.label}</a>)}
+        </nav>
+      ))}
+    </div>
+  </div>
+</Band>
+
+<style>
+  .learn {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .learn-cols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px 48px;
+  }
+  .learn-col {
+    flex: 1 1 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .learn-col h3 {
+    margin: 0 0 4px;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-base);
+    font-weight: 600;
+  }
+  .learn-col a {
+    font-size: 17px;
+  }
+  @media (max-width: 720px), (pointer: coarse) {
+    .learn-col {
+      gap: 0;
+    }
+    .learn-col a {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+    }
+  }
+</style>
