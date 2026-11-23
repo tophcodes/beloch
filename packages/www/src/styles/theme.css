@@ -429,8 +429,13 @@ h3:target + p { box-shadow: none; }
  * for both of its color columns: Starlight defines them dark first and flips
  * them on :root[data-theme='light'], while light-dark() does that job from
  * color-scheme.
+ *
+ * .bel-chrome repeats the block, so the --sl-* values inside the header
+ * resolve against the chrome's --bel-ui-* values and Starlight's search
+ * button takes the dark header's colors.
  * ────────────────────────────────────────────────────────────────────────── */
-:root {
+:root,
+.bel-chrome {
 	/* The page is one ground, and cards of surface lie on it. Starlight gives
 	   the header and the sidebar a second surface (gray-6 / gray-7); here a
 	   1px divider does that work. */
@@ -672,6 +677,13 @@ mobile-starlight-toc > nav {
  * both sides as everywhere else. */
 [data-has-sidebar] .header {
 	padding-inline-end: var(--bel-shell-pad-x);
+}
+
+/* Starlight draws the docs' header element; it takes the chrome the
+ * landing's header takes in Shell.astro. */
+header.header {
+	background-color: var(--bel-ui-chrome);
+	border-bottom-color: var(--bel-ui-chrome-line);
 }
 
 /* The drawer opens under the bar that carries its button, so its list never

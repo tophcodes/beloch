@@ -2,10 +2,11 @@
 // The one header. The landing and the playground wrap it in their own
 // <header>; in the docs it is Starlight's Header override and PageFrame
 // supplies the element around it. Both grounds resolve to the same height,
-// side margin and divider through the bridge in theme.css.
+// side margin and divider through the bridge in theme.css, and both take the
+// dark chrome, which .bel-chrome points the --bel-ui-* roles at.
 import { Icon } from "@astrojs/starlight/components";
 import Wordmark from "./Wordmark.astro";
-import { NAV_LINKS } from "../lib/nav-links";
+import { NAV_LINKS, REPO_LINK } from "../lib/nav-links";
 
 interface Props {
   // Below 50rem the docs need the room for the search button and the drawer
@@ -17,46 +18,118 @@ const { compact = false } = Astro.props;
 const hasSearch = Astro.slots.has("search");
 ---
 
-<div class="site-header-inner">
+<div class="site-header-inner bel-chrome">
   <Wordmark />
+  <nav class:list={["site-nav", { "site-nav-compact": compact }]} aria-label="Primary">
+    {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+  </nav>
   {hasSearch && (
     <div class="header-search">
       <slot name="search" />
     </div>
   )}
-  <nav class:list={["site-nav", { "site-nav-compact": compact }]} aria-label="Primary">
-    {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+  <div class:list={["site-end", { "site-nav-compact": compact }]}>
+    <a href={REPO_LINK.href}>{REPO_LINK.label}</a>
     <button type="button" class="theme-toggle" aria-label="Toggle color theme">
       <Icon name="moon" class="toggle-moon" />
       <Icon name="sun" class="toggle-sun" />
     </button>
-  </nav>
+    {!compact && (
+      <details class="site-menu">
+        <summary aria-label="Menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7H20M4 12H20M4 17H20" />
+          </svg>
+        </summary>
+        <nav aria-label="Primary">
+          {[...NAV_LINKS, REPO_LINK].map((l) => <a href={l.href}>{l.label}</a>)}
+        </nav>
+      </details>
+    )}
+  </div>
 </div>
 
 <style>
+  /* The standalone pages have no drawer, so below 720px the links and the
+     repository move into a menu that opens under the header. The docs keep
+     theirs in Starlight's drawer (compact). */
+  .site-menu { display: none; }
+  @media (max-width: 720px) {
+    .site-nav:not(.site-nav-compact),
+    .site-end:not(.site-nav-compact) > a { display: none; }
+    .site-end:not(.site-nav-compact) { margin-inline-start: auto; }
+    .site-menu { display: block; }
+  }
+  .site-menu summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--bel-ui-control-border);
+    border-radius: var(--bel-radius-control);
+    color: var(--bel-ui-text);
+    list-style: none;
+    cursor: pointer;
+  }
+  .site-menu summary::-webkit-details-marker { display: none; }
+  .site-menu[open] summary { background: var(--bel-ui-quiet); }
+  .site-menu summary:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+  }
+  .site-menu nav {
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    padding: 4px var(--bel-shell-pad-x) 12px;
+    background: var(--bel-ui-chrome);
+    border-bottom: 1px solid var(--bel-ui-chrome-line);
+  }
+  .site-menu nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--bel-ui-text);
+  }
+
+  /* Wordmark and links at the start, the search after them, and the
+     repository and the mode toggle at the end. */
   .site-header-inner {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    gap: clamp(12px, 3vw, 28px);
     height: 100%;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-base);
   }
 
   .header-search {
     display: flex;
-    flex: 1 1 auto;
+    justify-content: flex-end;
+    flex: 0 1 18rem;
     min-width: 0;
   }
 
   .site-nav {
     display: flex;
     align-items: center;
-    gap: clamp(12px, 3vw, 28px);
+    gap: clamp(12px, 3vw, 22px);
+    flex: 1 1 auto;
     flex-wrap: wrap;
-    font-size: var(--bel-text-base);
   }
-  .site-nav a { color: var(--bel-ui-text-muted); text-decoration: none; }
-  .site-nav a:hover { color: var(--bel-ui-text); }
+  .site-end {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 3vw, 22px);
+  }
+  .site-nav a,
+  .site-end a { color: var(--bel-ui-text); text-decoration: none; }
+  .site-nav a:hover,
+  .site-end a:hover { text-decoration: underline; }
 
   .site-nav-compact a { display: none; }
   @media (min-width: 50rem) {

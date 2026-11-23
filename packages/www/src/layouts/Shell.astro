@@ -57,7 +57,7 @@ const { title, description, url } = Astro.props;
     <slot name="head" />
   </head>
   <body>
-    <header class="site-header">
+    <header class="site-header bel-chrome">
       <SiteHeader />
     </header>
 
@@ -93,9 +93,11 @@ const { title, description, url } = Astro.props;
          is Starlight's PageFrame header, which the bridge gives the same
          height, side margin and divider. */
       .site-header {
+        position: relative;
         padding: 20px var(--bel-shell-pad-x);
         min-height: var(--bel-shell-nav-height);
-        border-bottom: 1px solid var(--bel-ui-divider);
+        background: var(--bel-ui-chrome);
+        border-bottom: 1px solid var(--bel-ui-chrome-line);
       }
 
       main {
