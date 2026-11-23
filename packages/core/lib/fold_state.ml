@@ -70,7 +70,7 @@ let fresh_crease_id () =
    with [Too_many_undecided]. The upgrade is to propagate the taco-taco
    condition and the flat-hinge form of taco-tortilla before the search, as
    the taco-tortilla condition is now, so that fewer classes stay open. *)
-let max_undecided = 10
+let max_undecided = 12
 
 type violation =
   | Bad_index of string
