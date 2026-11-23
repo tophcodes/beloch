@@ -43,7 +43,8 @@ to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
 the outline. A fan keeps the states whose faces lie on the table inside
 the convex hull of every table polygon of the state before it, where there
-are any, and every state where there are none ([[BEP-0058]]).
+are any, and every state where there are none (spec `multifold`, "The outline
+ranks the states of every fan").
 
 ## State
 
@@ -80,7 +81,8 @@ that checks the two preliminary-base routes against each other.
 
 ## Layer order
 
-`Fold_state.t` stores $\lambda$ ([[ADR-0069]]): for every two faces
+`Fold_state.t` stores $\lambda$ (spec `architecture`, "The kernel stores the
+layer order as a side per pair of overlapping faces"): for every two faces
 whose table polygons overlap in positive area (`Geom.convex_overlap`;
 touching is no overlap), which of the two lies above. Two faces that do not
 overlap have no entry. `Fold_state.above` and `Fold_state.rel` read one
@@ -136,7 +138,8 @@ A fold computes the pairs of the new state (`Fold_state.fold_blocks`). Two
 staying faces keep their side, and two faces of one moved block exchange
 sides. A block placed `Top` lies above every staying face it lands on, and
 a block placed `Bottom` below them. A block placed `Over` or `Under` faces
-lies directly on each of them; the three conditions of [[BEP-0059]] fix
+lies directly on each of them; the three conditions (spec `layer-order`,
+"Three conditions decide the side of a layer the moved paper lands on") fix
 the pairs they decide, and `Fold_state.orders` decides the rest. A face
 that `subdivide` cuts
 passes its sides on to its pieces.
@@ -201,7 +204,8 @@ hints `extend --x to (x, y)`.
 
 `Flatten_solve.run` reads the rays of a `flatten` from material creases and
 hands them to `Flatten_solve.solve`, which folds them at a point of the
-paper ([[BEP-0079]]); `Collapse` folds the tip of
+paper (spec `multifold`, "A fan folds at a point of the paper"); `Collapse`
+folds the tip of
 [[reference/model#def-flatten|def-flatten]] on the scored state. The vertex
 is the one paper point over the table vertex that a piece of every
 element passes through (`Fan_paper.vertex`). Where several paper points
@@ -243,7 +247,8 @@ layer of the tip; otherwise into a new crease, or into the crease `into`
 names.
 
 `Collapse.mk_sector_geoms` gives each hinge of the tip on a ray a role
-([[BEP-0044]]). A flat hinge of a ray's crease folds. A folded hinge of a ray's
+(spec `multifold`, "The fan tries each hinge no item fixes both ways"). A flat
+hinge of a ray's crease folds. A folded hinge of a ray's
 crease keeps or opens, and a hinge of another crease on a ray keeps or
 changes; the kernel tries every combination of these, so the work doubles
 with each of them. For each combination it moves every face by the
@@ -255,7 +260,8 @@ elsewhere `Fold_state.make` checks that the paths close.
 
 The layer order of the folded fan is a search over the sides of pairs of
 faces (`Fold_state.orders`; Layer order, above), whose units the verb
-gives ([[BEP-0077]]). For `flatten` and `squash` the faces that share one
+gives (spec `layer-order`, "A verb gives the units of its fan's layer
+search"). For `flatten` and `squash` the faces that share one
 motion form a unit, a piece, and the faces the fan leaves in place are one
 piece; `reverse` gives the units of its opening (Reverse, below). Two
 faces of one unit that overlap keep their side, exchanged where the motion
@@ -272,8 +278,9 @@ four fans.
 
 ### Fans
 
-`Flatten_fans.run` folds a `flatten` of fan items ([[BEP-0055]],
-[[BEP-0079]]). It cuts every crease a ray item names into the paper first,
+`Flatten_fans.run` folds a `flatten` of fan items (spec `multifold`, "flatten
+folds several fans in one motion"). It cuts every crease a ray item names into
+the paper first,
 then resolves each ray item to a line: a line operand to its material
 segments, a construction to the line `Axiom.select` keeps, under a fresh
 crease id. A fan with `at` has its table vertex at the table position of
@@ -333,7 +340,8 @@ valley fold reach.
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the layers of its bundles surround its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
-there are any (`Collapse.rank_by_outline`, [[BEP-0058]]); more than one
+there are any (`Collapse.rank_by_outline`, spec `multifold`, "The outline ranks
+the states of every fan"); more than one
 state left is an error. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
@@ -354,13 +362,15 @@ ray, so that the fan has four elements, the spine, the two pieces of the
 axis and the target's crease on the anchor's layer, and an even count seeks
 no emergent ray. The fan passes the two pieces of the axis, the flanks of
 the opened spine, with the letter valley, as a letter item of `flatten`
-passes its letter ([[BEP-0061]]). Of the states the fan folds flat in,
+passes its letter (spec `squash`, "A squash folds both flanks as valleys"). Of
+the states the fan folds flat in,
 the squash keeps those whose flanks both fold as valleys; with one flank a
 mountain the same creases fold a swivel fold, which the explicit fan reaches
 with letters. The stayer is a point of the anchor's material beyond the
 target's line, away from the spine. Where the anchor has no such
 material, `Squash.own_hinges` folds the squash without the solver
-([[BEP-0057]]): the tip is every piece of the two flaps at the spine, the
+(spec `squash`, "The layers a flap is hinged to hold its squash"): the tip is
+every piece of the two flaps at the spine, the
 hinges of the spine and of the axis change, each hinge on the target's
 line between the tip and a face outside it keeps or changes, and
 `Collapse.geoms_of` and `Collapse.pipeline_solve` give the states as for a
@@ -425,7 +435,8 @@ count floor, the boundary check, duplicate rays and Kawasaki closure are
 properties of which lines and directions are given, not of which are marked
 mountain or valley. Check 11 runs here only where the anchor surrounds O on
 the paper. Elsewhere its test, whether some combination of the hinges the
-fan may change closes the paper paths ([[BEP-0044]]), runs per admissible
+fan may change closes the paper paths (spec `multifold`, "A fan moves each piece
+by the changing hinges on its paper path"), runs per admissible
 stayer sector after checks 16 and 6, and a fan that fails it reports
 `` no realization keeps the staying flap still ``. A candidate that fails any of them fails for **every**
 Maekawa pattern tried against it, and checks 7–11 have no per-pattern
@@ -446,13 +457,14 @@ from an ambiguity among the states of one combination.
 One check concerns the anchor. It is numbered after the others so that
 the numbers above keep their meaning. Numbers 5 and 15 stay unused: they
 checked a staying point and the flap of `on` against the anchor, and a
-`flatten` has no anchor ([[BEP-0079]]).
+`flatten` has no anchor (spec `multifold`, "A fan folds at a point of the paper").
 
 | # | check | shipped message | shipped hint |
 |---|---|---|---|
 | 16 | the anchor has no face outside the stayer's wedge, so the tip is empty | `the anchor flap has no material outside the staying sector` | |
 
-Four checks concern the stayer ([[BEP-0048]]). A candidate fan that fails 17,
+Four checks concern the stayer (spec `multifold`, "staying names the part that
+holds every point"). A candidate fan that fails 17,
 18 or 19 contributes no states, and the message surfaces when no candidate
 fan contributes any.
 
@@ -519,7 +531,8 @@ the stayer (Sectors, below).
    single-combination statement has no alternative to fall back on, so a
    mis-ordered leading pair there is *not* caught this way; it runs the
    full pipeline and folds the states its stayer admits, past the outline
-   of the sheet where none stays inside ([[BEP-0058]]). In
+   of the sheet where none stays inside (spec `multifold`, "The outline ranks
+   the states of every fan"). In
    `packages/core/tests/cases/collapse/flatten-order-load-bearing.bel` two
    combinations fold such states, and the statement fails with check 14.
    For each surviving combination, at each admissible stayer sector
@@ -536,7 +549,8 @@ the stayer (Sectors, below).
    anchor does not surround O, then, per pattern, Maekawa itself where it
    does, self-intersection, and `over`. An `over` pair holds where the face
    of its upper point overlaps the face of its lower point and lies above
-   it; no other face of their pieces is compared ([[BEP-0082]]). A failing
+   it; no other face of their pieces is compared (spec `multifold`, "An over
+   item orders the faces of its two points"). A failing
    pattern contributes one
    of `` Maekawa violated by the stated assignment `` / `` assignment
    forces self-intersection `` / `` contradictory `over` `` to a
@@ -548,7 +562,7 @@ the stayer (Sectors, below).
    The outline then ranks the realizations of all combinations together
    (`Collapse.rank_by_outline`): those inside the convex hull of the state
    before the flatten where there are any, else all of them
-   ([[BEP-0058]]).
+   (spec `multifold`, "The outline ranks the states of every fan").
 3. **Segment-choice ambiguity** (check 14). If **more than one** segment
    combination independently produced a non-empty realization pool, the
    statement stops here: `` <name> is ambiguous at the vertex; select a
@@ -559,11 +573,13 @@ the stayer (Sectors, below).
    admissible stayer sector):
 
    - S holds the realizations of `LineNew` and `OppositeRay` candidates
-     alike; the tag ranks none of them ([[BEP-0061]]).
+     alike; the tag ranks none of them (spec `multifold`, "Every item of a
+     flatten is a condition on its states").
    - `(emergent beside .p)` keeps the realizations whose emergent ray
      lies in a wedge of the given rays, sorted counter-clockwise around O,
      that holds the table point of `.p` or has it on a bounding ray
-     ([[BEP-0078]]). It runs after the outline, and leaving no realization
+     (spec `multifold`, "emergent beside names the wedge of the emergent ray").
+     It runs after the outline, and leaving no realization
      where there were some is `` no state has its emergent ray beside
      <point> ``.
    - \|S\| = 0 → infeasible, checked in priority order: whichever of
@@ -638,7 +654,8 @@ The fan of a reverse fold is built once, for every opening.
 `Fold_state.reverse_fan` cuts each face of the tip that the axis crosses,
 with a flat hinge of the new crease between its two pieces, and
 `Collapse.geoms_of` moves the pieces beyond the axis by the creases on their
-paper paths ([[BEP-0044]]). The cut hinges fold, a hinge that lies on the
+paper paths (spec `multifold`, "A fan moves each piece by the changing hinges on
+its paper path"). The cut hinges fold, a hinge that lies on the
 axis between the tip and a face that stays changes, and every other hinge
 keeps its angle, the hinges on the spine's line included. Every piece beyond
 the axis moves by the reflection across it, so one folded state serves
@@ -649,12 +666,14 @@ its spine folds the same way.
 Each opening is a stacking of that state (`Fold_state.fold_opening`), with
 the faces numbered as a fold of the two blocks numbers them: a block placed
 at the bottom, the faces that stay, the other block. The units of the layer
-search are the faces that stay and each of the two blocks ([[BEP-0077]]):
+search are the faces that stay and each of the two blocks (spec `layer-order`,
+"A reverse fold gives three units per opening"):
 two faces of one block keep their side, exchanged since the block turns
 over, and the lower block lies below the upper one. For `inside`, the lower
 block lies over the faces of its body that no face of the body overlaps from
 above, and the upper block under the faces of its body that no face of the
-body overlaps from below; the three conditions of [[BEP-0059]] fix the sides
+body overlaps from below; the three conditions (spec `layer-order`, "Three
+conditions decide the side of a layer the moved paper lands on") fix the sides
 they decide, and `Fold_state.orders` decides the rest. For `outside`, the
 lower block lies below every face that stays and the upper block above
 them, and the search only checks the result. The body of a block is its
@@ -730,7 +749,8 @@ reader of the file sees.
 
 ## Annotations
 
-An annotation never changes the geometry ([[BEP-0029]]), and the kernel holds to
+An annotation never changes the geometry (spec `annotations`, "An annotation
+never changes the geometry"), and the kernel holds to
 that in two places. `Parse.parse` runs `Annotation.check`, which needs no
 state. The evaluator reads an annotation's arguments with
 `Annotation.resolve` when it reaches the annotation, and keeps the result

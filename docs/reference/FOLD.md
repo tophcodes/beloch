@@ -9,7 +9,8 @@ tableOfContents:
 `beloch fold FILE.bel` writes one JSON document in the FOLD format
 [@foldformat], extended with fields under the `beloch:` prefix as FOLD's
 custom-property rule allows. FOLD is the exchange format the origami tools
-read ([[ADR-0065]]); the extension carries what the model and the language know
+read (spec `architecture`, "The FOLD is the only data layer"); the extension
+carries what the model and the language know
 and FOLD has no field for. This document is the contract of the file: what
 it represents, and which fields it carries.
 
@@ -82,7 +83,8 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   every coordinate of the file is in that unit.
 
 Exact coordinates are rounded to decimal only at serialization; the values the
-kernel computes stay exact ([[ADR-0008]], 0012).
+kernel computes stay exact (spec `architecture`, "A float stands only in
+output or in front of an exact decision").
 
 ## Beloch's fields
 
@@ -98,11 +100,12 @@ What the language knows about a state and FOLD cannot say:
   of an application that kept no instance. Consumers join on the
   index; two statements may share a source line, so the span alone leaves
   the join ambiguous. This is the attribution the model calls provenance
-  ([[ADR-0019]]).
+  (spec `output`, "A consumer joins on the entry index").
 - `beloch:source_line`, on each folded frame: the source line of the
   statement that produced the frame.
 - `beloch:statements`: one entry per executed statement in the order the
-  statements run, a sourcemap from the program to the frames ([[ADR-0066]]). Each
+  statements run, a sourcemap from the program to the frames (spec `output`,
+  "The FOLD logs every executed statement in one flat list"). Each
   entry carries the `kind` that says which axis it moves, its `source_line`
   and its `span`, the `frame_index` of the frame it reads against, and its
   `parent`. `fold` and `mark` are the writes: the paper moved, or it was
@@ -124,7 +127,8 @@ What the language knows about a state and FOLD cannot say:
   the text, since one spelling names different creases inside a `def` body
   and after a `--x!` rebinding. Deduplicated by (target, span).
 - `beloch:annotations`: one entry per annotation in the order the statements
-  ran, an annotation in a `def` body once per execution ([[BEP-0029]],
+  ran, an annotation in a `def` body once per execution (spec `output`,
+  "The FOLD carries every annotation in one top-level field",
   `BELOCH-ANNOTATIONS.md`). Each carries its `key`, its `namespace` or null,
   its `span` and `source_line`, and its `target`: the first and the last
   index into `beloch:statements` it belongs to. The target is one entry,
@@ -133,7 +137,8 @@ What the language knows about a state and FOLD cannot say:
   after the last statement of the program or of a `def` body belongs to a
   state, and its target is null; `frame_index` names that state. The keys
   `author`, `design` and `source` belong to the program as a whole
-  ([[ADR-0068]]), and their target is the string `"program"`; their
+  (spec `output`, "The program's credits reach the FOLD"), and their target is
+  the string `"program"`; their
   `frame_index` is 0. `args` holds the
   arguments in order, each an object with its `span` and one of `text`,
   `number`, `word`, `point` (with `paper` and `table` coordinates), `line`
@@ -308,7 +313,8 @@ none of this appears, and every other field is the same with and without it.
   counter-clockwise; a ray is a segment from the vertex. The letters of a
   candidate are the assignments in its frame. `removed_by` is null: the
   items of a flatten are conditions, and a state they rule out is no
-  candidate ([[BEP-0061]]).
+  candidate (spec `multifold`, "Every item of a flatten is a condition on its
+  states").
 - `beloch:error`: present when the program fails, with the `message`, the
   `hint`, the `span` and the `statement` index of the statement that failed.
 

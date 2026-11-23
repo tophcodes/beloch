@@ -13,7 +13,7 @@ turned on the page, who wrote the program and whose model it folds. It never
 changes the geometry. A program with its annotations removed evaluates to the
 same FOLD without the annotations and without the `file_author` that
 `@author` fills, and the evaluator passes them into the FOLD unchanged
-([[BEP-0029]]).
+(spec `annotations`, "An annotation never changes the geometry").
 
 An annotation is one line. It starts with `@`, and the end of the line ends
 it; a `;` comment may follow on the same line. `WORD` is a name without a
@@ -22,7 +22,8 @@ its only escapes. `RATIONAL` is a number as everywhere else.
 
 An annotation belongs to the statement that follows it. It may stand at the
 top level and inside a `def` body; in a body it applies once per `apply`
-that runs the body, to the statements of that execution ([[BEP-0030]]). An
+that runs the body, to the statements of that execution (spec `annotations`,
+"An annotation is a source line that belongs to the statement after it"). An
 annotation after the last statement of the program belongs to the final
 state, and one after the last statement of a body to the state that
 execution of the body leaves. `call`, `orient`, `say` and the annotations
@@ -31,7 +32,8 @@ state, such as the name of the finished model. `step` and `label` name a
 statement, and one with no statement after it is an error.
 
 Three keys belong to the program as a whole: `author`, `design` and
-`source` ([[BEP-0051]]). They stand at the top level before the first
+`source` (spec `annotations`, "Three keys credit the program as a whole").
+They stand at the top level before the first
 statement, either at the head of the file, before `unit`, the shapes and
 `paper`, or after `paper`. `author` and `design` stand once each, and
 `source` once per sequence the program follows. One in a `def` body, one
