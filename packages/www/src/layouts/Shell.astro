@@ -15,8 +15,11 @@ interface Props {
   description: string;
   // Canonical URL of this page, for the Open Graph tags a shared link uses.
   url: string;
+  // The page lays out its own bands across the full width, so <main> takes
+  // neither the column width nor the padding.
+  bleed?: boolean;
 }
-const { title, description, url } = Astro.props;
+const { title, description, url, bleed = false } = Astro.props;
 ---
 
 <html lang="en">
@@ -61,7 +64,7 @@ const { title, description, url } = Astro.props;
       <SiteHeader />
     </header>
 
-    <main>
+    <main class:list={[{ bleed }]}>
       <slot />
     </main>
 
@@ -104,6 +107,10 @@ const { title, description, url } = Astro.props;
         width: min(1120px, 94vw);
         margin: 0 auto;
         padding: clamp(32px, 6vw, 72px) 0 48px;
+      }
+      main.bleed {
+        width: auto;
+        padding: 0;
       }
 
       .site-footer {

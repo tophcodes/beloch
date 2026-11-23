@@ -1,0 +1,356 @@
+---
+// The landing hero's card: the program on the code panel, and beside it the
+// paper after one fold, as the folded state or as the crease pattern. The
+// stepper under the drawing moves through the folds; the lines of the fold
+// shown are lit on the panel and scrolled into view. Pointing at a name on
+// the panel writes where it comes from into the status line under the code.
+//
+// Every drawing is made at build time (lib/hero-program.ts), so the script
+// below only swaps which one is shown.
+import { heroProgram } from "../lib/hero-program";
+
+interface Props {
+  src: string;
+  /** The fold the card opens on, 1-based. */
+  start: number;
+}
+const { src, start } = Astro.props;
+const { lines, folds, tips } = await heroProgram(src);
+const at = Math.min(Math.max(start, 1), folds.length);
+const status = (k: number) => `line ${folds[k - 1]!.from}  ·  fold ${k} of ${folds.length}`;
+---
+
+<div class="hp" data-folds={JSON.stringify(folds.map((f) => [f.from, f.to]))} data-start={at}>
+  <div class="hp-code-col">
+    <div class="hp-code" tabindex="0" aria-label="The program">
+      {lines.map((html, i) => (
+        <div class="hp-line" data-line={i + 1}>
+          <span class="hp-num" aria-hidden="true">{i + 1}</span><code set:html={html || " "} />
+        </div>
+      ))}
+    </div>
+    <p class="hp-status" aria-live="polite">{status(at)}</p>
+  </div>
+  <div class="hp-draw">
+    <div class="hp-bar">
+      <div class="hp-tabs" role="group" aria-label="View">
+        <button type="button" class="hp-tab" data-view="folded" aria-pressed="true">folded</button>
+        <button type="button" class="hp-tab" data-view="cp" aria-pressed="false">crease pattern</button>
+      </div>
+      <span class="hp-count">{folds.length} folds · exact</span>
+    </div>
+    <figure class="hp-stage">
+      {folds.map((f, i) => (
+        <>
+          <div class:list={["hp-drawing", "hp-folded", { "is-shown": i + 1 === at }]} data-fold={i + 1} role="img"
+            aria-label={`Folded state after fold ${i + 1}`} set:html={f.folded} />
+          <div class="hp-drawing hp-cp" data-fold={i + 1} role="img"
+            aria-label={`Crease pattern after fold ${i + 1}`} set:html={f.cp} />
+        </>
+      ))}
+    </figure>
+    <div class="hp-stepper">
+      <button type="button" class="hp-go" data-dir="-1" aria-label="Previous fold">‹</button>
+      <input type="range" class="hp-range" min="1" max={folds.length} value={at} aria-label="Fold" />
+      <button type="button" class="hp-go" data-dir="1" aria-label="Next fold">›</button>
+      <span class="hp-at">fold <span class="hp-at-n">{at}</span> / {folds.length}</span>
+    </div>
+  </div>
+  <script type="application/json" class="hp-tips" set:html={JSON.stringify(tips)} />
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>(".hp")) {
+    const folds = JSON.parse(root.dataset.folds!) as [number, number][];
+    const tips = JSON.parse(root.querySelector(".hp-tips")!.textContent!) as Record<string, string>;
+    const code = root.querySelector<HTMLElement>(".hp-code")!;
+    const lines = root.querySelectorAll<HTMLElement>(".hp-line");
+    const status = root.querySelector<HTMLElement>(".hp-status")!;
+    const range = root.querySelector<HTMLInputElement>(".hp-range")!;
+    const atN = root.querySelector<HTMLElement>(".hp-at-n")!;
+    const tabs = root.querySelectorAll<HTMLButtonElement>(".hp-tab");
+    let view = "folded";
+    let at = Number(root.dataset.start);
+
+    const where = () => `line ${folds[at - 1]![0]}  ·  fold ${at} of ${folds.length}`;
+    const show = (scroll: boolean) => {
+      const [from, to] = folds[at - 1]!;
+      for (const l of lines) {
+        const n = Number(l.dataset.line);
+        l.classList.toggle("is-on", n >= from && n <= to);
+      }
+      for (const d of root.querySelectorAll<HTMLElement>(".hp-drawing")) {
+        d.classList.toggle(
+          "is-shown",
+          d.dataset.fold === String(at) && d.classList.contains(view === "folded" ? "hp-folded" : "hp-cp"),
+        );
+      }
+      for (const t of tabs) t.setAttribute("aria-pressed", String(t.dataset.view === view));
+      range.value = String(at);
+      atN.textContent = String(at);
+      status.textContent = where();
+      // The lit line stays in the upper third of the panel, so the lines
+      // that lead up to it stay in sight.
+      if (scroll) {
+        const line = lines[from - 1]!;
+        code.scrollTo({ top: Math.max(0, line.offsetTop - code.clientHeight / 3), behavior: "smooth" });
+      }
+    };
+    const go = (n: number) => {
+      at = Math.min(folds.length, Math.max(1, n));
+      show(true);
+    };
+
+    for (const b of root.querySelectorAll<HTMLButtonElement>(".hp-go")) {
+      b.addEventListener("click", () => go(at + Number(b.dataset.dir)));
+    }
+    range.addEventListener("input", () => go(Number(range.value)));
+    for (const t of tabs) {
+      t.addEventListener("click", () => {
+        view = t.dataset.view!;
+        show(false);
+      });
+    }
+
+    // A name's key carries its sigil, which the token's class tells: a point
+    // is `.o`, a line `--o`.
+    code.addEventListener("pointerover", (e) => {
+      const tok = (e.target as Element).closest<HTMLElement>("[data-bel-name]");
+      if (!tok) return;
+      const key = (tok.classList.contains("bel-point") ? "." : "--") + tok.dataset.belName;
+      const tip = tips[key];
+      if (tip) status.textContent = tip;
+    });
+    code.addEventListener("pointerleave", () => {
+      status.textContent = where();
+    });
+
+    show(false);
+    const [from] = folds[at - 1]!;
+    code.scrollTop = Math.max(0, lines[from - 1]!.offsetTop - code.clientHeight / 3);
+  }
+</script>
+
+<style>
+  .hp {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--bel-ui-chrome-line);
+    border-radius: var(--bel-radius-card);
+    overflow: hidden;
+    background: var(--bel-ui-code-surface);
+    font-family: var(--bel-font-mono);
+    /* The drawings lie on the panel rather than on a sheet of their own
+       (WEB_THEME reads this). */
+    --bel-paper-background: transparent;
+  }
+
+  .hp-code-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .hp-code {
+    position: relative;
+    flex: 1 0 auto;
+    height: 418px;
+    overflow: auto;
+    padding: 14px 0;
+    font-size: var(--bel-code-size);
+    line-height: var(--bel-code-line);
+    color: var(--bel-ui-code-text);
+    font-variant-ligatures: none;
+  }
+  .hp-code:focus-visible {
+    outline: 2px solid var(--bel-ui-chrome-accent);
+    outline-offset: -2px;
+  }
+  .hp-line {
+    min-height: var(--bel-code-line);
+    padding-right: 16px;
+    white-space: pre;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+  .hp-line.is-on {
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: inset 3px 0 0 var(--bel-ui-code-accent);
+  }
+  .hp-line code {
+    font: inherit;
+  }
+  .hp-num {
+    display: inline-block;
+    width: 44px;
+    padding-right: 14px;
+    text-align: right;
+    color: var(--bel-ui-code-gutter);
+    user-select: none;
+  }
+  .hp-code :global([data-bel-name]) {
+    cursor: help;
+    border-radius: 2px;
+  }
+  .hp-code :global([data-bel-name]:hover) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .hp-status {
+    margin: 0;
+    min-height: 36px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    border-top: 1px solid var(--bel-ui-chrome-line);
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-chrome-muted);
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hp-draw {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-left: 1px solid var(--bel-ui-chrome-line);
+  }
+  .hp-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--bel-ui-chrome-line);
+    font-size: var(--bel-text-xs);
+  }
+  .hp-tabs {
+    display: flex;
+    border: 1px solid var(--bel-ui-chrome-border);
+    border-radius: var(--bel-radius-control);
+    overflow: hidden;
+  }
+  .hp-tab {
+    font: inherit;
+    padding: 6px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--bel-ui-chrome-text);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .hp-tab[aria-pressed="true"] {
+    background: var(--bel-ui-chrome-accent);
+    color: var(--bel-ui-chrome-accent-text);
+  }
+  .hp-tab:focus-visible,
+  .hp-go:focus-visible,
+  .hp-range:focus-visible {
+    outline: 2px solid var(--bel-ui-chrome-accent);
+    outline-offset: 2px;
+  }
+  .hp-count {
+    color: var(--bel-ui-chrome-muted);
+    white-space: nowrap;
+  }
+
+  /* Every drawing stands in the one cell, and the one shown is visible. A
+     drawing taken out of the layout with display: none would take the
+     shadow filter its id names with it, and the drawings after it that
+     name the same id would lose their faces. */
+  .hp-stage {
+    flex: 1;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    min-height: 300px;
+  }
+  .hp-drawing {
+    grid-area: 1 / 1;
+    width: 100%;
+    max-width: 380px;
+    visibility: hidden;
+  }
+  .hp-drawing.is-shown {
+    visibility: visible;
+  }
+  .hp-cp {
+    max-width: 300px;
+  }
+  .hp-drawing :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .hp-folded :global(svg) {
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  }
+
+  .hp-stepper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--bel-ui-chrome-line);
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-chrome-text);
+  }
+  .hp-go {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--bel-ui-chrome-border);
+    background: transparent;
+    color: var(--bel-ui-chrome-text);
+    font: inherit;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .hp-range {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--bel-ui-chrome-accent);
+  }
+  .hp-at {
+    min-width: 72px;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Stacked, the drawing comes first and the program under it. */
+  @media (max-width: 720px) {
+    .hp {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .hp-draw {
+      order: -1;
+      border-left: 0;
+      border-bottom: 1px solid var(--bel-ui-chrome-line);
+    }
+    .hp-bar {
+      padding: 6px 10px;
+    }
+    .hp-stage {
+      padding: 12px;
+      min-height: 0;
+    }
+    .hp-drawing {
+      max-width: 240px;
+    }
+    .hp-code {
+      height: 292px;
+    }
+  }
+  @media (max-width: 720px), (pointer: coarse) {
+    .hp-tab {
+      min-height: 44px;
+      padding: 0 14px;
+    }
+    .hp-go {
+      width: 44px;
+      height: 44px;
+    }
+  }
+</style>
