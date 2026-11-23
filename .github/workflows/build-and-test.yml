@@ -2,7 +2,8 @@ name: Build and test
 
 # Runs `check` (scripts/check.sh) on every pull request that changes more
 # than prose: the kernel suites against scripts/known-failures.txt, the bun
-# suites and the prose lint at level error. A pull request that changes only
+# suites, the script tests that render the figures of the documents, and the
+# prose lint at level error. A pull request that changes only
 # Markdown no suite reads skips the job; prose.yml lints that Markdown at
 # level error. The ruleset on main requires the job by its name,
 # `build-and-test`, so the name stays as it is. A path filter on the trigger

@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# The checks to run before a push: every test suite, the prose lint at level
-# error, the id links between documents and the credits of the programs,
+# The checks to run before a push: every test suite, the script tests that
+# render the figures of the documents, the prose lint at level error, the id
+# links between documents and the credits of the programs,
 # without the site build. `check-all` adds what the deploy job adds on top.
 # Run inside the devshell, where both are on PATH.
 #
 # Every step runs even when an earlier one failed, so a red kernel suite does
 # not hide a red bun suite. The summary at the end names the failed steps,
-# and the exit status is 1 if any failed. Only the kernel suites wait for the
-# build: after a failed `dune build` they would repeat its errors.
+# and the exit status is 1 if any failed. Only the kernel suites and the script
+# tests wait for the build: after a failed `dune build` they would repeat its
+# errors.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 source scripts/steps.sh
@@ -24,8 +26,10 @@ bun_typecheck() {
 
 if step "dune build" dune build; then
   step "kernel suites" bash scripts/run-ocaml-tests.sh
+  step "bun test scripts" bun test scripts
 else
   skip "kernel suites" "dune build failed"
+  skip "bun test scripts" "dune build failed"
 fi
 step "bun test packages/render-2d" bun_suite render-2d
 step "tsc packages/render-2d" bun_typecheck render-2d

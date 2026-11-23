@@ -69,16 +69,16 @@ Inside the devshell (`nix develop`, or direnv):
 
 - `check` builds the kernel and runs its suites, the bun suites of
   `packages/render-2d`, `packages/runtime` and `packages/www`, the type
-  check (`tsc`) of `packages/render-2d` and `packages/runtime`, the prose
-  lint at level error and the check that every program states its credits
+  check (`tsc`) of `packages/render-2d` and `packages/runtime`, the script
+  tests (`bun test scripts`, which render every figure of the documents),
+  the prose lint at level error and the check that every program states its credits
   (ADR-0068). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README
-  drawings against their programs, the script tests (`bun test scripts`) and
-  the site build.
+  drawings against their programs and the site build.
 
 Both run every step even after one has failed, end with a summary of the
-failed steps, and exit non-zero if there is one. Only the kernel suites wait
-for `dune build`.
+failed steps, and exit non-zero if there is one. Only the kernel suites and
+the script tests wait for `dune build`.
 
 CI runs `check` on every pull request, in the job `build-and-test` of
 `.github/workflows/build-and-test.yml`, and skips it when the pull request
