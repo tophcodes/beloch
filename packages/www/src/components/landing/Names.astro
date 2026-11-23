@@ -1,0 +1,83 @@
+---
+// "Name what you fold": the first folds of the hero's helmet and the points
+// they make, beside the crease pattern with those names written out.
+import Band from "../Band.astro";
+import { parseFold } from "@beloch/scene";
+import { renderCP, colorLineStyle, WEB_THEME } from "@beloch/render-svg";
+import { evalBelToFold } from "../../lib/eval-bel";
+import { highlightBel, highlightBelInline } from "../../lib/highlight-bel";
+
+const SRC = `paper square
+fold (map .c onto .a) as --bd
+fold (map .d onto .a) as --l
+fold (map .b onto .a) as --r
+
+.o = --r * --l
+.sl = --l * --da
+.sr = --r * --ab`;
+
+const scene = parseFold(evalBelToFold(SRC) as object);
+const drawing = renderCP(scene, {
+  theme: { ...WEB_THEME, lineStyle: colorLineStyle },
+  annotate: [".a", ".b", ".c", ".d", ".o", ".sl", ".sr", "--bd", "--l", "--r"],
+  dots: "annotated",
+}).toString();
+const lines = (await highlightBel(SRC)).split("\n");
+const c = async (s: string) => `<code class="bel-inline bel-code-on-page">${await highlightBelInline(s)}</code>`;
+---
+
+<Band tone="ground">
+  <div class="l-split">
+    <div class="l-text">
+      <h2 class="l-h2">Name what you fold.</h2>
+      <p class="l-p">
+        Points start with a dot, like <Fragment set:html={await c(".o")} />, lines with
+        two dashes, like <Fragment set:html={await c("--mid")} />. The sheet brings its
+        own: corners <Fragment set:html={await c(".a")} /> to <Fragment set:html={await c(".d")} />
+        and edges <Fragment set:html={await c("--ab")} /> to <Fragment set:html={await c("--da")} />.
+        Every fold you make and every point where creases meet can be named too, so
+        the next fold can refer to it.
+      </p>
+    </div>
+    <div class="l-vis names-duo">
+      <div class="l-card l-code bel-code-on-page">
+        {lines.map((html) => <div set:html={html || " "} />)}
+      </div>
+      <figure class="l-figure names-drawing" aria-label="Crease pattern with the named points" set:html={drawing} />
+    </div>
+  </div>
+</Band>
+
+<style>
+  .names-duo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 32px;
+    align-items: center;
+  }
+  .names-drawing {
+    margin: 0;
+    max-width: 360px;
+    justify-self: center;
+    width: 100%;
+  }
+  /* The names are drawn in the paper's ink, so the drawing keeps its own
+     light ground in both modes, as the figures in the docs do. */
+  .names-drawing :global(svg) {
+    border-radius: var(--bel-radius-card);
+  }
+  /* The names are what the drawing is about, so they keep a size a reader
+     can read at the width the column gives the drawing. */
+  .names-drawing :global(text) {
+    font-size: 26px;
+  }
+  @media (max-width: 720px) {
+    .names-duo {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+    .names-drawing {
+      max-width: 80%;
+    }
+  }
+</style>

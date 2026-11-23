@@ -1,0 +1,98 @@
+/* The bands under the landing hero. Each puts one claim beside the program or
+ * the drawing that shows it: the text in a narrow column, the picture in a
+ * wide one. .l-flip puts the picture first; below 1160px the text always
+ * comes first, so a narrow screen reads the claim before the picture. */
+.l-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px 56px;
+  align-items: center;
+}
+.l-text {
+  flex: 0 1 380px;
+  min-width: 0;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.l-vis {
+  flex: 1 1 600px;
+  min-width: 0;
+}
+.l-flip > .l-text { order: 2; }
+.l-flip > .l-vis { order: 1; }
+@media (max-width: 1160px) {
+  .l-flip > .l-text { order: 1; }
+  .l-flip > .l-vis { order: 2; }
+}
+
+.l-h2 {
+  margin: 0;
+  font-family: var(--bel-font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.l-p {
+  margin: 0;
+  font-size: 18px;
+  line-height: var(--bel-line-height);
+  text-wrap: pretty;
+}
+.l-p code.bel-inline {
+  font-family: var(--bel-font-mono);
+  font-size: 0.86em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--bel-ui-code-inline);
+  font-variant-ligatures: none;
+}
+
+/* A card of surface on the band, for code, a diagnostic or a drawing. */
+.l-card {
+  background: var(--bel-ui-surface);
+  border: 1px solid var(--bel-ui-divider);
+  border-radius: var(--bel-radius-card);
+}
+.l-code {
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-family: var(--bel-font-mono);
+  font-size: var(--bel-text-sm);
+  line-height: 21px;
+  color: var(--bel-ui-code-text);
+  font-variant-ligatures: none;
+}
+.l-code > div {
+  min-height: 21px;
+  white-space: pre;
+}
+.l-label {
+  font-family: var(--bel-font-mono);
+  font-size: var(--bel-text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bel-ui-text-muted);
+}
+
+/* A diagnostic as the kernel prints it (lib/diagnostic-html.ts). */
+.dg-gutter { color: var(--bel-syntax-punct); }
+.dg-error { color: var(--bel-ui-code-error); font-weight: 600; }
+.dg-help { color: var(--bel-ui-code-accent); font-weight: 600; }
+
+.l-figure svg,
+.l-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* The drawings stand at a third of the size the renderer draws them, where
+   their own stroke widths would thin to a hair, so the lines keep their
+   width in screen pixels. */
+.l-figure line,
+.l-figure polyline,
+.l-figure polygon {
+  vector-effect: non-scaling-stroke;
+}

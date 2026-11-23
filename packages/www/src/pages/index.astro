@@ -7,8 +7,10 @@ import Shell from "../layouts/Shell.astro";
 import Band from "../components/Band.astro";
 import CitationMeta from "../components/CitationMeta.astro";
 import HeroProgram from "../components/HeroProgram.astro";
+import Names from "../components/landing/Names.astro";
 import { HERO_SRC } from "../lib/landing-examples";
 import { DESCRIPTION } from "../lib/description";
+import "../styles/landing.css";
 
 // The description's first sentence is the hero's lead, the rest its body.
 const cut = DESCRIPTION.indexOf(". ") + 1;
@@ -40,6 +42,7 @@ const body = DESCRIPTION.slice(cut + 1);
       lines that made each one light up.
     </p>
   </Band>
+  <Names />
 </Shell>
 
 <style>
