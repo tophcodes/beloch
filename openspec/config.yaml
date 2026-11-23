@@ -1,0 +1,27 @@
+schema: spec-driven
+
+# Constraints an agent cannot infer from the code. Rules per artifact go under
+# `rules:`, guidance for apply and archive under `operations:`; see the
+# OpenSpec documentation for both.
+context: |
+  Write all artifacts in English, even when the conversation is in German.
+  Beloch writes origami folding sequences as programs over the Huzita-Justin
+  axioms. It evaluates `.bel` source into one FOLD file with the folded state
+  after every step; crease patterns and folding diagrams are renderings of it.
+  The capability `architecture` holds how Beloch is built and how the project
+  works. Every other capability holds part of what a program means, by topic.
+  The pages under docs/reference/ explain the language, the model and the
+  output in full; a requirement states the rule they explain.
+  Code and docs point at a requirement by its capability and its name:
+  `openspec/specs/<capability>/spec.md`, "Requirement: <name>". A code
+  comment shortens this to (spec <capability>, "<name>").
+
+rules:
+  specs:
+    - A requirement in `architecture` ends with a sentence that names the
+      change that introduced it.
+    - A change to a capability other than `architecture` edits the pages
+      under docs/reference/ that explain the rule, in the same pull request.
+  design:
+    - Write design.md only when the change chooses between alternatives, and
+      list each rejected alternative in one line with the reason.

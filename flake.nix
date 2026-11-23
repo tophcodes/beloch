@@ -152,6 +152,8 @@
             pkgs.graphviz
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isLinux [pkgs.perf];
+          # OpenSpec (openspec/) reports usage to its authors unless this is set.
+          DO_NOT_TRACK = "1";
           # `check`, `check-all` and `prose` run the script of that name in scripts/.
           # Shim `beloch` and `beloch-render` onto PATH from this checkout:
           # `beloch` runs the freshly built binary (not a stale Nix-store
