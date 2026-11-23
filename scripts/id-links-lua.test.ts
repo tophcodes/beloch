@@ -15,7 +15,7 @@ const modelSource = [
 	"",
 	"## 1. Paper",
 	"",
-	"A sheet, see [[reference/model#def-sheet]] and [[ADR-0032|the record]].",
+	"A sheet, see [[reference/model#def-sheet]] and [[notes/2026-06-29-axiom3|the note]].",
 	"",
 	'::: {.definition #def-sheet name="sheet"}',
 	"A sheet is a polygon. Compare [[reference/kernel#rank|rank]] and [[reference/kernel]].",
@@ -28,11 +28,11 @@ const modelSource = [
 
 const model = indexDocument(modelSource, "docs/reference/MODEL.md", "/model/");
 const kernel = indexDocument("---\ntitle: The OCaml kernel\n---\n\n## Rank\n", "docs/reference/KERNEL.md", "/kernel/");
-const adr = indexDocument("# ADR-0032: The specification binds\n", "records/adr/ADR-0032-the-specification-binds.md", null);
+const note = indexDocument("# Axiom 3\n", "records/notes/2026-06-29-axiom3.md", null);
 const index: Index = {
 	site: "https://belochlang.org",
 	repository: "https://github.com/tophcodes/beloch/blob/main",
-	documents: { [model.id]: model, [kernel.id]: kernel, [adr.id]: adr },
+	documents: { [model.id]: model, [kernel.id]: kernel, [note.id]: note },
 };
 
 function html(source: string, extra: string[] = []): { out: string; err: string; code: number } {
@@ -53,14 +53,14 @@ test.skipIf(!pandoc)("an anchor in the rendered document links internally, the r
 	const r = html(modelSource);
 	expect(r.err).toBe("");
 	expect(r.out).toContain('<a href="#def-sheet">sheet</a>');
-	expect(r.out).toContain('<a href="https://github.com/tophcodes/beloch/blob/main/records/adr/ADR-0032-the-specification-binds.md">the record</a>');
+	expect(r.out).toContain('<a href="https://github.com/tophcodes/beloch/blob/main/records/notes/2026-06-29-axiom3.md">the note</a>');
 	expect(r.out).toContain('<a href="https://belochlang.org/kernel/#rank">rank</a>');
 	expect(r.out).toContain('<a href="https://belochlang.org/kernel/">The OCaml kernel</a>');
 	expect(r.out).toContain('<td><a href="#def-sheet">in a cell</a></td>');
 });
 
 test.skipIf(!pandoc)("a target that resolves to nothing stops the render and names it", () => {
-	const r = html("See [[ADR-9999]].");
+	const r = html("See [[notes/2099-01-01]].");
 	expect(r.code).not.toBe(0);
-	expect(r.err).toContain("[[ADR-9999]] names no document; there is no ADR-9999 under docs/ or records/");
+	expect(r.err).toContain("[[notes/2099-01-01]] names no document; there is no notes/2099-01-01 under docs/ or records/");
 });

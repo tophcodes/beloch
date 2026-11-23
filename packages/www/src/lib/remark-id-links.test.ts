@@ -12,15 +12,11 @@ const model = indexDocument(
 	"docs/reference/MODEL.md",
 	"/model/",
 );
-const adr = indexDocument(
-	["---", "id: ADR-0032", 'title: "The specification binds"', "---", "", "# ADR-0032: The specification binds"].join("\n"),
-	"records/adr/ADR-0032-the-specification-binds-every-implementation.md",
-	null,
-);
+const note = indexDocument("# Axiom 3\n", "records/notes/2026-06-29-axiom3.md", null);
 const index: Index = {
 	site: "https://belochlang.org",
 	repository: "https://github.com/tophcodes/beloch/blob/main",
-	documents: { [model.id]: model, [adr.id]: adr },
+	documents: { [model.id]: model, [note.id]: note },
 };
 
 async function render(source: string) {
@@ -35,18 +31,18 @@ async function render(source: string) {
 	);
 }
 
-test("a link to a page, an anchor and a record renders with the default text", async () => {
-	const html = await render("See [[reference/model]], [[reference/model#def-sheet]] and [[ADR-0032]].");
+test("a link to a page, an anchor and a journal entry renders with the default text", async () => {
+	const html = await render("See [[reference/model]], [[reference/model#def-sheet]] and [[notes/2026-06-29-axiom3]].");
 	expect(html).toBe(
 		'<p>See <a href="/model/">Model</a>, <a href="/model/#def-sheet">sheet</a> and ' +
-			'<a href="https://github.com/tophcodes/beloch/blob/main/records/adr/ADR-0032-the-specification-binds-every-implementation.md">ADR-0032</a>.</p>',
+			'<a href="https://github.com/tophcodes/beloch/blob/main/records/notes/2026-06-29-axiom3.md">Axiom 3</a>.</p>',
 	);
 });
 
 test("text after the pipe replaces the default, and code spans keep their brackets", async () => {
-	const html = await render("Read [[reference/model#1-paper|the paper section]]; write `[[ADR-0032]]` to link it.");
+	const html = await render("Read [[reference/model#1-paper|the paper section]]; write `[[reference/model]]` to link it.");
 	expect(html).toBe(
-		'<p>Read <a href="/model/#1-paper">the paper section</a>; write <code>[[ADR-0032]]</code> to link it.</p>',
+		'<p>Read <a href="/model/#1-paper">the paper section</a>; write <code>[[reference/model]]</code> to link it.</p>',
 	);
 });
 
@@ -56,7 +52,7 @@ test("the escaped pipe of a table cell reads as the pipe", async () => {
 });
 
 test("a link that resolves to nothing fails the build, naming the file and the target", async () => {
-	await expect(render("See [[ADR-9999]].")).rejects.toThrow(
-		"docs/guide/first-folds.md: [[ADR-9999]] names no document; there is no ADR-9999 under docs/ or records/",
+	await expect(render("See [[notes/2099-01-01]].")).rejects.toThrow(
+		"docs/guide/first-folds.md: [[notes/2099-01-01]] names no document; there is no notes/2099-01-01 under docs/ or records/",
 	);
 });

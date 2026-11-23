@@ -8,6 +8,8 @@ motivation section will need.
 
 Filename: `YYYY-MM-DD.md` (multiple entries per day → append, or `-2` suffix).
 
-Keep it informal. Link to records (`[[ADR-0008]]`, `[[BEP-0037]]`, [[ADR-0062]]) and examples
+Keep it informal. Name requirements of `openspec/specs/` and examples
 liberally. An entry stays as it was written; when it ends in a decision, the
-decision becomes an ADR or a BEP and the entry links to it.
+decision becomes an OpenSpec change and the entry names it. Older entries
+name ADRs and BEPs, the records the specification replaced; the Git history
+keeps them.

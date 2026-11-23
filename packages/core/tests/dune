@@ -108,9 +108,7 @@
  (libraries beloch alcotest yojson)
  (deps
   ../stdlib/shapes.bel
-  ../../../docs/reference/BELOCH.md
-  ../../../records/bep/BEP-0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
-  ../../../records/bep/BEP-0047-a-trim-exports-the-names-it-lists.md))
+  ../../../docs/reference/BELOCH.md))
 
 ; property tests (QCheck, run as alcotest cases); arb.ml holds the generators
 (test
