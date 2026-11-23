@@ -1,10 +1,9 @@
-# Spec Delta
+# architecture Specification
 
 ## Purpose
-
 How Beloch is built and how the project works: the implementation languages and the number kernel, the module boundaries of the kernel, the FOLD as the one data layer, the readers, the documents and the checks the repository runs.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: The OpenSpec specification binds every implementation
 The requirements under `openspec/specs/` SHALL be the binding specification of Beloch. Every implementation of the language SHALL satisfy them, and a rule that no requirement states SHALL bind no implementation. Where a page under `docs/reference/` and a requirement disagree, the requirement SHALL hold and the page SHALL be corrected. Introduced by the change adopt-openspec; its design gives the reason under ADR-0032.
@@ -131,7 +130,7 @@ A document or code comment that cites a rule's reason SHALL name the requirement
 - **THEN** it reads `(spec architecture, "A number is rational, a field element or a qqbar value")`
 
 ### Requirement: A defined term has a glossary entry of its own
-Every term that a definition of `MODEL.md` introduces, listed in its `defines` attribute, SHALL have a glossary entry of its own, a `.term` block whose id is that term, linked to the definition that owns it. Alignment, construction, candidate and selection SHALL each stand as a definition of its own with an entry of its own. Introduced by the change adopt-openspec; its design gives the reason under ADR-0064.
+Every term that a definition of `MODEL.md` introduces, listed in its `defines` attribute, SHALL have a glossary entry of its own, a `.term` block whose id is that term, linked to the definition that owns it. Alignment, construction, candidate and selection SHALL each have an entry of its own. Introduced by the change adopt-openspec; its design gives the reason under ADR-0064.
 
 #### Scenario: A new definition
 - **WHEN** a definition block in `MODEL.md` lists `term-hinge-angle` in `defines`
@@ -139,7 +138,7 @@ Every term that a definition of `MODEL.md` introduces, listed in its `defines` a
 
 #### Scenario: The four terms of selection
 - **WHEN** a reader looks up alignment, construction, candidate or selection in the glossary
-- **THEN** each term has its own entry, and none points at the definition of another term
+- **THEN** each term has its own entry
 
 ### Requirement: The evaluator core is written in OCaml
 The kernel in `packages/core` SHALL be written in OCaml and built with dune: lexing, parsing, name resolution, geometric evaluation, layer order and the emission of the FOLD file. Introduced by the change adopt-openspec; its design gives the reason under ADR-0001.
@@ -358,8 +357,8 @@ The kernel SHALL hold a folded state whose every hinge angle is 0, π or minus �
 - **WHEN** `Fold_state.make` receives a hinge whose angle is one half, in units of π
 - **THEN** it returns `Error (Bad_angle i)` for that hinge
 
-### Requirement: Declared credits reach every export without loss
-The emitter SHALL carry the credits a program declares, who wrote it, who designed its model and which sequence it follows, into every export it writes without loss. Model credits SHALL stay apart from the credit for the evaluator's code, which the MIT notice covers. Introduced by the change adopt-openspec; its design gives the reason under ADR-0019.
+### Requirement: Declared credits reach the FOLD file without loss
+The emitter SHALL carry the credits a program declares, who wrote it, who designed its model and which sequence it follows, into the FOLD file it writes without loss. Model credits SHALL stay apart from the credit for the evaluator's code, which the MIT notice covers. Introduced by the change adopt-openspec; its design gives the reason under ADR-0019.
 
 #### Scenario: A credited program evaluates to a FOLD file
 - **WHEN** a program that states `@author "Ann"` and `@design traditional` evaluates
@@ -368,13 +367,6 @@ The emitter SHALL carry the credits a program declares, who wrote it, who design
 #### Scenario: A program without credits
 - **WHEN** a program declares no credits
 - **THEN** the FOLD file it writes carries none
-
-### Requirement: Beloch's own tools show declared credits by default
-The playground, the document cards and the renderers this project ships SHALL show the credits a program declares, by default, beside what they draw. Introduced by the change adopt-openspec; its design gives the reason under ADR-0019.
-
-#### Scenario: The playground draws a credited model
-- **WHEN** the playground draws a program that states `@design traditional` and `@source "[ida2020, Fig. 7.19]"`
-- **THEN** the design and the source appear beside the drawing without a setting turned on
 
 ### Requirement: Attribution is a capability and never a license duty
 Beloch's code SHALL stay under the MIT license everywhere, with no field-of-use clause and no clause that requires a user to keep or show model credits. Declaring credits SHALL be opt-in for a program. Introduced by the change adopt-openspec; its design gives the reason under ADR-0019.
@@ -452,30 +444,6 @@ Every reader of an error SHALL carry its message and its hint as two parts. The 
 #### Scenario: The browser evaluator answers a failed run
 - **WHEN** the browser evaluator runs a program that fails
 - **THEN** its answer carries the message, the hint and the start and the end of the span
-
-### Requirement: The command line prints a warning as it prints an error
-The command line SHALL print each warning on standard error in its error block, headed `warning:`, with the hint as the `help:` line, and exit with 0 when the program runs. When `beloch fold --trace` runs a failing program, the warnings of the statements before the failing one SHALL come first, then the error. `beloch fold --watch` and `beloch render` of a `.bel` file SHALL print warnings the same way. Introduced by the change adopt-openspec; its design gives the reason under ADR-0067.
-
-#### Scenario: A program with a warning
-- **WHEN** `beloch fold` runs a program that warns and runs to its end
-- **THEN** standard error shows a block headed `warning:` with a `help:` line
-- **AND** the command exits with 0 and writes the FOLD file
-
-#### Scenario: A traced program that warns and then fails
-- **WHEN** `beloch fold --trace` runs a program whose second statement warns and whose fourth fails
-- **THEN** the warning prints before the error, and the command exits with 1
-
-### Requirement: The browser readers carry a warning as they carry an error
-The browser evaluator's answer to a program that runs SHALL carry `warnings`, each with the message, the hint and the whole span, start and end. The playground SHALL show a warning where it would show an error, in a color of its own, and draw the program's result as usual. A language server SHALL report a warning with the severity Warning and the same span, with the hint where it puts an error's hint. Introduced by the change adopt-openspec; its design gives the reason under ADR-0067.
-
-#### Scenario: The playground shows a warning
-- **WHEN** the playground runs a program that warns
-- **THEN** the offending word is underlined with the message and the hint in rows beneath it, in the warning color
-- **AND** the drawing shows the program's result
-
-#### Scenario: An answer from before warnings existed
-- **WHEN** the playground reads an answer of the browser evaluator without the field `warnings`
-- **THEN** it reads the answer as a run without warnings
 
 ### Requirement: The examples are complete popular models
 The directory `examples/` SHALL hold complete models only, each a popular model with a technique the others lack, judged by its last flat state. A base or a single technique SHALL live as a test case under `packages/core/tests/cases/`. A model by a named designer SHALL enter only once that designer's credit is settled. Introduced by the change adopt-openspec; its design gives the reason under ADR-0049.
@@ -606,7 +574,7 @@ A condition the form cannot carry, such as each piece of a bundle passing throug
 - **THEN** the function returns an error
 
 ### Requirement: The check holds the maintainer's hash of each reviewed interface
-A list in the repository SHALL hold one SHA-256 hash per reviewed `.mli`. On every pull request the CI job `reviewed-interfaces`, apart from `check`, SHALL fail while a listed file no longer matches its hash, until the maintainer writes the new hash. An agent SHALL write the list only after the maintainer approves the call; a hook in the agent settings asks him. Implementation files carry no hash. Introduced by the change adopt-openspec; its design gives the reason under ADR-0080.
+A list in the repository SHALL hold one SHA-256 hash per reviewed `.mli`. On every pull request the CI job `reviewed-interfaces`, apart from `check`, SHALL fail while a listed file no longer matches its hash, until the maintainer writes the new hash. An agent SHALL write the list only after the maintainer approves the call; a hook in the agent settings asks the maintainer. Implementation files carry no hash. Introduced by the change adopt-openspec; its design gives the reason under ADR-0080.
 
 #### Scenario: The reviewed interfaces match their hashes
 - **WHEN** the job `reviewed-interfaces` runs on a pull request
@@ -619,4 +587,3 @@ A list in the repository SHALL hold one SHA-256 hash per reviewed `.mli`. On eve
 #### Scenario: An agent writes the list
 - **WHEN** an agent runs a command that writes the hash list
 - **THEN** the hook asks the maintainer before the command runs
-

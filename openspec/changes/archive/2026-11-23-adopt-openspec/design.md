@@ -100,9 +100,6 @@ The FOLD already carries frames, statements and annotations, and the media diffe
 ### ADR-0066: The FOLD logs every executed statement in one flat list
 Annotations target statements inside `def` bodies and a diagram draws a repeated `apply`; a flat list with a parent index carries the call tree without making every consumer recurse.
 
-### ADR-0067: Every reader carries a warning as it carries an error
-A program with warnings writes its file anyway, so a warning only on standard error or only under `--trace` would never reach a reader of the FOLD or the playground.
-
 ### ADR-0068: The FOLD carries a program's credits, and the repository's check requires them
 A header comment is read by no tool and does not reach the FOLD; annotations do, and the repository's convention is enforced by a script while the language asks for nothing.
 
@@ -110,7 +107,7 @@ A header comment is read by no tool and does not reach the FOLD; annotations do,
 One list of all faces orders faces the paper leaves unordered, makes results depend on the route to a state, and cannot hold a cyclic state such as the square twist.
 
 ### ADR-0080: A reviewed type states its contract in an interface, and the check holds the maintainer's hash of it
-Agents write most of the code and the maintainer reviews types first; a hash per reviewed interface, checked outside `check`, tells him which change waits for his review, where CODEOWNERS would block every pull request opened under his account.
+Agents write most of the code and the maintainer reviews types first; a hash per reviewed interface, checked outside `check`, tells the maintainer which change waits for review, where CODEOWNERS would block every pull request opened under the maintainer's account.
 
 ### ADR-0081: The number kernel holds values up to a measured degree over one generator
 Field arithmetic over one generator beats qqbar, which computes a minimal polynomial for every result, up to the measured cap; a degree fixed in prose would go stale with the next measurement.
@@ -149,9 +146,6 @@ heading asks for the direction of the crease without a position, which keeps deg
 
 ### BEP-0033: A line reads as the bundle it names; a mark's bundle is its extent
 Reading a mark as all the paper on its table line made its material change with every later fold, so every read takes the bundle under the name, and a mark's bundle is its extent.
-
-### BEP-0035: A warning reports a program that runs, in the shape of an error
-Failing a program for a redundant item rejects a program that means what its author wrote, and silence leaves the author believing the item does something; a hint that silences the warning makes codes and suppression unnecessary.
 
 ### BEP-0036: A write reaches every layer under its axis; moving names a side
 A folder presses a crease through the whole stack under the finger, so every write takes all layers by default and moving names only a side.
@@ -235,6 +229,8 @@ A line bound with `=` was a value the program knew and the paper did not show, s
 ### BEP-0084: A program unites no bundles
 The union `[--l --m]` looked like a meet with its `.` dropped and no program needed it, so a bare bracket is an error and every bracket form selects one thing of its sigil's sort.
 
+Rules that are decided and not built went to open changes, which keep their reason: ADR-0067 and BEP-0035 to `report-warnings`, the display of credits from ADR-0019 to `show-declared-credits` and their place in exports other than the FOLD file to `carry-credits-in-every-export`, the kinds of glossary entries from ADR-0064 to `glossary-term-kinds`, and the reading of namespaced annotations by the YR library from BEP-0029 to `read-yr-annotations`.
+
 Records that contributed nothing:
 
 - ADR-0002: superseded; the FOLD output is held by the output capability (ADR-0065, FOLD.md) and the boundary by "The tooling edge is written in TypeScript"
@@ -245,7 +241,7 @@ Records that contributed nothing:
 - BEP-0022: superseded by BEP-0031 (selection), which carries forward the alignment set as the canonical form of a construction
 - BEP-0026: superseded by BEP-0030; its two axes and statement log are held by output "A position in a program is a pair of a state and a statement count" and "The FOLD logs every executed statement in one flat list"
 - BEP-0042: superseded by BEP-0043; its rule now held by reverse-fold "A reverse fold opens its tip at one opening"
-- BEP-0056: superseded by BEP-0058; its rule now held by flatten "The outline ranks the states of every fan"
+- BEP-0056: superseded by BEP-0058; its rule now held by multifold "The outline ranks the states of every fan"
 - BEP-0070: abandoned history of the 2018 design; its one lasting rule is held by "The kernel implements no rule the specification lacks" (ADR-0003)
 - BEP-0071: abandoned; the split into def, apply, export and step is held by the names capability
 - BEP-0072: abandoned; crossings are computed on material in paper space (BEP-0027, operands)

@@ -29,15 +29,15 @@ it from the specification is a change of its own.
 - `architecture`: languages, number kernel, kernel modules, data layer, readers, documents and repository checks.
 - `annotations`: annotation lines, their vocabulary and the credits of a program.
 - `output`: what the FOLD file shows beyond its frames.
-- `diagnostics`: errors and warnings and where they appear.
+- `diagnostics`: errors and where they appear.
 - `folded-state`: flat folded states, verbs as the only change, flaps.
-- `operands`: typed slots, bundles, the meet, filters and joins.
+- `operands`: typed slots, numbers, free points, bundles, the meet, filters and joins.
 - `names`: what a name holds and what `=` binds.
 - `sheets`: the sheet a program opens, shapes and their exports.
 - `selection`: how a write keeps one candidate line of a construction.
 - `folds`: which layers `mark`, `fold` and `unfold` reach and move.
 - `layer-order`: how a write decides which of two overlapping faces lies above.
-- `flatten`: the fan of `flatten` and the fan machinery of `reverse` and `squash`.
+- `multifold`: the fan of `flatten` and the fan machinery of `reverse` and `squash`.
 - `squash`: the `squash` write.
 - `reverse-fold`: the `reverse` write.
 

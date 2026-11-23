@@ -1,10 +1,9 @@
-# Spec Delta
+# operands Specification
 
 ## Purpose
+How a statement names what it works on: typed slots, numbers and the unit a file declares, free points, creases as bundles of pieces, the meet, the filters and the join, the paper a line reads, and the errors of a slot that resolves to no or several referents.
 
-How a statement names what it works on: typed slots, creases as bundles of pieces, the meet, the filters and the join, the paper a line reads, and the errors of a slot that resolves to no or several referents.
-
-## ADDED Requirements
+## Requirements
 
 ### Requirement: A crease is a bundle of pieces
 A crease name SHALL denote the bundle its write scored: a set of paper points with one piece per flap the scored line crossed. A later fold across the crease SHALL split a piece in 2 and leave the bundle the same set of paper points. A crease SHALL serve as a line only through the table line its pieces lie on.
@@ -134,3 +133,35 @@ The crease of a `flatten` with an even number of rays SHALL be the only bundle t
 - **WHEN** a program flattens 4 rays `as --x` and then writes `fold (--x) (moving .b)`
 - **THEN** evaluation fails with `--x is a bundle, not a single crease`
 
+### Requirement: A number is an exact rational written without arithmetic
+A number in the source SHALL be an integer, a fraction or a decimal, each an exact rational, and a decimal SHALL start with a digit. The language SHALL hold no arithmetic on numbers and no irrational literal; an irrational ratio SHALL come from a constructed line.
+
+#### Scenario: A decimal and a point name
+- **WHEN** a program writes `paper square 7.5`
+- **THEN** the side is the rational $15/2$
+- **AND** the lexer takes `.5` as the point name `.5` and no number
+
+### Requirement: A free point lies at a distance along a line
+`free on --l from .x by d` SHALL place the point at the distance `d` from the end `.x` of the material of `--l`, measured along the line, for $0 \le d$ up to the length of that material. A longer distance SHALL fail with `the distance is longer than the line's material`.
+
+#### Scenario: Three units along an edge
+- **WHEN** a program opens `paper square 4` and binds `.e = free on --ab from .a by 3`
+- **THEN** `.e` is the paper point $(3, 0)$
+
+### Requirement: The parameters of a shape are numbers
+A shape's parameters SHALL be numbers named without a sigil, matched by position to the numbers of an opening. A count mismatch SHALL fail with `` `<shape>` takes <n> numbers, <m> given ``. A bare name where a number stands SHALL fail outside a shape body and, inside one, where it names no parameter. A shape body SHALL hold no `def` and no annotation.
+
+#### Scenario: Too few numbers
+- **WHEN** a program opens `paper rectangle 2`
+- **THEN** evaluation fails with `` `rectangle` takes 2 numbers, 1 given ``
+
+### Requirement: A file declares the unit of its numbers
+A file MAY name its unit before its first statement with `unit <u>`, `<u>` being one of `in`, `pt`, `m`, `cm`, `mm`, `um`, `nm`. The unit SHALL change no coordinate. The FOLD output SHALL write it as `frame_unit`, and SHALL write `"unit"` when the file names none. Any other unit SHALL fail with `` `<u>` is no unit; the units are in, pt, m, cm, mm, um, nm ``.
+
+#### Scenario: A square in millimeters
+- **WHEN** a file reads `unit mm` and `paper square 150`
+- **THEN** the FOLD output has `frame_unit` `"mm"` and the corner `.c` at $(150, 150)$
+
+#### Scenario: No unit declared
+- **WHEN** a file declares no unit
+- **THEN** the FOLD output has `frame_unit` `"unit"`
