@@ -1,0 +1,121 @@
+---
+// "When a fold could mean two things, Beloch asks": a fold two creases carry
+// out, the error the kernel raises for it, and the two folds a `toward`
+// item picks between, each drawn as its crease pattern with the folded
+// state over its corner.
+import Band from "../Band.astro";
+import Diagnostic from "../Diagnostic.astro";
+import { parseFold } from "@beloch/scene";
+import { colorLineStyle, makeLayout, renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
+import { evalBelToFold } from "../../lib/eval-bel";
+import { highlightBel } from "../../lib/highlight-bel";
+
+const SRC = `paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+fold (map --ac onto --bd)`;
+// The two edges a `toward` item can name to pick each fold.
+const TOWARD = ["--ab", "--da"];
+
+const THEME = { ...WEB_THEME, lineStyle: colorLineStyle };
+const BARE = { annotate: [], dots: "annotated" as const };
+const picks = await Promise.all(
+  TOWARD.map(async (edge) => {
+    const scene = parseFold(evalBelToFold(`${SRC} (toward ${edge})`) as object);
+    // The folded state fills its own drawing, which lies over a corner of
+    // the crease pattern.
+    const vs = scene.steps.at(-1)!.frame.vertices;
+    const xs = vs.map((v) => v[0]), ys = vs.map((v) => v[1]);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    const h = Math.max(x1 - x0, y1 - y0) / 2, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const layout = makeLayout([[cx - h, cy - h], [cx + h, cy + h]]);
+    return {
+      code: (await highlightBel(`${SRC.split("\n").at(-1)}\n  (toward ${edge})`)).split("\n"),
+      cp: renderCP(scene, { ...BARE, theme: THEME }).toString(),
+      folded: renderFolded(scene, { ...BARE, theme: WEB_THEME, layout }).toString(),
+    };
+  }),
+);
+---
+
+<Band tone="quiet">
+  <div class="l-split l-flip amb">
+    <div class="l-text">
+      <h2 class="l-h2">When a fold could mean two things, Beloch asks.</h2>
+      <p class="l-p">
+        Diagrams leave a lot to the eye, and a program has to say it all. When a
+        statement fits more than one fold, Beloch does not guess: it stops, says how
+        many folds fit, and hints at what would pin one down.
+      </p>
+      <p class="l-p">
+        A folder settles these choices with an arrow and a bit of intuition. A
+        program has neither, so the question comes up at the line that caused it,
+        before a later fold builds on the wrong one.
+      </p>
+    </div>
+    <div class="l-vis amb-vis">
+      <Diagnostic source={SRC} name="fold.bel" />
+      <div class="amb-picks">
+        {picks.map((p) => (
+          <div class="amb-pick">
+            <div class="l-code bel-code-on-page amb-code">
+              {p.code.map((html) => <div set:html={html} />)}
+            </div>
+            <div class="amb-pair">
+              <div class="l-figure" role="img" aria-label="Crease pattern" set:html={p.cp} />
+              <div class="l-figure amb-folded" role="img" aria-label="Folded state" set:html={p.folded} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</Band>
+
+<style>
+  .l-split.amb {
+    align-items: flex-start;
+  }
+  .amb-vis {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 600px;
+  }
+  .amb-picks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 16px;
+  }
+  .amb-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+    padding: 16px 18px 22px;
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
+    --bel-paper-background: transparent;
+  }
+  .amb-pick .amb-code {
+    padding: 0;
+  }
+  /* The crease pattern, with the folded state laid over its lower right
+     corner. */
+  .amb-pair {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    padding: 0 20% 20% 0;
+    align-self: center;
+  }
+  .amb-folded {
+    position: absolute;
+    right: -4%;
+    bottom: -4%;
+    width: 58%;
+  }
+  .amb-folded :global(svg) {
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  }
+</style>
