@@ -5,8 +5,8 @@
 ; steps without one clobbering the other's recorded creation step.
 paper square
 mark (through .a .c) as --m
-fold (map .a onto .b) as --v
-.m = --v * --m
+fold (map --ab onto --da) as --v
+.m = --m * --bc
 
 ; assert named-step --m = 0
 ; assert named-step .m = 1

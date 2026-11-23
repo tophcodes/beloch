@@ -28,9 +28,9 @@ import { renderFolded } from "./render-folded";
 import type { RenderOptions } from "./render-cp";
 
 export interface SideOptions extends RenderOptions {
-  // The named line to cut along, without `--`. It is read on the table of the
-  // state drawn, so a line bound with `=` after the last fold fits the final
-  // state.
+  // The named line to cut along, without `--`. Its coefficients are its line
+  // on the table of the last state, and the section reads them on the table
+  // of the state drawn.
   along: string;
   step?: string | undefined; // frame index; undefined → final state
   // See the section from the other side of the cut than the default one.

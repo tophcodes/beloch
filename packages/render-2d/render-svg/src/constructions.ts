@@ -54,7 +54,7 @@ export function appendConstructions(
     if (s.startsWith("--")) {
       const name = s.slice(2);
       // Where the line lies on the paper: a crease's own scars, or the paper
-      // under a line bound with `=`. The folded view takes the same pieces to
+      // under a named line without edges. The folded view takes the same pieces to
       // the table face by face, so both views draw one set of paper points.
       const paper = namedSegments(scene, name);
       const drawn = folded ? segmentsInFrame(folded.frame, paper) : paper;

@@ -1394,6 +1394,28 @@ let test_ax5_bind_endpoint_directions () =
   Alcotest.(check bool) "toward .a and toward .b differ" true
     (Geom.side_of_line ka (pt 1 1) <> Geom.side_of_line kb (pt 1 1))
 
+(* a crease a mark scores on a folded state is named by its line on the
+   table, as for a crease a fold made: here the line through the preliminary
+   base's table points (1/2, 1) and (1, 1/2), where the paper line of the
+   piece on .a's quarter is x + y = 1/2 *)
+let test_mark_named_line_on_table () =
+  let fd =
+    eval_src
+      "mark (through .a .c) as --ac\n\
+       mark (through .b .d) as --bd\n\
+       mark (map --ab onto --cd) as --h\n\
+       mark (map --da onto --bc) as --v\n\
+       flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)\n\
+       .m = free on --bd from .b at 1/4\n\
+       mark (perp --bd through .m) (on #[.a]) as --s\n"
+  in
+  match assoc4 "s" fd.Eval.named_lines with
+  | Some s ->
+      let on x y = Geom.side_of_line s { Geom.x = x; y } = 0 in
+      Alcotest.(check bool) "--s passes through (1/2, 1)" true (on half (q 1));
+      Alcotest.(check bool) "--s passes through (1, 1/2)" true (on (q 1) half)
+  | None -> Alcotest.fail "expected --s"
+
 (* bind, hinge at the sheet center (two midlines crossing): .b lies on the
    anti-diagonal candidate and names no side of it, so the a-c diagonal
    remains (#58, the figure of a line folding over in part) *)
@@ -2254,6 +2276,8 @@ let () =
             test_ax5_bind_endpoint_directions;
           Alcotest.test_case "ax5 bind center, toward a corner" `Quick
             test_ax5_bind_center_toward_corner;
+          Alcotest.test_case "a marked crease is named on the table" `Quick
+            test_mark_named_line_on_table;
           Alcotest.test_case "ax5 toward on the moved line" `Quick
             test_ax5_toward_on_moved_line;
           Alcotest.test_case "ax5 toward point on l1" `Quick

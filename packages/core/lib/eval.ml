@@ -486,7 +486,12 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
         else
           let frame, stmt = step_of_line k in
           match cv with
-          | Mark (_, l) -> (k, l, frame, stmt) :: acc
+          (* a mark keeps its line on the paper; the map wants the table *)
+          | Mark (cid, l) -> (
+              match Fold_state.mark_axis_current !(ctx.state) cid with
+              | `Line l -> (k, l, frame, stmt) :: acc
+              | `Empty -> (k, l, frame, stmt) :: acc
+              | `Bent | `Collapsed -> acc)
           | Material (cid, l_orig) -> (
               match Fold_state.crease_axis !(ctx.state) cid l_orig with
               | `Line l -> (k, l, frame, stmt) :: acc

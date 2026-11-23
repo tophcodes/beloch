@@ -242,6 +242,22 @@ let lookup_line (fd : Eval.folded) (name : string) : Geom.line =
   | Some l -> l
   | None -> harness_fail "unknown line --%s" name
 
+(* The PAPER line of a named crease: its mark chords or its material pieces,
+   which no fold moves on the paper. [named_lines] holds the table line, and
+   no entry once a fold bends the crease. A name without a crease id falls
+   back to its [named_lines] entry. *)
+let paper_line (fd : Eval.folded) (name : string) : Geom.line =
+  match List.assoc_opt name fd.Eval.named_line_cids with
+  | None -> lookup_line fd name
+  | Some cid -> (
+      match Fold_state.mark_chords fd.Eval.state cid with
+      | (a, b) :: _ -> Geom.line_through a b
+      | [] -> (
+          match Fold_state.crease_paper_axis fd.Eval.state cid with
+          | `Line l -> l
+          | `Bent -> harness_fail "--%s lies on more than one paper line" name
+          | `Empty -> harness_fail "--%s has no pieces on the paper" name))
+
 let lookup_named_step (fd : Eval.folded) (v : value) : string * int option =
   match v with
   | VPoint (name, _) ->
@@ -338,11 +354,12 @@ let check_incident (fd : Eval.folded) (polarity : bool) (v1 : value) (v2 : value
           (describe_value v2)
 
 let check_is (fd : Eval.folded) (name : string) (kw : assign_kw) : unit =
-  let l = lookup_line fd name in
   match kw with
   | KBoundary ->
-      if not (is_boundary_line fd l) then harness_fail "--%s is not the paper boundary" name
+      if not (is_boundary_line fd (paper_line fd name)) then
+        harness_fail "--%s is not the paper boundary" name
   | KMountain | KValley ->
+      let l = lookup_line fd name in
       let want = if kw = KMountain then Fold_state.M else Fold_state.V in
       let st = fd.Eval.state in
       let hs = Fold_state.hinges st in
