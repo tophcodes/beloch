@@ -1,35 +1,18 @@
 ---
 // "Fold something": four models of examples/, each its crease pattern with
 // the folded model over its corner, and how many lines of code fold it. The
-// drawings are the ones the README shows, which check-all holds to their
-// programs. A card leads to its program on GitHub.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+// drawings are files pages/landing/[drawing].svg.ts writes at build time. A
+// card leads to its program on GitHub.
 import Band from "../Band.astro";
 import { REPO_LINK } from "../../lib/nav-links";
-import craneCp from "../../../../../examples/crane-cp.svg?url";
-import craneFolded from "../../../../../examples/crane-folded.svg?url";
-import frogCp from "../../../../../examples/traditional-frog-cp.svg?url";
-import frogFolded from "../../../../../examples/traditional-frog-folded.svg?url";
-import birdCp from "../../../../../examples/flapping-bird-cp.svg?url";
-import birdFolded from "../../../../../examples/flapping-bird-folded.svg?url";
-import cicadaCp from "../../../../../examples/cicada-cp.svg?url";
-import cicadaFolded from "../../../../../examples/cicada-folded.svg?url";
+import { codeLines, MODELS } from "../../lib/landing-models";
 
-const MODELS = [
-  { name: "Crane", file: "crane", cp: craneCp, folded: craneFolded },
-  { name: "Frog", file: "traditional-frog", cp: frogCp, folded: frogFolded },
-  { name: "Flapping bird", file: "flapping-bird", cp: birdCp, folded: birdFolded },
-  { name: "Cicada", file: "cicada", cp: cicadaCp, folded: cicadaFolded },
-];
-
-const root = process.env.BELOCH_REPO_ROOT!;
-// A line of code: neither blank, nor a comment, nor an annotation.
-const codeLines = (file: string) =>
-  readFileSync(join(root, "examples", `${file}.bel`), "utf8")
-    .split("\n")
-    .filter((l) => !/^\s*(;|@|$)/.test(l)).length;
-const models = MODELS.map((m) => ({ ...m, lines: codeLines(m.file) }));
+const models = MODELS.map((m) => ({
+  ...m,
+  lines: codeLines(m.file),
+  cp: `/landing/${m.file}-cp.svg`,
+  folded: `/landing/${m.file}-folded.svg`,
+}));
 const tree = `${REPO_LINK.href}/tree/main/examples`;
 ---
 

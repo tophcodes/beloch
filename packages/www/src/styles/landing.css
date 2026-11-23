@@ -88,11 +88,10 @@
   width: 100%;
   height: auto;
 }
-/* The drawings stand at a third of the size the renderer draws them, where
-   their own stroke widths would thin to a hair, so the lines keep their
-   width in screen pixels. */
-.l-figure line,
-.l-figure polyline,
-.l-figure polygon {
-  vector-effect: non-scaling-stroke;
+/* A drawing that marks points draws no other dots, so every circle in it
+   is a marked point. At a third of the renderer's size its own radius would
+   shrink to a speck; this one is in drawing units and keeps clear of
+   DOT_MARGIN (lib/landing-drawing.ts). */
+.l-dots circle {
+  r: 12px;
 }

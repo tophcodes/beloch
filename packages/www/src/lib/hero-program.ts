@@ -8,10 +8,10 @@
  *  and has no step of its own. */
 import { orientationAt, parseFold, type FoldScene } from "@beloch/scene";
 import {
-  colorLineStyle, makeLayout, renderFolded, renderScene, turnFrame, WEB_THEME, type Layout, type Theme,
+  makeLayout, renderFolded, renderScene, turnFrame, type Layout,
 } from "@beloch/render-svg";
 import { lineOfSpan, parseSpan } from "@beloch/runtime-editor";
-import { evalBelToFold } from "./eval-bel";
+import { cachedFold, LANDING_THEME, paperOnly } from "./landing-drawing";
 import { highlightBel } from "./highlight-bel";
 
 export interface HeroFold {
@@ -33,10 +33,9 @@ export interface HeroProgram {
   tips: Record<string, string>;
 }
 
-const THEME: Partial<Theme> = { ...WEB_THEME, lineStyle: colorLineStyle };
 // The drawings write out no name and draw no point: the program beside them
 // carries the names.
-const BARE = { theme: THEME, annotate: [], dots: "annotated" as const };
+const BARE = { theme: LANDING_THEME, annotate: [], dots: "annotated" as const };
 // How far a crease scored before the fold recedes behind the ones it adds.
 const EARLIER_OPACITY = 0.3;
 // A tip quotes the statement behind a name up to this many characters.
@@ -66,7 +65,7 @@ function creasePattern(scene: FoldScene, frame: number, fresh: Set<string>): str
     const id = line.attrs["data-crease-id"];
     if (id !== undefined && !fresh.has(String(id))) line.attrs.opacity = EARLIER_OPACITY;
   }
-  return doc.toString();
+  return paperOnly(doc);
 }
 
 const CORNERS = new Set([".a", ".b", ".c", ".d"]);
@@ -126,7 +125,7 @@ function stepLayouts(scene: FoldScene): Layout[] {
 }
 
 export async function heroProgram(src: string): Promise<HeroProgram> {
-  const scene = parseFold(evalBelToFold(src) as object);
+  const scene = parseFold(cachedFold(src) as object);
   const source = src.split("\n");
   // No token spans a line break, so the highlighted program splits where the
   // source does.
@@ -141,7 +140,7 @@ export async function heroProgram(src: string): Promise<HeroProgram> {
     return [{
       from: step.sourceLine,
       to,
-      folded: renderFolded(scene, { ...BARE, step: String(step.index), orient: true, layout: layouts[k] }).toString(),
+      folded: paperOnly(renderFolded(scene, { ...BARE, step: String(step.index), orient: true, layout: layouts[k] })),
       cp: creasePattern(scene, step.index, scoredOn(scene, step.sourceLine)),
     }];
   });

@@ -6,8 +6,8 @@
 import Band from "../Band.astro";
 import Diagnostic from "../Diagnostic.astro";
 import { parseFold } from "@beloch/scene";
-import { colorLineStyle, makeLayout, renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
-import { evalBelToFold } from "../../lib/eval-bel";
+import { renderCP, renderFolded } from "@beloch/render-svg";
+import { cachedFold, fitStep, LANDING_THEME, paperOnly } from "../../lib/landing-drawing";
 import { highlightBel } from "../../lib/highlight-bel";
 
 const SRC = `paper square
@@ -17,22 +17,16 @@ fold (map --ac onto --bd)`;
 // The two edges a `toward` item can name to pick each fold.
 const TOWARD = ["--ab", "--da"];
 
-const THEME = { ...WEB_THEME, lineStyle: colorLineStyle };
-const BARE = { annotate: [], dots: "annotated" as const };
+const BARE = { theme: LANDING_THEME, annotate: [], dots: "annotated" as const };
 const picks = await Promise.all(
   TOWARD.map(async (edge) => {
-    const scene = parseFold(evalBelToFold(`${SRC} (toward ${edge})`) as object);
-    // The folded state fills its own drawing, which lies over a corner of
-    // the crease pattern.
-    const vs = scene.steps.at(-1)!.frame.vertices;
-    const xs = vs.map((v) => v[0]), ys = vs.map((v) => v[1]);
-    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-    const h = Math.max(x1 - x0, y1 - y0) / 2, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    const layout = makeLayout([[cx - h, cy - h], [cx + h, cy + h]]);
+    const scene = parseFold(cachedFold(`${SRC} (toward ${edge})`) as object);
     return {
       code: (await highlightBel(`${SRC.split("\n").at(-1)}\n  (toward ${edge})`)).split("\n"),
-      cp: renderCP(scene, { ...BARE, theme: THEME }).toString(),
-      folded: renderFolded(scene, { ...BARE, theme: WEB_THEME, layout }).toString(),
+      cp: paperOnly(renderCP(scene, BARE)),
+      // The folded state fills its own drawing, which lies over a corner of
+      // the crease pattern.
+      folded: paperOnly(renderFolded(scene, { ...BARE, layout: fitStep(scene) })),
     };
   }),
 );
@@ -95,7 +89,6 @@ const picks = await Promise.all(
     padding: 16px 18px 22px;
     border: 1px solid var(--bel-ui-divider);
     border-radius: var(--bel-radius-card);
-    --bel-paper-background: transparent;
   }
   .amb-pick .amb-code {
     padding: 0;

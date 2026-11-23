@@ -140,9 +140,6 @@ const status = (k: number) => `line ${folds[k - 1]!.from}  ·  fold ${k} of ${fo
     overflow: hidden;
     background: var(--bel-ui-code-surface);
     font-family: var(--bel-font-mono);
-    /* The drawings lie on the panel rather than on a sheet of their own
-       (WEB_THEME reads this). */
-    --bel-paper-background: transparent;
   }
 
   .hp-code-col {

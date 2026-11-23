@@ -7,12 +7,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import Band from "../Band.astro";
 import { parseFold } from "@beloch/scene";
-import { createDoc, WEB_THEME } from "@beloch/render-svg";
+import { createDoc, renderCP, renderFolded } from "@beloch/render-svg";
 import { renderYr } from "@beloch/yr";
-import { evalBelToFold } from "../../lib/eval-bel";
+import { cachedFold, fitStep, LANDING_THEME, paperOnly } from "../../lib/landing-drawing";
 import { highlightBel } from "../../lib/highlight-bel";
-import craneCp from "../../../../../examples/crane-cp.svg?url";
-import craneFolded from "../../../../../examples/crane-folded.svg?url";
 
 // The crane's program lines the card shows before it elides the rest, and
 // the panel of its folding diagram the third drawing takes.
@@ -26,7 +24,7 @@ const shown = code.slice(0, SHOWN).map((l) => l.replace(/\s*;.*$/, ""));
 const head = (await highlightBel(shown.join("\n"))).split("\n");
 const more = code.length - SHOWN;
 
-const fold = evalBelToFold(src) as Record<string, unknown>;
+const fold = cachedFold(src) as Record<string, unknown>;
 // An edge the program did not make, the paper's boundary for one, has no entry.
 const edges = fold["beloch:edges"] as ({ name: string | null; axiom: string; sources: string[] } | null)[];
 const named = edges.find((e) => e?.name === "head")!;
@@ -34,8 +32,13 @@ const vertices = (fold.vertices_coords as unknown[]).length;
 const frames = (fold.file_frames as unknown[]).length;
 const points = Object.keys(fold["beloch:named_points"] as object).length;
 
+const scene = parseFold(fold);
+const BARE = { theme: LANDING_THEME, annotate: [], dots: "annotated" as const };
+const cp = paperOnly(renderCP(scene, BARE));
+const folded = paperOnly(renderFolded(scene, { ...BARE, orient: true, layout: fitStep(scene) }));
+
 // One panel of the diagram, cut out of the column renderYr draws.
-const yr = renderYr(parseFold(fold), { theme: WEB_THEME }).doc;
+const yr = renderYr(scene, { theme: LANDING_THEME }).doc;
 const panel = yr.root.children.find((n) => String(n.attrs?.["data-panel"]) === String(PANEL));
 if (!panel) throw new Error(`the crane's folding diagram has no panel ${PANEL}`);
 const one = createDoc(yr.width, 588);
@@ -90,11 +93,11 @@ const json = [
       <div class="ff-arrow"><span class="ff-chip"><span class="ff-prompt">$ </span>beloch render crane.fold --view &lt;view&gt;</span></div>
       <div class="ff-figs">
         <figure class="l-figure">
-          <div class="ff-fig"><img src={craneCp} alt="The crane's crease pattern" /></div>
+          <div class="ff-fig" role="img" aria-label="The crane's crease pattern" set:html={cp} />
           <figcaption>crease pattern<code>--view cp</code></figcaption>
         </figure>
         <figure class="l-figure">
-          <div class="ff-fig ff-folded"><img src={craneFolded} alt="The folded crane" /></div>
+          <div class="ff-fig ff-folded" role="img" aria-label="The folded crane" set:html={folded} />
           <figcaption>folded state<code>--view folded</code></figcaption>
         </figure>
         <figure class="l-figure">
@@ -181,7 +184,6 @@ const json = [
     gap: 20px;
     width: 100%;
     align-items: end;
-    --bel-paper-background: transparent;
   }
   .ff-figs figure {
     margin: 0;
@@ -195,7 +197,7 @@ const json = [
     width: 100%;
     max-width: 200px;
   }
-  .ff-folded img {
+  .ff-folded :global(svg) {
     filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
   }
   .ff-figs figcaption {

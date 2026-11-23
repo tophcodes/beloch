@@ -8,8 +8,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import Band from "../Band.astro";
 import { parseFold } from "@beloch/scene";
-import { renderFolded, HIGHLIGHT_PALETTE, WEB_THEME } from "@beloch/render-svg";
-import { evalBelToFold } from "../../lib/eval-bel";
+import { renderFolded, HIGHLIGHT_PALETTE } from "@beloch/render-svg";
+import { cachedFold, DOT_MARGIN, fitStep, LANDING_THEME, paperOnly } from "../../lib/landing-drawing";
 import { highlightBel } from "../../lib/highlight-bel";
 import { HERO_SRC } from "../../lib/landing-examples";
 
@@ -31,7 +31,7 @@ const num = (s: string) => {
   return Number(n) / Number(d ?? 1);
 };
 
-const fold = evalBelToFold(HERO_SRC) as Record<string, unknown>;
+const fold = cachedFold(HERO_SRC) as Record<string, unknown>;
 const table = fold["beloch:named_points"] as Record<string, { table: [number, number] }>;
 const values = POINTS.map((p, i) => {
   const twin = same.get(p);
@@ -80,9 +80,10 @@ for (const l of source.slice(source.findIndex((l) => /\bmoving \.x\b/.test(l))))
 const lines = (await highlightBel(statements.flatMap(wrap).join("\n"))).split("\n");
 
 const scene = parseFold(fold);
-const drawing = renderFolded(scene, {
-  theme: WEB_THEME, orient: true, annotate: POINTS, dots: "annotated", highlight: POINTS,
-}).toString();
+const drawing = paperOnly(renderFolded(scene, {
+  theme: LANDING_THEME, orient: true, annotate: [], dots: "annotated", highlight: POINTS,
+  layout: fitStep(scene),
+}), DOT_MARGIN);
 // A coordinate pair is no Beloch expression, so it takes the number and
 // punctuation colors by hand.
 const pair = (v: string) =>
@@ -116,7 +117,7 @@ const pair = (v: string) =>
           </div>
         ))}
       </div>
-      <figure class="l-figure exact-drawing" aria-label="The folded helmet with the three points marked" set:html={drawing} />
+      <figure class="l-figure l-dots exact-drawing" aria-label="The folded helmet with the three points marked" set:html={drawing} />
     </div>
   </div>
 </Band>
@@ -150,13 +151,8 @@ const pair = (v: string) =>
     width: 100%;
     justify-self: center;
   }
-  /* The names are drawn in the paper's ink, so the drawing keeps its own
-     light ground in both modes, as the figures in the docs do. */
   .exact-drawing :global(svg) {
-    border-radius: var(--bel-radius-card);
-  }
-  .exact-drawing :global(text) {
-    font-size: 26px;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
   }
   @media (max-width: 720px) {
     .exact-duo {
