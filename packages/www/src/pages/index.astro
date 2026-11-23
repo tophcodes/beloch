@@ -42,10 +42,6 @@ const body = DESCRIPTION.slice(cut + 1);
       </div>
     </div>
     <HeroProgram src={HERO_SRC} start={4} />
-    <p class="hero-hint">
-      Point at a name to see where it comes from. Step through the folds; the
-      lines that made each one light up.
-    </p>
   </Band>
   <Names />
   <FoldFile />
@@ -136,13 +132,6 @@ const body = DESCRIPTION.slice(cut + 1);
   .action:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
-  }
-
-  .hero-hint {
-    margin: 20px 0 0;
-    font-family: var(--bel-font-mono);
-    font-size: var(--bel-text-xs);
-    color: var(--bel-ui-text-muted);
   }
 
   @media (max-width: 720px) {
