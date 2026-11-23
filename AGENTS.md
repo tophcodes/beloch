@@ -46,6 +46,13 @@ to.
   (`https://raw.githubusercontent.com/tophcodes/beloch/<sha>/<path>`), the
   figure before the change beside it where one existed. A reviewer judges a
   drawing by looking at it.
+- An image that belongs to no file in the change, such as a screenshot of a
+  page, a mockup or a figure from an analysis, goes on the bookmark
+  `issue-assets` in a folder named after the issue number, and the body
+  links it at that bookmark's commit
+  (`https://raw.githubusercontent.com/tophcodes/beloch/<sha>/<n>/<file>`).
+  The bookmark never reaches `main`, so the images stay out of the code
+  history.
 - Annotation keys such as `@orient` go in backticks in a pull request or
   issue body, and stay out of titles and commit subjects, which render no
   code spans: GitHub links a bare `@word` to the user of that name.
