@@ -7,6 +7,7 @@
 import { headSyncScript } from "../lib/paper-schemes";
 import { NAV_LINKS, REPO_LINK } from "../lib/nav-links";
 import SiteHeader from "../components/SiteHeader.astro";
+import Wordmark from "../components/Wordmark.astro";
 import CiteLine from "../components/CiteLine.astro";
 import "../styles/theme.css";
 
@@ -68,13 +69,17 @@ const { title, description, url, bleed = false } = Astro.props;
       <slot />
     </main>
 
-    <footer class="site-footer">
-      <nav class="site-footer-nav" aria-label="Secondary">
-        {[...NAV_LINKS, REPO_LINK].map((l) => (
-          <a href={l.href}>{l.label}</a>
-        ))}
-      </nav>
-      <CiteLine />
+    <footer class="site-footer bel-chrome">
+      <div class="site-footer-in">
+        <Wordmark />
+        <nav class="site-footer-nav" aria-label="Secondary">
+          {[...NAV_LINKS, REPO_LINK].map((l) => (
+            <a href={l.href}>{l.label}</a>
+          ))}
+          <a href={`${REPO_LINK.href}/blob/main/LICENSE.md`}>MIT license</a>
+        </nav>
+        <CiteLine />
+      </div>
     </footer>
 
     <style is:global>
@@ -113,18 +118,32 @@ const { title, description, url, bleed = false } = Astro.props;
         padding: 0;
       }
 
+      /* The footer takes the chrome the header takes: the wordmark at the
+         start, the links and the release line after it. */
       .site-footer {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        padding: 24px var(--bel-shell-pad-x) 40px;
-        border-top: 1px solid var(--bel-ui-divider);
+        padding: 32px var(--bel-shell-pad-x);
+        background: var(--bel-ui-chrome);
+        border-top: 1px solid var(--bel-ui-chrome-line);
+        font-family: var(--bel-font-mono);
         font-size: var(--bel-text-sm);
       }
-      .site-footer-nav { display: flex; gap: 20px; justify-content: center; }
-      .site-footer-nav a { color: var(--bel-ui-text-muted); }
-      .site-footer-nav a:hover { color: var(--bel-ui-text); }
+      .site-footer-in {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px 40px;
+        max-width: 1056px;
+        margin: 0 auto;
+      }
+      .site-footer-nav { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+      .site-footer-nav a { color: var(--bel-ui-text); }
+      .site-footer .cite-line { justify-content: flex-start; }
+      @media (max-width: 720px), (pointer: coarse) {
+        .site-footer-in { flex-direction: column; align-items: flex-start; }
+        .site-footer-nav { flex-direction: column; }
+        .site-footer-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+      }
     </style>
 
   </body>
