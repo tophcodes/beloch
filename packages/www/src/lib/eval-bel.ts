@@ -23,6 +23,9 @@ export function evalBelToFold(source: string, opts: { trace?: boolean } = {}): u
       stdout = execFileSync("beloch", opts.trace ? ["fold", "--trace", file] : ["fold", file], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
+        // The frog's FOLD file runs to 5 MB, and the default buffer of 1 MB
+        // cuts it off with nothing on stderr.
+        maxBuffer: 64 * 1024 * 1024,
       });
     } catch (err) {
       const e = err as {
