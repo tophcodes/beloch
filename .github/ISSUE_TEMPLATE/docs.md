@@ -4,8 +4,8 @@ about: Pages, figures, reference text
 labels: kind:docs
 ---
 
-<!-- Where this comes from: the issues and the record it follows. "No record" if none applies. -->
-Follow-up to #n and ADR-NNNN or BEP-NNNN.
+<!-- Where this comes from: the issues and the requirement or OpenSpec change it follows. "No requirement" if none applies. -->
+Follow-up to #n and `openspec/specs/<capability>/spec.md`, "Requirement: <name>".
 
 <!-- What a reader finds today, and what they lack. -->
 
