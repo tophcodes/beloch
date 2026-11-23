@@ -17,6 +17,17 @@ Beloch is a programming language for origami. A program writes a folding sequenc
 
 Beloch only folds. It returns the folded paper after each step as a standard [FOLD](https://github.com/edemaine/fold) file that other origami software opens as well. Its own renderer, on the command line and in the browser, draws that file as a crease pattern, as the folded model or as a folding diagram.
 
+> **Note by the author.** Beloch was developed with major AI assistance. I led
+> the design and steered the work throughout, but at the pace it was built, not
+> every detail got the scrutiny it needs. In its current state Beloch can be
+> considered a proof of concept. You can use it for testing, but do not mistake
+> it for a finished product: the implementation and the language specification
+> still contain inconsistencies and are subject to change as issues come up. The
+> documentation, the model and the guide are mostly unreviewed. For now, my main
+> focus is cleaning up the whole project step by step, from the specification
+> and documentation to the code layout and the interfaces. If you want to help,
+> see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## The traditional crane
 
 <table>
