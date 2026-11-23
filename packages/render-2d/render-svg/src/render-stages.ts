@@ -58,7 +58,7 @@ const EPS = 1e-9;
 
 // The candidates' colors, in the order they are numbered: blue, orange and
 // purple of the highlight palette. Green and red read as pass and fail.
-const CANDIDATE_HUES = [4, 3, 2];
+const CANDIDATE_HUES = [3, 2, 1];
 const hue = (k: number) => CANDIDATE_HUES[k % CANDIDATE_HUES.length]!;
 const stroke = (theme: Theme, k: number) =>
   theme.highlightPalette[hue(k) % theme.highlightPalette.length]!.stroke;

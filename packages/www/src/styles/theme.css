@@ -141,22 +141,14 @@
    per mode: HIGHLIGHT_TEXT from the same file for the light page and for print
    (scripts/typst-compat.typ repeats it), and the stroke lightened towards white
    until it holds 4.5:1 for the dark page. theme-tokens.test.ts keeps the three
-   lists of light values equal. Measured on the dark set: 4.51 to 4.73 against
-   the panel, L* 54.5 to 55.9, ΔE76 54.4 between any two and 20.4 to every other
-   color in the project.
-
-   Highlight 0 is the one light value that is not the stroke darkened in place:
-   the stroke is teal-green and so is --bel-ui-accent, and on a light ground
-   both have to be dark to hold 4.5:1, which left them at dE76 11.0 where B1.7
-   asks for 25. The light caption therefore turns towards green, #1C6B33, at
-   dE76 27.5 to the accent and 6.22:1 on surface. The stroke itself does not
-   move, so no drawing and no PDF changes. */
-.figure-hl-0 { color: light-dark(#1C6B33, #079876); }
-.figure-hl-1 { color: light-dark(#c2004f, #fb1777); }
-.figure-hl-2 { color: light-dark(#8a2fd6, #b054ff); }
-.figure-hl-3 { color: light-dark(#b25600, #ce6603); }
-.figure-hl-4 { color: light-dark(#0b6fb0, #1788d7); }
-.figure-hl-5 { color: light-dark(#5f6600, #808905); }
+   lists of light values equal. A figure takes the first four palette colors
+   (FIGURE_HIGHLIGHTS), so there are four classes. Measured on the page ground
+   the caption is printed on: 4.6:1 or more light, 4.68:1 or more dark; ΔE76
+   61.4 or more to the interface accent in either mode. */
+.figure-hl-0 { color: light-dark(#c2004f, #fb1777); }
+.figure-hl-1 { color: light-dark(#8a2fd6, #b054ff); }
+.figure-hl-2 { color: light-dark(#a65000, #ce6603); }
+.figure-hl-3 { color: light-dark(#0b6dac, #1788d7); }
 
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of the language pages (```grammar), so a rule and a program

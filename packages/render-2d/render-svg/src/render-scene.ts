@@ -6,7 +6,7 @@
 // additive and dormant for the presets.
 import type { EdgeProvenance, FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
-import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
+import { DEFAULT_THEME, Theme, LineStyle, HighlightColor, highlightColor } from "./theme";
 import { sceneLayout } from "./layout";
 import type { Layout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
@@ -110,7 +110,7 @@ export function highlightFaceColors(
   if (!highlight.some((h) => h.startsWith("#["))) return null;
   const palette = theme.highlightPalette;
   const colorOf = new Map<string, HighlightColor>(
-    highlight.map((h, i) => [h, palette[i % palette.length]!]),
+    highlight.map((h, i) => [h, highlightColor(palette, i)]),
   );
   return flapFaces(scene, colorOf);
 }
@@ -162,7 +162,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   // this view and in the other view of the same scene.
   const palette = theme.highlightPalette;
   const colorOf = new Map<string, HighlightColor>(
-    highlight.map((h, i) => [h, palette[i % palette.length]!]),
+    highlight.map((h, i) => [h, highlightColor(palette, i)]),
   );
   // A flap named by one point, `#[.p]`, draws that point in the flap's color
   // as well, so the name a caption uses for the flap can be found in the
