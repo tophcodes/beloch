@@ -3,9 +3,9 @@
 ; The petal fold of flatten-petal-two-fans.bel without a staying item. The
 ; hinges of the two fans part the paper into the kite of the front flap,
 ; which turns up, and the rest of the square; without staying, the part of
-; largest area on the paper holds still (BEP-0079). That is the rest of the
-; square, which (staying .o) names in flatten-petal-two-fans.bel, and the
-; state is the same.
+; largest area on the paper holds still (spec multifold, "Without staying a
+; default part stays"). That is the rest of the square, which (staying .o)
+; names in flatten-petal-two-fans.bel, and the state is the same.
 
 paper square
 

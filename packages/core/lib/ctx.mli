@@ -7,7 +7,8 @@
     directly. *)
 
 type stmt_kind = SFold | SMark | SBind | SApply of string
-(** Which axis a statement moves (BEP-0030). [SFold] and [SMark] are writes:
+(** Which axis a statement moves (spec output, "A position in a program is
+    a pair of a state and a statement count"). [SFold] and [SMark] are writes:
     the paper moved, or it was scored and stands where it was. [SBind] moves
     the program alone: a point, a construction line, a bundle, a definition,
     an export. [SApply] is an [apply] of the named def; its body's statements
@@ -35,11 +36,13 @@ type stmt_log_entry = {
           binding leaves every mark where it was. *)
   sl_parent : int option;
       (** The entry of the [apply] this statement runs under, [None] at the
-          top level (BEP-0030). *)
+          top level (spec output,
+          "The FOLD logs every executed statement in one flat list"). *)
 }
 
 (** An annotation with its arguments read against the state the statement
-    after it starts from (BEP-0029). *)
+    after it starts from (spec annotations,
+    "An annotation's value is a read against the next state"). *)
 type annot_value =
   | AvPoint of Geom.point * Geom.point  (** paper, table *)
   | AvLine of Geom.line * int option    (** the table line, crease id if a crease *)

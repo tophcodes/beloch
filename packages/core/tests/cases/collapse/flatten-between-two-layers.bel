@@ -2,10 +2,10 @@
 
 ; The vertex of flatten-through-two-layers.bel with its rays marked on both
 ; layers of the book, and the letters that fold the upper corner inward. The
-; upper corner is the tip (BEP-0037) and lands between the upper and the
-; lower layer, both of which reach into the stayer's wedge; the lower corner
-; stays flat at the bottom of the stack and carries its rays as unfolded
-; marks.
+; upper corner is the tip (spec multifold, "A fan moves every part the stayer
+; does not hold") and lands between the upper and the lower layer, both of
+; which reach into the stayer's wedge; the lower corner stays flat at the
+; bottom of the stack and carries its rays as unfolded marks.
 
 paper square
 fold (map --ab onto --cd) (moving .a) as --m

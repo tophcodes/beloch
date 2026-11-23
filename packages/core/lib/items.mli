@@ -6,8 +6,9 @@
     per-verb table lives here and nowhere else.
 
     A leaf over [Ast] and [Error], called from the semantic actions of the
-    parser: [Error -> Ast -> Items -> Parser] (ADR-0018 covers the evaluator
-    chain, which this module sits in front of). *)
+    parser: [Error -> Ast -> Items -> Parser]. It sits in front of the
+    evaluator chain (spec architecture,
+    "The core modules form one dependency chain"). *)
 
 val bind : string -> Ast.construction -> Ast.raw_item list -> Error.span -> Ast.stmt
 (** A binding of a construction, [--name = (construction) items]: it takes

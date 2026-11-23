@@ -2,9 +2,10 @@
 
 ; A three-ray fan near the upper corner of a book fold, scored on the upper
 ; layer alone. The emergent ray runs from the vertex to the raw edge --bc
-; across the lower layer, which lies beneath and stays (BEP-0037). The
-; emergent ray is scored on the layers of the tip alone, so the lower layer
-; keeps a single face and gains no crease on the emergent ray's line.
+; across the lower layer, which lies beneath and stays (spec multifold, "A fan
+; moves every part the stayer does not hold"). The emergent ray is scored on
+; the layers of the tip alone, so the lower layer keeps a single face and
+; gains no crease on the emergent ray's line.
 
 paper square
 fold (map --ab onto --cd) (moving .a) as --m

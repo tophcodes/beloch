@@ -1,7 +1,7 @@
 (** The disposition verbs that write to the fold state: `mark`, `fold`,
-    `unfold` and `reverse` (BEP-0011), plus the checked-fold primitive `fold` and
-    `reverse` share. Every stateful function takes [(ctx : Ctx.ctx)] as its
-    first parameter. *)
+    `unfold` and `reverse` (spec folded-state, "Only a verb changes the
+    state"), plus the checked-fold primitive `fold` and `reverse` share. Every
+    stateful function takes [(ctx : Ctx.ctx)] as its first parameter. *)
 
 open Ctx
 
@@ -24,7 +24,8 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
      paper, through a single corner, or along hinges with every layer on one
      side) a fold would reflect every layer and open or close nothing, so it
      is an error; turning some layers over such a line is `unfold`
-     (BEP-0053). A line along hinges with paper on both sides folds: the
+     (spec folds, "fold refuses a line with all of the paper on one side").
+     A line along hinges with paper on both sides folds: the
      hinges on it toggle (`lem-toggle`). *)
   if not (Fold_state.paper_on_both_sides !(ctx.state) axis) then
     Error.fail
@@ -49,7 +50,8 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
   in
   let outside = if valley then Fold_state.Top else Fold_state.Bottom in
   (* The moving side comes from the side items, else from the anchor; the
-     anchor names a side and nothing else (BEP-0036). *)
+     anchor names a side and nothing else (spec folds,
+     "The anchor of a fold names its side and nothing more"). *)
   let move_side () =
     match (side_override, anchor_arg) with
     | Some s, _ -> s
@@ -274,7 +276,8 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
      piece records as a material chord (never subdivides) between the
      extreme endpoints of that flap's per-face paper clips. With `on` it
      scores the named flap; without, every flap the line crosses, one piece
-     per flap (BEP-0036). *)
+     per flap (spec folds,
+     "A mark without on scores every layer its line crosses"). *)
   let record_full () =
     let st = !(ctx.state) in
     let n = Array.length (Fold_state.faces st) in
@@ -335,7 +338,8 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
              (Resolve.pstr a) (Resolve.pstr b))
   in
   (* A partial extent without `on`: a piece on every flap under the extent,
-     its material of the axis clipped to the extent (BEP-0036). *)
+     its material of the axis clipped to the extent (spec folds,
+     "A mark without on scores every layer its line crosses"). *)
   let record_partial_every_layer extent_geom =
     let st = !(ctx.state) in
     let n = Array.length (Fold_state.faces st) in
@@ -541,7 +545,8 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
 
-(* One letter item per opening that keeps that opening alone (BEP-0043): a
+(* One letter item per opening that keeps that opening alone (spec
+   reverse-fold, "A tip with several openings needs a letter"): a
    hinge on the spine's line whose letter after the fold differs from its
    letter under every other opening, named by its crease and a named point
    on its segment. Where no named point lies on the segment alone, the item
@@ -700,7 +705,8 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
   push_frame ctx (Some span);
   bind_out (Material (cid, axis))
 
-(* `unfold` (BEP-0053): the moving layers cross the axis, so every hinge on
+(* `unfold` (spec folds, "unfold turns its layers as one block and opens
+   the hinges on the axis"): the moving layers cross the axis, so every hinge on
    it between a moving and a staying layer opens. The moving set is the one
    `def-fold` gives for a depth: the flap `up to` names, else the flap
    `moving` names, every layer outward of it (above, or below for

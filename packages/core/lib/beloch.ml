@@ -2,9 +2,9 @@
 
     The library is intentionally empty until the minimal core (v0.0) is
     specified in [docs/reference/10-core-v0.md]: one square of paper, axiom 1 only, a
-    crease-line type, output to FOLD-extended. See
-    [records/adr/ADR-0003-restart-from-minimal-core.md] and
-    [records/adr/ADR-0007-evaluator-not-compiler.md]. *)
+    crease-line type, output to FOLD-extended. See (spec architecture,
+    "The kernel implements no rule the specification lacks") and
+    (spec architecture, "Beloch is an evaluator"). *)
 
 let version = Version.version
 

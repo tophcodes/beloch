@@ -297,7 +297,7 @@ let test_flatten_derive_opposite_ray_fish_base () =
 
 (* `(emergent beside .p)` is a condition: on the rabbit ear the emergent ray
    lies beside .a, so a point in the wedge of the stayer leaves no state
-   (BEP-0078) *)
+   (spec multifold, "emergent beside names the wedge of the emergent ray") *)
 let test_flatten_emergent_beside_no_state () =
   let src =
     Str.global_replace (Str.regexp_string "(emergent beside .a)")
@@ -522,9 +522,10 @@ let test_flatten_no_flat_hinge_splits_taco () =
 
 
 (* The swivel fold of collapse/flatten-swivel-over.bel: an over item compares
-   the two faces that hold its points (BEP-0082). Each direction keeps one
-   state, the two states differ, and in each the face of the upper point lies
-   above the face of the lower one. The face of .z overlaps the face of .p in
+   the two faces that hold its points (spec multifold, "An over item orders
+   the faces of its two points"). Each direction keeps one state, the two
+   states differ, and in each the face of the upper point lies above the
+   face of the lower one. The face of .z overlaps the face of .p in
    neither state, so an over item on them holds in none. *)
 let swivel_src over =
   "paper square\n\

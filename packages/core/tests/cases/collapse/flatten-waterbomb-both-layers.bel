@@ -4,13 +4,15 @@
 ; his syntax cannot tell apart from flatten-waterbomb-top-layer.bel
 ; [fisher1994, §5.3]. The creases are marked on both layers, and one fan item
 ; with `up to` folds both layers under the table point of .n as one stack
-; (BEP-0079): one fan at the point of each layer, with the same rays. The
-; rays name their pieces in both layers: --ab and --cd each hold an edge of
-; both layers, and .s0 and .s1 lie on the spine. `(staying .b .c)` names the
-; sector along the raw edges by the two corners of the top layer that lie on
-; its bounding rays (BEP-0048); the bottom layer's face in that sector stays
-; with it. The bottom layer faces down, so each letter folds it the other
-; way round on the paper, and the two layers keep their order.
+; (spec multifold, "A fan with up to folds every layer down to a flap"): one fan
+; at the point of each layer, with the same rays. The rays name their pieces
+; in both layers: --ab and --cd each hold an edge of both layers, and .s0 and
+; .s1 lie on the spine. `(staying .b .c)` names the sector along the raw edges
+; by the two corners of the top layer that lie on its bounding rays
+; (spec multifold, "staying names the part that holds every point"); the bottom
+; layer's face in that sector stays with it. The bottom layer faces down, so
+; each letter folds it the other way round on the paper, and the two layers
+; keep their order.
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

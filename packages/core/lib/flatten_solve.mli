@@ -31,7 +31,8 @@ val solve :
     staying points on the paper, and the emergent item: a table point and
     its name. The fan folds at the one paper point over [o] that a piece of
     every element passes through; where several are, the anchor picks the
-    one on it, and without an anchor the fan fails (BEP-0079).
+    one on it, and without an anchor the fan fails (spec multifold,
+    "A fan folds at a point of the paper").
     [verb] names the write in messages and crease records, [elem_names] the
     elements as the program wrote them. Leaves the chosen state in the
     context and records the trace; returns the emergent crease where one

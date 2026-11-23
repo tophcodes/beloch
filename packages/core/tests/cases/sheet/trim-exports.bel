@@ -1,8 +1,8 @@
 @author "Claude (Anthropic)"
 
 ; A trim that lists its names exports exactly those, under their landing
-; names (BEP-0047): the band's corners become .a to .d, its edges --ab to
-; --da, and the body's .p and .q are gone.
+; names (spec sheets, "A trim lists the names it exports"): the band's corners
+; become .a to .d, its edges --ab to --da, and the body's .p and .q are gone.
 
 shape band(w h) {
   paper square w

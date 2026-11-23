@@ -3,10 +3,11 @@
 ; The preliminary fold as Randlett folds it [randlett1961art, p. 69]: the
 ; square folded in half twice, the top flap squashed, the model turned
 ; over and the other flap squashed. The first squash is held by the layers
-; the flap is hinged to (BEP-0057). After it the second flap runs flat
-; across --bd into the first square, and that half holds its squash
-; (BEP-0038). The base has its folded edges on --bd, as the base of
-; preliminary-reverse.bel has.
+; the flap is hinged to (spec squash, "The layers a flap is hinged to hold its
+; squash"). After it the second flap runs flat across --bd into the first
+; square, and that half holds its squash (spec squash, "The flap beyond the
+; target line holds the squash"). The base has its folded edges on --bd, as
+; the base of preliminary-reverse.bel has.
 
 paper square
 fold (map .d onto .b) as --ac

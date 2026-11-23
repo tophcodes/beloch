@@ -1,4 +1,5 @@
-(** The paper side of a fan of `flatten` (BEP-0079): the paper point of its
+(** The paper side of a fan of `flatten` (spec multifold,
+    "A fan folds at a point of the paper"): the paper point of its
     vertex, the faces a ray runs through from that point, the parts of the
     paper the fan's hinges separate, and the layer error of a part that moves
     without a hinge of the fan. *)
@@ -199,7 +200,8 @@ let named_on (ctx : Ctx.ctx) (poly : Geom.point array) : string option =
   |> List.sort compare
   |> function [] -> None | k :: _ -> Some k
 
-(* The layer check of the fan at the table points [v] (BEP-0079): a face of
+(* The layer check of the fan at the table points [v] (spec multifold,
+   "A fan moves every part the stayer does not hold"): a face of
    [pre] under [v] that holds a moving face of [st] and on which no hinge of
    the fan lies makes the write undefined. [parent] maps a face of [st] to
    the face of [pre] that holds it, [tip] tells the moving faces, and

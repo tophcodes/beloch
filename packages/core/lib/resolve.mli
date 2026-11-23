@@ -60,12 +60,13 @@ val bundle_segments :
 
 val resolve_flap_cluster : Ctx.ctx -> Ast.flap_arg -> Error.span -> int list
 (** Resolve a flap operand to its unique current flap: a coplanar cluster of
-    faces (BEP-0017: two faces joined only by a still-unfolded flat hinge are
-    the same flap). Errors if the operand names more than one flap. *)
+    faces (spec folded-state, "A flap is a set of faces joined flat": two
+    faces joined only by a still-unfolded flat hinge are the same flap). Errors
+    if the operand names more than one flap. *)
 
 val resolve_sector_face : Ctx.ctx -> Ast.flap_arg -> Error.span -> int
 (** Face-precise resolution for [collapse]'s `over`/`under`: a sector around
-    a collapse vertex is always one FACE (BEP-0017 non-goal), unlike
+    a collapse vertex is always one FACE, unlike
     `moving`/`up to`'s flap operand. *)
 
 val side_of_flap_arg_res :
@@ -107,7 +108,8 @@ val resolve_mark_extent :
 val resolve_mark_flap :
   Ctx.ctx -> Ast.flap_arg option -> Geom.point -> Error.span -> int list
 (** The flap (coplanar cluster) a partial mark's extent is written onto: an
-    explicit `on` layer wins, in any of the three flap forms (BEP-0016 §5);
+    explicit `on` layer wins, in any of the three flap forms (spec operands,
+    "Material is selected by incidence");
     otherwise the carrying flap of the extent's representative paper
     point. *)
 
@@ -124,7 +126,8 @@ val placed_fold_plan :
     ([side] where the side items fixed it, else from the anchor, as for a
     default fold), the block (the faces of the [depth] flap with a piece on
     that side, or every face with one when there is no depth, closed under
-    hinges off the axis and outward up to the target flap, BEP-0052, as a
+    hinges off the axis and outward up to the target flap (spec folds,
+    "A placed fold takes the layers between its depth and its target"), as a
     mask over parent faces) and the placement. The target flap must keep a stationary piece (a non-block
     face, or a block face the axis cuts: the anchor's own hinge layer) that
     overlaps the landing footprint (the block's move-side pieces reflected

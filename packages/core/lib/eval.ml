@@ -112,7 +112,8 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
         (tv, None)
     | Some (Ast.FreeBy d) ->
         (* the distance as a fraction of the range's length, which the
-           kernel holds exactly (ADR-0012, 0013) *)
+           kernel holds exactly (spec architecture,
+           "The kernel computes geometry exactly") *)
         let dq = number_value ctx d in
         let d = Num.of_q dq in
         let dx = Num.sub e1.Geom.x e0.Geom.x and dy = Num.sub e1.Geom.y e0.Geom.y in
@@ -231,7 +232,9 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
         inst.ilines)
 
 (* A selection passed to a line parameter holds the selected material in the
-   body (BEP-0083), and the body's closed scope cannot see the caller's names.
+   body (spec names,
+   "A selection passed to a line parameter holds its material"), and the
+   body's closed scope cannot see the caller's names.
    [capture_line] copies every crease and point the selection names into the
    body scope under fresh temp names ([_#0], [_#1], …: the lexer reads no [#]
    in a name, and a temp is never exported) and returns the selection over
@@ -291,7 +294,9 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Point (n, Ast.PsFree { line; anchor; pos; span }, _) ->
       eval_free_point ctx n line anchor pos span
   | Ast.Flip span ->
-      (* a flip is a write (ADR-0066): it gets a frame and an entry of its own *)
+      (* a flip is a write (spec output,
+         "The FOLD logs every executed statement in one flat list"): it gets
+         a frame and an entry of its own *)
       ctx.state := Fold_state.flip !(ctx.state);
       Ctx.push_frame ctx (Some span)
   | Ast.Def (name, params, body, span) -> eval_def ctx name params body span
@@ -345,7 +350,8 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
           Hashtbl.replace body_scope.points p.Ast.pname (Resolve.resolve_point ctx po)
       | `Line, Ast.ALine lo ->
           (* a crease name passes its binding; a selection passes the
-             material it selects (BEP-0083) *)
+             material it selects (spec names,
+             "A selection passed to a line parameter holds its material") *)
           let cv =
             match lo with
             | Ast.LNamed cr -> lookup_crease ctx cr
@@ -422,7 +428,8 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
 (* Evaluate one statement and give it its entry on the second axis. A write
    logs itself as it pushes its frame or records its mark, and an [apply]
    logs itself ahead of its body; a statement that logged nothing bound a
-   name and moved no paper, and gets its entry here (ADR-0066). *)
+   name and moved no paper, and gets its entry here (spec output,
+   "The FOLD logs every executed statement in one flat list"). *)
 and eval_logged (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
   | Ast.Annotation _ -> eval_stmt ctx stmt
@@ -665,7 +672,8 @@ let trimmed_names (bctx : Ctx.ctx) (flap : int list) (sheet : Sheet.t) :
   in
   (points, settle_bundles sheet points lines)
 
-(* The names a trim's list exports (BEP-0047): each entry's name of the
+(* The names a trim's list exports (spec sheets,
+   "A trim lists the names it exports"): each entry's name of the
    body, which must lie on the trimmed sheet, under its landing name. *)
 let exported (bctx : Ctx.ctx) (sheet : Sheet.t)
     ~(points : (string * Geom.point) list)

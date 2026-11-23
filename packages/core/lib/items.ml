@@ -95,7 +95,7 @@ let direction_of (mv : mv_constraint) : direction =
 (* ---- the side items, shared by every statement over a construction ---- *)
 
 (* `(toward …)` and `(moving …)` name the side that stays and the side that
-   folds over (BEP-0031). *)
+   folds over (spec selection, "toward and moving name opposite sides"). *)
 let side_item (verb : string) ~(toward : (toward_item * Error.span) option ref)
     ~(moving : (flap_arg * Error.span) option ref) (it : raw_item) : bool =
   match it with
@@ -119,8 +119,9 @@ let sides_of toward moving : sides =
 
 (* ---- the six verbs, and the binding of a construction ---- *)
 
-(* BEP-0083: a name with -- holds a crease, so [--l = (…)] scores nothing
-   and binds nothing. *)
+(* A name with -- holds a crease (spec names,
+   "A name with two dashes holds a crease or a paper edge"), so [--l = (…)]
+   scores nothing and binds nothing. *)
 let bind (name : string) (_ : construction) (_ : raw_item list)
     (span : Error.span) : stmt =
   Error.fail
@@ -213,7 +214,8 @@ let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
          rletters = List.rev !letters; rspans = sd.s_spans }),
       span )
 
-(* `unfold` opens hinges that are already there (BEP-0053): its axis is a line
+(* `unfold` opens hinges that are already there (spec folds,
+   "unfold turns layers back over a scored crease"): its axis is a line
    the program has, and it scores no crease, so it takes no construction and
    no output clause. Its items are those of `fold` without a placement beside
    the stack. *)
@@ -263,7 +265,9 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       span )
 
 (* A fan item takes rays: a line or a construction, each with an optional
-   letter (BEP-0055), and at most one `up to` (BEP-0079). *)
+   letter (spec multifold, "A ray of a fan item is a line or a construction"),
+   and at most one `up to` (spec multifold,
+   "A fan with up to folds every layer down to a flap"). *)
 let fan (at : point_operand option) (items : raw_item list)
     (bind : (string * Error.span) option) (span : Error.span) : fan =
   (match (at, bind) with
@@ -312,7 +316,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       | RiSelection (_, sp) ->
           Error.fail
             ~hint:"name the side of the emergent ray with (emergent beside .p), or give letters"
-            sp "flatten takes no (toward) item: an item is a condition (BEP-0061)"
+            sp "flatten takes no (toward) item: an item is a condition"
       | it -> refuse verb it)
     items;
   match (!rays, !fans) with
@@ -332,7 +336,9 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       FlattenFans (out, List.rev fans, List.rev !overs, !staying, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target
-   (BEP-0038), and nothing else: the spine names the anchor (BEP-0040). *)
+   (spec squash, "squash takes a bare alignment of its spine"), and nothing
+   else: the spine names the anchor (spec multifold,
+   "A reverse or squash fan sits at a point of the projective table"). *)
 let squash (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "squash" in
   let alignment = ref None in

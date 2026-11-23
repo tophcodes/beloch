@@ -2,7 +2,8 @@
 
 ; On the preliminary base the spines of the front and the back flap on one
 ; side, --h & --da and --h & --bc, lie on one table edge and both land on
-; --ac; the squash of --h alone names two flaps (BEP-0038).
+; --ac; the squash of --h alone names two flaps (spec squash, "The squash
+; finds its spine by incidence").
 
 paper square
 mark (through .a .c) as --ac

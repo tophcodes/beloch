@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# A PreToolUse hook of the agents' settings (ADR-0080). Before an agent
+# A PreToolUse hook of the agents' settings
+# (spec architecture, "The check holds the maintainer's hash of each reviewed interface"). Before an agent
 # writes the hash list of the reviewed interfaces, the hook asks the user,
 # who approves the call after reviewing the change. It reads the payload
 # Claude Code sends on stdin and prints a permission decision of "ask" for a
@@ -47,5 +48,5 @@ esac
 
 jq -n --arg list "$list" '{hookSpecificOutput: {hookEventName: "PreToolUse",
   permissionDecision: "ask",
-  permissionDecisionReason: ("This call writes " + $list + ", the hash list of the reviewed interfaces, which only the maintainer approves (ADR-0080).")}}'
+  permissionDecisionReason: ("This call writes " + $list + ", the hash list of the reviewed interfaces, which only the maintainer approves (openspec/specs/architecture/spec.md).")}}'
 exit 0

@@ -3,8 +3,9 @@
 type span = Lexing.position * Lexing.position
 
 (** A rejected program: where, what is wrong, and optionally one thing the
-    author can write instead (ADR-0028). The message never carries the
-    suggestion itself. *)
+    author can write instead (spec diagnostics, "A rejected program is
+    reported as a span, a message and an optional hint"). The message never
+    carries the suggestion itself. *)
 exception Beloch_error of span * string * string option
 
 let fail ?hint (span : span) (msg : string) : 'a =

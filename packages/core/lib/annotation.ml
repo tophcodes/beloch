@@ -15,7 +15,8 @@ let shape_of (a : Ast.annot_arg) : shape =
 
 let vocabulary = [ "step"; "label"; "say"; "call"; "orient"; "author"; "design"; "source" ]
 
-(* the keys that belong to the program as a whole (BEP-0051) *)
+(* the keys that belong to the program as a whole (spec annotations,
+   "Three keys credit the program as a whole") *)
 let program_keys = [ "author"; "design"; "source" ]
 
 (* the program keys that stand once in a program *)

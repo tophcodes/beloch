@@ -1,11 +1,13 @@
 (** `squash`: the fan of a squash fold from the bare alignment of its spine
-    (docs/reference/KERNEL.md, Fan; BEP-0038). The spine is a folded hinge
+    (docs/reference/KERNEL.md, Fan; spec squash,
+    "squash takes a bare alignment of its spine"). The spine is a folded hinge
     on the named crease, its vertex the end of it inside the paper, and the
     axis the bisector through the vertex that lays the spine on the target
     on the flap's side. The axis is scored on both layers of the flap, and
     the fan runs through [Flatten_solve.solve] with the spine, the two
     pieces of the axis and the crease on the target line as its elements
-    (BEP-0044). *)
+    (spec multifold,
+    "A fan moves each piece by the changing hinges on its paper path"). *)
 
 open Ctx
 
@@ -79,16 +81,19 @@ let keeping_item (ctx : Ctx.ctx) (span : Error.span) ~(spine_str : string)
       Printf.sprintf "(%s & .p onto %s) with .p at %s" spine_str target_str
         (Resolve.point_str c.f_paper)
 
-(* The squash of a flap that ends at its target line (BEP-0057): the layers
+(* The squash of a flap that ends at its target line (spec squash,
+   "The layers a flap is hinged to hold its squash"): the layers
    that hinges on the target line join to the flap hold it. [st] carries the
    axis on both layers of the flap, as the creases [cid_a] and [cid_b];
    [in_flap] holds the pieces of the flap, which all move. The spine opens
-   and both pieces of the axis fold as valleys (BEP-0061); each hinge on the
+   and both pieces of the axis fold as valleys (spec squash,
+   "A squash folds both flanks as valleys"); each hinge on the
    target line between the flap and a layer that stays keeps its fold or
    opens, and the stacking check decides between them. [f'] is where the
    far end [f] of the spine lands. [other_side] says that the lower layer
    of the flap has material beyond the target line: seen from the other
-   side that layer is the upper one and holds the squash (BEP-0038), so a
+   side that layer is the upper one and holds the squash (spec squash,
+   "The flap beyond the target line holds the squash"), so a
    squash that finds no single state here names the side. *)
 let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
     ~(f : Geom.point) ~(f' : Geom.point) ~(target_line : Geom.line)
@@ -467,7 +472,8 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     (cid, s.Fold_state.ta, s.Fold_state.tb, letter)
   in
   (* the two pieces of the axis are the flanks of the opened spine, and a
-     squash folds both as valleys (BEP-0061): each element carries the
+     squash folds both as valleys (spec squash,
+     "A squash folds both flanks as valleys"): each element carries the
      letter as a letter item of `flatten` carries it *)
   let axis_segs cid = List.filter at_o (Fold_state.crease_segments st2 cid) in
   let axis_elem cid =
@@ -538,7 +544,8 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
            ~emergent:None span)
   | None ->
       (* the flap ends at its target line, so no staying point lies beyond
-         it; the flap turns about its own hinges (BEP-0057) *)
+         it; the flap turns about its own hinges (spec squash,
+     "The layers a flap is hinged to hold its squash") *)
       own_hinges ctx st2 ~o ~f ~f' ~target_line ~spine_cid:c.cid ~cid_a ~cid_b
         ~in_flap:(fun i -> in_anchor i || in_lower i)
         ~other_side:(beyond_target in_lower <> None)

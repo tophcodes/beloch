@@ -7,7 +7,8 @@
 ; inside the one of the front layer. On the paper, --m runs straight across
 ; the spine from one layer's vertex to the other's; each fan folds only its
 ; own half of it, and the back layer takes the letter of --m the other way
-; round like every other ray (BEP-0079). The triangle along --cd stays, and
+; round like every other ray (spec multifold, "A ray folds the pieces of its
+; bundle that pass through the vertex"). The triangle along --cd stays, and
 ; the triangle along --ab turns over onto it.
 
 paper rectangle 2 1

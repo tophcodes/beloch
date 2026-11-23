@@ -1,12 +1,13 @@
 @author "Claude (Anthropic)"
 
 ; The swivel fold of flatten-swivel-on-folded-base.bel, decided by an over
-; item (BEP-0082). Its two states differ in whether the moving flap lies
-; above or below two faces of the staying part, while a third face of the
-; staying part lies above the flap in both. .p lies in the flap, .w in one
-; of the two faces below or above it; (.p over .w) keeps the state in which
-; the face that holds .p lies above the face that holds .w. The other
-; layers of the staying part need not lie below .p's face.
+; item (spec multifold, "An over item orders the faces of its two points"). Its
+; two states differ in whether the moving flap lies above or below two faces
+; of the staying part, while a third face of the staying part lies above the
+; flap in both. .p lies in the flap, .w in one of the two faces below or above
+; it; (.p over .w) keeps the state in which the face that holds .p lies above
+; the face that holds .w. The other layers of the staying part need not lie
+; below .p's face.
 
 paper square
 mark (through .a .c) as --ac

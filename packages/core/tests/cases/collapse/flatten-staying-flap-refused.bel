@@ -1,7 +1,8 @@
 @author "Claude (Anthropic)"
 
 ; The fan of flatten-waterbomb-top-layer.bel, held by a flap. A flap names no
-; sector of the fan, so `staying` refuses it (BEP-0048).
+; sector of the fan, so `staying` refuses it (spec multifold, "staying names the
+; part that holds every point").
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

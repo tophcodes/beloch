@@ -3,9 +3,10 @@
 ; The first squash of the preliminary fold [randlett1961art, p. 69]: a
 ; square folded in half along --bd and again along --ac, then the top flap
 ; squashed. The flap ends at its target --ac, so the two layers it is hinged
-; to on that line hold it (BEP-0057). Its lower layer folds in half along
-; the axis, and its upper layer turns over --ac and folds along the axis
-; there: a square whose half lies beyond the triangle.
+; to on that line hold it (spec squash, "The layers a flap is hinged to hold
+; its squash"). Its lower layer folds in half along the axis, and its upper
+; layer turns over --ac and folds along the axis there: a square whose half
+; lies beyond the triangle.
 
 paper square
 fold (map .a onto .c) as --bd

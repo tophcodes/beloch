@@ -6,9 +6,10 @@
 ; found on the faces that state holds. Each fan folds the pieces of its kite
 ; crease that pass through its vertex: the one in the front layer and the
 ; one in the layer behind it, which the side edge joins to the front layer
-; (BEP-0079). The points land where the petal fold written with
-; constructions puts them; the marks also cut the layers of the back flap,
-; which the fans leave flat, so the state has four faces more.
+; (spec multifold, "A ray folds the pieces of its bundle that pass through the
+; vertex"). The points land where the petal fold written with constructions
+; puts them; the marks also cut the layers of the back flap, which the fans
+; leave flat, so the state has four faces more.
 
 paper square
 

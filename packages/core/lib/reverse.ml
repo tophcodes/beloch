@@ -1,8 +1,12 @@
-(** A reverse fold through the fan (BEP-0077): the fan cuts the tip along
-    the axis and moves each piece by the creases on its paper path
-    ([Collapse.geoms_of], BEP-0044), and each opening of the tip (BEP-0043)
-    is a stacking of that one folded state, found by the layer search of the
-    fan with the blocks as its units. *)
+(** A reverse fold through the fan (spec layer-order,
+    "A reverse fold gives three units per opening"): the fan cuts the tip
+    along the axis and moves each piece by the creases on its paper path
+    ([Collapse.geoms_of]; spec multifold,
+    "A fan moves each piece by the changing hinges on its paper path"), and
+    each opening of the tip (spec reverse-fold,
+    "A reverse fold opens its tip at one opening") is a stacking of that one
+    folded state, found by the layer search of the fan with the blocks as its
+    units. *)
 
 let attempts ~(cid : int) (g : Fold_state.t) ~(axis : Geom.line)
     ~(move_side : int) ~(tip : bool array) ~(inside : bool)

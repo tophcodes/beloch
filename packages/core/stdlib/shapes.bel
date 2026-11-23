@@ -1,11 +1,12 @@
 @author "Claude (Anthropic)"
 
-; The standard library of sheets (BEP-0046): shapes folded from a square and
-; trimmed to one flap. The file declares no unit, so its numbers are in the
-; unit of the program that opens one of its shapes. Each shape exports the
-; names a reader expects of it (BEP-0047): a rectangle the corners .a to .d
-; and the edges --ab to --da, counter-clockwise from the origin, as a square
-; binds them.
+; The standard library of sheets (spec sheets, "The standard library provides
+; the common sheets"): shapes folded from a square and trimmed to one flap.
+; The file declares no unit, so its numbers are in the unit of the program
+; that opens one of its shapes. Each shape exports the names a reader expects
+; of it (spec sheets, "A trim lists the names it exports"): a rectangle the
+; corners .a to .d and the edges --ab to --da, counter-clockwise from the
+; origin, as a square binds them.
 
 ; The rectangle of width w and height h, for h at most w: the square of side
 ; w with the strip above height h folded away.

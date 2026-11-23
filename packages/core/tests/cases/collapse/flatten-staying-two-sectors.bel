@@ -1,7 +1,8 @@
 @author "Claude (Anthropic)"
 
 ; The fan of flatten-waterbomb-top-layer.bel. .s0 lies on a ray, in the two
-; sectors beside it, so it names neither alone (BEP-0048).
+; sectors beside it, so it names neither alone (spec multifold, "staying names
+; the part that holds every point").
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

@@ -76,7 +76,8 @@ jobs:
 
   # A pull request that changes an interface the maintainer has reviewed
   # turns this job red, and it stays red until he records the new hash
-  # (ADR-0080). It runs on every pull request, outside `check`, so the red
+  # (spec architecture, "The check holds the maintainer's hash of each reviewed interface").
+  # It runs on every pull request, outside `check`, so the red
   # check names the review it waits for.
   reviewed-interfaces:
     name: reviewed-interfaces

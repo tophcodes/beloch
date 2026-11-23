@@ -505,7 +505,9 @@ and spine_attempt = {
 val reverse_failure_to_string : reverse_failure -> string
 
 type reverse_fan
-(** A reverse fold as a fan (BEP-0077): the state with every face of the tip
+(** A reverse fold as a fan (spec layer-order,
+    "A reverse fold gives three units per opening"): the state with every
+    face of the tip
     cut along the axis by a flat hinge, and the hinges the fan changes. Every
     piece beyond the axis moves by the reflection across it, whatever the
     opening, so every opening is a stacking of one folded state. *)
@@ -564,7 +566,8 @@ val reverse_attempts :
   fold:((bool array * placement) list -> (t list, violation) result) ->
   spine_attempt list
 (** Every opening of a reverse fold of the material [tip] (a mask over
-    PARENT faces) across the TABLE-space [axis] (BEP-0043), from the bottom
+    PARENT faces) across the TABLE-space [axis] (spec reverse-fold,
+    "A reverse fold opens its tip at one opening"), from the bottom
     of the tip up, with what became of it. An opening parts the tip into a
     lower and an upper half where every hinge joining the two is folded and
     lies on one table line that reaches beyond the axis, and no face of the
@@ -713,11 +716,14 @@ val select_scope :
     judged between those pieces (depth may vary along the crease). The
     moving set is closed under both the outer-prefix rule and cohesion (a
     candidate in the same coplanar cluster as a moving face must move too:
-    BEP-0017), and under every hinge off the axis, folded or flat, which
-    cannot be torn ({!close_off_axis}). The anchor takes no part in the moving set (BEP-0036); it is
+    spec folded-state, "A flap is a set of faces joined flat"), and under
+    every hinge off the axis, folded or flat, which cannot be torn
+    ({!close_off_axis}). The anchor takes no part in the moving set (spec
+    folds, "The anchor of a fold names its side and nothing more"); it is
     only where a [TargetHinged] walk starts, and that walk fails without one.
-    Errors are user-facing messages with an optional hint (ADR-0028); the
-    caller attaches the span. *)
+    Errors are user-facing messages with an optional hint (spec diagnostics,
+    "A rejected program is reported as a span, a message and an optional
+    hint"); the caller attaches the span. *)
 
 val default_scope :
   t ->
@@ -729,7 +735,8 @@ val default_scope :
 (** The outside-contiguous prefix of layers down to and including the [seed]
     faces that have a piece on [move_side], closed under cohesion. "Outside"
     is top for valley, bottom for mountain. A fold without [up to] seeds it
-    with every face, so every layer on the moving side moves (BEP-0036). A
+    with every face, so every layer on the moving side moves (spec folds,
+    "A fold moves every layer on its moving side"). A
     moving set short of every layer still needs {!scoped_fold_hinge_closed}:
     a strict subset can tear. *)
 
@@ -760,7 +767,9 @@ val mark_chords : t -> int -> (Geom.point * Geom.point) list
     test that a marked line physically reaches a crossing. *)
 
 val mark_material_segments : t -> int -> (Geom.point * Geom.point) list
-(** The bundle of mark [cid] on the table (BEP-0033): every [MSeg] extent
+(** The bundle of mark [cid] on the table (spec operands,
+    "The paper of a line is the bundle held under its name"): every [MSeg]
+    extent
     cut into one table piece per face it crosses, and every [MPoint] as a
     segment of length zero at its table position. *)
 

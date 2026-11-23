@@ -1,20 +1,22 @@
 @author "Claude (Anthropic)"
 
 ; The squash of one flap of the folded preliminary base, written as a fan at
-; the base's closed corner (BEP-0044). The flap's spine --h & --da opens, and
-; --s and --t, one on each layer of the flap, lie on one ray of the table.
-; The center line --ac & .a folds in the layer under the flap. The tip does
-; not surround the corner, so the fan has no Kawasaki condition there; each
-; piece moves by the creases on its paper path, and the piece of the top
-; layer under the axis turns by a quarter of a right angle about the corner
-; while the piece of the second layer beside it is reflected across the axis.
-; The pieces land where the squash of BEP-0038, folded from the flat sheet,
-; puts them.
+; the base's closed corner (spec multifold, "A fan moves each piece by the
+; changing hinges on its paper path"). The flap's spine --h & --da opens, and
+; --s and --t, one on each layer of the flap, lie on one ray of the table. The
+; center line --ac & .a folds in the layer under the flap. The tip does not
+; surround the corner, so the fan has no Kawasaki condition there; each piece
+; moves by the creases on its paper path, and the piece of the top layer under
+; the axis turns by a quarter of a right angle about the corner while the
+; piece of the second layer beside it is reflected across the axis. The pieces
+; land where the squash (spec squash, "squash takes a bare alignment of its
+; spine"), folded from the flat sheet, puts them.
 ;
 ; The four rays fold flat in 3 states. The letters valley on --s and --t
 ; select the squash among them, with --ac & .a a mountain under the flap
-; (BEP-0061). The letter valley on --s alone leaves the same state; the
-; letter on --t alone leaves 3. With --s a mountain the rays fold a swivel fold
+; (spec multifold, "Every item of a flatten is a condition on its states"). The
+; letter valley on --s alone leaves the same state; the letter on --t alone
+; leaves 3. With --s a mountain the rays fold a swivel fold
 ; (flatten-swivel-on-folded-base.bel).
 
 paper square

@@ -1,8 +1,9 @@
 @author "Claude (Anthropic)"
 
 ; An over item compares the faces that hold its two points where they
-; overlap (BEP-0082). The face that holds .z lies apart from the face that
-; holds .p in every state of the swivel fold, so the item holds in none.
+; overlap (spec multifold, "An over item orders the faces of its two points").
+; The face that holds .z lies apart from the face that holds .p in every state
+; of the swivel fold, so the item holds in none.
 
 paper square
 mark (through .a .c) as --ac

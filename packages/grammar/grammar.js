@@ -21,7 +21,8 @@ module.exports = grammar({
 
   rules: {
     // a binding of a construction takes `(toward …)` and `(moving …)` items
-    // after it, as a write does (BEP-0031)
+    // after it, as a write does (spec selection, "toward names the side that
+    // stays on every write")
     source_file: $ => repeat(choice(
       $.write_statement, $.definition_head, $.application, $.construction, $.selection_item, $.anchor_item, $._group, $._token,
     )),
@@ -65,7 +66,7 @@ module.exports = grammar({
     // _axis_item and _ray_item are the same union of heads with two
     // differences: the bare-line item is `axis_item` under the five axis
     // verbs and `flatten_element` under `flatten`, and `flatten` takes no
-    // `layer_item` (BEP-0079).
+    // `layer_item` (spec multifold, "flatten takes no on item").
     _axis_item: $ => choice(
       $.construction,
       $.axis_item,
@@ -108,8 +109,10 @@ module.exports = grammar({
     flatten_element: $ => seq('(', $._operand, optional($._mv), ')'),
 
     // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
-    // the rays of one vertex of a flatten (BEP-0055), and `(up to #[.a])`, the
-    // flap down to which it folds the layers under its vertex (BEP-0079)
+    // the rays of one vertex of a flatten (spec multifold, "A fan item names or
+    // binds its vertex"), and `(up to #[.a])`, the flap down to which it folds
+    // the layers under its vertex (spec multifold, "A fan with up to folds every
+    // layer down to a flap")
     fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
       repeat1(choice($.construction, $.fan_construction, $.flatten_element)),
       optional($.depth_item),
@@ -167,7 +170,8 @@ module.exports = grammar({
 
     // a construction: the canonical `align` over its alignments and its
     // `heading`, or one of the prose spellings that desugar to the same
-    // alignments (BEP-0031):
+    // alignments (spec selection, "A construction is one of the seven
+    // alignment sets"):
     // `(align (.a onto .c))`, `(map .a onto .c)`, `(through .a .b)`,
     // `(perp --l through .p)`
     construction: $ => prec(1, seq('(', choice(

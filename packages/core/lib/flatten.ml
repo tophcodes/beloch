@@ -161,17 +161,17 @@ let mv_patterns (constraints : Ast.mv_constraint list) : bool list list =
          if abs (nm - nv) = 2 then Some lst else None)
 
 (* The error of a flatten that leaves several states, and its hint: the
-   items that would leave one ([BEP-0061]). [letters s] is the letter of
-   every given ray in the state [s], true for a valley, parallel to
-   [items]; an item spells a ray with a letter, and [None] stands for a ray
-   the program cannot letter, because it lettered it already or wrote no
-   item for it. Up to [max_listed] states
-   get an item each: the letter of one ray that no other state shares, or
-   the letters of two rays where one does not part it from the rest. A
-   state that no letter parts from another differs from it in its layers
-   only. Above [max_listed] the hint names the ray whose letter splits the
-   states most evenly. Ceiling: the pair search is quadratic in the rays
-   per state, which stays small for the fans a program writes. *)
+   items that would leave one (spec multifold,
+   "Every item of a flatten is a condition on its states"). [letters s] is the
+   letter of every given ray in the state [s], true for a valley, parallel to
+   [items]; an item spells a ray with a letter, and [None] stands for a ray the
+   program cannot letter, because it lettered it already or wrote no item for
+   it. Up to [max_listed] states get an item each: the letter of one ray that no
+   other state shares, or the letters of two rays where one does not part it
+   from the rest. A state that no letter parts from another differs from it in
+   its layers only. Above [max_listed] the hint names the ray whose letter
+   splits the states most evenly. Ceiling: the pair search is quadratic in the
+   rays per state, which stays small for the fans a program writes. *)
 let max_listed = 4
 
 (* a ray item with its letter, as the program writes it *)
