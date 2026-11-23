@@ -43,6 +43,22 @@ const body = DESCRIPTION.slice(cut + 1);
     </div>
     <HeroProgram src={HERO_SRC} start={4} />
   </Band>
+  <aside class="author-note" aria-label="Note by the author">
+    <p>
+      <strong>Note by the author.</strong> Beloch was developed with major AI
+      assistance. I led the design and steered the work throughout, but at the
+      pace it was built, not every detail got the scrutiny it needs. In its
+      current state Beloch can be considered a proof of concept. You can use it
+      for testing, but do not mistake it for a finished product: the
+      implementation and the language specification still contain
+      inconsistencies and are subject to change as issues come up. The
+      documentation, the model and the guide are mostly unreviewed. For now, my
+      main focus is cleaning up the whole project step by step, from the
+      specification and documentation to the code layout and the interfaces. If
+      you want to help, see{" "}
+      <a href="https://github.com/tophcodes/beloch/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
+    </p>
+  </aside>
   <Names />
   <FoldFile />
   <Exact />
@@ -53,6 +69,18 @@ const body = DESCRIPTION.slice(cut + 1);
 </Shell>
 
 <style>
+  .author-note {
+    background: var(--bel-ui-accent-low);
+    color: var(--bel-ui-text);
+  }
+  .author-note p {
+    max-width: 1168px;
+    margin: 0 auto;
+    padding: 64px var(--bel-shell-pad-x);
+    font-size: var(--bel-text-sm);
+    line-height: var(--bel-line-height);
+    text-wrap: pretty;
+  }
   .hero {
     padding: 40px 0 64px;
   }
