@@ -9,9 +9,9 @@ def diagonal(.p .q) {
   mark (through .p .q) as --d
 }
 $d1 = apply diagonal(.a .c)
-fold (map .a onto .b) as --v
+fold (map --ab onto --da) as --v
 export { --d as --m } $d1
-.m = --v * --m
+.m = --m * --bc
 
 ; assert named-step --m = 0
 ; assert named-step .m = 1
