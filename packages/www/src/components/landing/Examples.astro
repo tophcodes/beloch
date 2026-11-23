@@ -1,0 +1,141 @@
+---
+// "Fold something": four models of examples/, each its crease pattern with
+// the folded model over its corner, and how many lines of code fold it. The
+// drawings are the ones the README shows, which check-all holds to their
+// programs. A card leads to its program on GitHub.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import Band from "../Band.astro";
+import { REPO_LINK } from "../../lib/nav-links";
+import craneCp from "../../../../../examples/crane-cp.svg?url";
+import craneFolded from "../../../../../examples/crane-folded.svg?url";
+import frogCp from "../../../../../examples/traditional-frog-cp.svg?url";
+import frogFolded from "../../../../../examples/traditional-frog-folded.svg?url";
+import birdCp from "../../../../../examples/flapping-bird-cp.svg?url";
+import birdFolded from "../../../../../examples/flapping-bird-folded.svg?url";
+import cicadaCp from "../../../../../examples/cicada-cp.svg?url";
+import cicadaFolded from "../../../../../examples/cicada-folded.svg?url";
+
+const MODELS = [
+  { name: "Crane", file: "crane", cp: craneCp, folded: craneFolded },
+  { name: "Frog", file: "traditional-frog", cp: frogCp, folded: frogFolded },
+  { name: "Flapping bird", file: "flapping-bird", cp: birdCp, folded: birdFolded },
+  { name: "Cicada", file: "cicada", cp: cicadaCp, folded: cicadaFolded },
+];
+
+const root = process.env.BELOCH_REPO_ROOT!;
+// A line of code: neither blank, nor a comment, nor an annotation.
+const codeLines = (file: string) =>
+  readFileSync(join(root, "examples", `${file}.bel`), "utf8")
+    .split("\n")
+    .filter((l) => !/^\s*(;|@|$)/.test(l)).length;
+const models = MODELS.map((m) => ({ ...m, lines: codeLines(m.file) }));
+const tree = `${REPO_LINK.href}/tree/main/examples`;
+---
+
+<Band tone="quiet">
+  <div class="ex">
+    <div class="ex-head">
+      <h2 class="l-h2">Fold something.</h2>
+      <a class="ex-all" href={tree}>All examples on GitHub →</a>
+    </div>
+    <div class="ex-grid">
+      {models.map((m) => (
+        <a class="ex-card" href={`${REPO_LINK.href}/blob/main/examples/${m.file}.bel`}>
+          <div class="ex-pair">
+            <img src={m.cp} alt={`${m.name}, crease pattern`} loading="lazy" />
+            <img class="ex-folded" src={m.folded} alt={`${m.name}, folded`} loading="lazy" />
+          </div>
+          <div class="ex-meta">
+            <span class="ex-name">{m.name}</span>
+            <span class="ex-lines">{m.lines} lines</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</Band>
+
+<style>
+  .ex {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .ex-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .ex-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-base);
+  }
+  .ex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: 24px;
+  }
+  .ex-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--bel-ui-text);
+  }
+  .ex-card:hover {
+    text-decoration: none;
+  }
+  .ex-card:hover .ex-name {
+    text-decoration: underline;
+  }
+  .ex-card:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 4px;
+    border-radius: var(--bel-radius-control);
+  }
+  /* The crease pattern, with the folded model laid over its lower right
+     corner. */
+  .ex-pair {
+    position: relative;
+    padding: 0 18% 18% 0;
+  }
+  .ex-pair img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .ex-pair .ex-folded {
+    position: absolute;
+    right: -6%;
+    bottom: -6%;
+    width: 62%;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  }
+  .ex-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--bel-font-mono);
+  }
+  .ex-name {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .ex-lines {
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-text-muted);
+  }
+  @media (max-width: 480px) {
+    .ex-grid {
+      justify-items: center;
+    }
+    .ex-card {
+      width: 84%;
+    }
+  }
+</style>

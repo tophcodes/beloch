@@ -12,6 +12,7 @@ import FoldFile from "../components/landing/FoldFile.astro";
 import Exact from "../components/landing/Exact.astro";
 import Ambiguous from "../components/landing/Ambiguous.astro";
 import Errors from "../components/landing/Errors.astro";
+import Examples from "../components/landing/Examples.astro";
 import { HERO_SRC } from "../lib/landing-examples";
 import { DESCRIPTION } from "../lib/description";
 import "../styles/landing.css";
@@ -51,6 +52,7 @@ const body = DESCRIPTION.slice(cut + 1);
   <Exact />
   <Ambiguous />
   <Errors />
+  <Examples />
 </Shell>
 
 <style>
