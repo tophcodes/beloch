@@ -1,0 +1,124 @@
+---
+// "Fold something": four models of examples/, each its crease pattern with
+// the folded model over its corner, and how many lines of code fold it. The
+// drawings are files pages/landing/[drawing].svg.ts writes at build time. A
+// card leads to its program on GitHub.
+import Band from "../Band.astro";
+import { REPO_LINK } from "../../lib/nav-links";
+import { codeLines, MODELS } from "../../lib/landing-models";
+
+const models = MODELS.map((m) => ({
+  ...m,
+  lines: codeLines(m.file),
+  cp: `/landing/${m.file}-cp.svg`,
+  folded: `/landing/${m.file}-folded.svg`,
+}));
+const tree = `${REPO_LINK.href}/tree/main/examples`;
+---
+
+<Band tone="quiet">
+  <div class="ex">
+    <div class="ex-head">
+      <h2 class="l-h2">Fold something.</h2>
+      <a class="ex-all" href={tree}>All examples on GitHub →</a>
+    </div>
+    <div class="ex-grid">
+      {models.map((m) => (
+        <a class="ex-card" href={`${REPO_LINK.href}/blob/main/examples/${m.file}.bel`}>
+          <div class="ex-pair">
+            <img src={m.cp} alt={`${m.name}, crease pattern`} loading="lazy" />
+            <img class="ex-folded" src={m.folded} alt={`${m.name}, folded`} loading="lazy" />
+          </div>
+          <div class="ex-meta">
+            <span class="ex-name">{m.name}</span>
+            <span class="ex-lines">{m.lines} lines</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</Band>
+
+<style>
+  .ex {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .ex-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .ex-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-base);
+  }
+  .ex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: 24px;
+  }
+  .ex-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--bel-ui-text);
+  }
+  .ex-card:hover {
+    text-decoration: none;
+  }
+  .ex-card:hover .ex-name {
+    text-decoration: underline;
+  }
+  .ex-card:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 4px;
+    border-radius: var(--bel-radius-control);
+  }
+  /* The crease pattern, with the folded model laid over its lower right
+     corner. */
+  .ex-pair {
+    position: relative;
+    padding: 0 18% 18% 0;
+  }
+  .ex-pair img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .ex-pair .ex-folded {
+    position: absolute;
+    right: -6%;
+    bottom: -6%;
+    width: 62%;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  }
+  .ex-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--bel-font-mono);
+  }
+  .ex-name {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .ex-lines {
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-text-muted);
+  }
+  @media (max-width: 480px) {
+    .ex-grid {
+      justify-items: center;
+    }
+    .ex-card {
+      width: 84%;
+    }
+  }
+</style>

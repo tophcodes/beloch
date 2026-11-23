@@ -1,76 +1,38 @@
 @author "Claude (Anthropic)"
 @design traditional
-@source "[randlett1961art, p. 69]"
-@source "[ida2020, Fig. 7.19]"
+@source "[saydak2010samurai]"
 paper square
 
-; fold in half twice
-fold (map .d onto .b) as --ac
-fold (map .a onto .c) as --bd
+fold (map .c onto .a) as --bd
+fold (map .d onto .a) as --l
+fold (map .b onto .a) as --r
 
-; preliminary base: a squash in front,
-; one behind
-squash (--ac & --ab onto --bd) as --s1
-flip
-squash (--ac & --bc onto --bd) as --s2
-flip
+.o = --r * --l
+mark (through .o .c) as --mid
+.sl = --l * --da
+.sr = --r * --ab
+.el = --l * --cd
+.er = --r * --bc
+fold (through .sl .sr) (moving .d) (up to #[.d .el])
+  as --wl
+fold (through .sl .sr) (moving .b) (up to #[.b .er])
+  as --wr
 
-.o = --ac * --bd
-mark (through .c .o) as --mid
+.ml = --wl * --bd
+.mr = --wr * --bd
+.ql = free on --da & .d from .d at 1/3
+.qr = free on --ab & .b from .b at 1/3
+fold (through .ml .ql) (moving .d) (up to #[.d .sl])
+  as --hl
+fold (through .mr .qr) (moving .b) (up to #[.b .sr])
+  as --hr
 
-; the four side corners
-.sr = --ab * --s1
-.sl = --da * --s1
-.br = --bc * --s2
-.bl = --cd * --s2
+.x = free on --bc from .c at 3/8
+fold (perp --mid through .x) (moving .c) (up to #[.c])
+  as --s5
+fold (through .sl .sr) (moving .x) (up to #[.o .x])
+  as --s6
+fold (through .sl .sr) (moving .a) (up to #[.a])
+  (under #[.o .el .er]) as --s7
 
-; the bird base: a petal fold in front,
-; one behind
-flatten
-  (fan (--s1 & .sr)
-    (map .sr onto --mid through .a valley)
-    as .e1)
-  (fan (--s1 & .sl)
-    (map .sl onto --mid through .a valley)
-    as .e2)
-  (staying .o) as --pf
-flatten
-  (fan (--s2 & .br)
-    (map .br onto --mid through .c valley)
-    as .e3)
-  (fan (--s2 & .bl)
-    (map .bl onto --mid through .c valley)
-    as .e4)
-  (staying .o) as --pb
-
-; a point for the head, on the petal's edge
-.ht = free on --[.e2 .a] from .a at 1/3
-
-; narrow the legs onto the center line
-fold (map --[.e1 .b] onto --mid) (moving .e1)
-  (up to #[.e1 .b .o]) as --n1
-fold (map --[.e2 .d] onto --mid) (moving .e2)
-  (up to #[.e2 .d .o]) as --n2
-fold (map --[.e3 .b] onto --mid) (moving .e3)
-  (up to #[.e3 .b .o]) (mountain) as --n3
-fold (map --[.e4 .d] onto --mid) (moving .e4)
-  (up to #[.e4 .d .o]) (mountain) as --n4
-
-; neck and tail, each opened in the middle
-.pn = free on --n1 & #[.sr .b] from .b at 1/4
-.pn3 = free on --n3 & #[.br .b] from .b at 1/4
-reverse (perp --n1 through .sr) (moving .b)
-  (--n1 & .pn mountain) (--n3 & .pn3 mountain)
-  as --neck
-.pt = free on --n2 & #[.sl .d] from .d at 1/4
-.pt4 = free on --n4 & #[.bl .d] from .d at 1/4
-reverse (perp --n2 through .sr) (moving .d)
-  (--n2 & .pt mountain) (--n4 & .pt4 mountain)
-  as --tail
-
-; the head
-.hp = free on --bd & .b from .b at 1/4
-reverse (through .hp .ht) (moving .b) as --head
-
-; stand it on its center line
-@orient .o .c up
+@orient .o up

@@ -1,0 +1,239 @@
+---
+// "One FOLD file": the crane's program, the file `beloch fold` writes for it,
+// and three drawings `beloch render` makes from that file. The excerpt of
+// the file is read off the real one: its counts, and the entry of the
+// crease the program names `--head`.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import Band from "../Band.astro";
+import { parseFold } from "@beloch/scene";
+import { createDoc, renderCP, renderFolded } from "@beloch/render-svg";
+import { renderYr } from "@beloch/yr";
+import { cachedFold, fitStep, LANDING_THEME, paperOnly } from "../../lib/landing-drawing";
+import { highlightBel } from "../../lib/highlight-bel";
+
+// The crane's program lines the card shows before it elides the rest, and
+// the panel of its folding diagram the third drawing takes.
+const SHOWN = 3;
+const PANEL = 14;
+
+const root = process.env.BELOCH_REPO_ROOT!;
+const src = readFileSync(join(root, "examples", "crane.bel"), "utf8");
+const code = src.split("\n").filter((l) => !/^\s*(;|@|$)/.test(l));
+const shown = code.slice(0, SHOWN).map((l) => l.replace(/\s*;.*$/, ""));
+const head = (await highlightBel(shown.join("\n"))).split("\n");
+const more = code.length - SHOWN;
+
+const fold = cachedFold(src) as Record<string, unknown>;
+// An edge the program did not make, the paper's boundary for one, has no entry.
+const edges = fold["beloch:edges"] as ({ name: string | null; axiom: string; sources: string[] } | null)[];
+const named = edges.find((e) => e?.name === "head")!;
+const vertices = (fold.vertices_coords as unknown[]).length;
+const frames = (fold.file_frames as unknown[]).length;
+const points = Object.keys(fold["beloch:named_points"] as object).length;
+
+const scene = parseFold(fold);
+const BARE = { theme: LANDING_THEME, annotate: [], dots: "annotated" as const };
+const cp = paperOnly(renderCP(scene, BARE));
+const folded = paperOnly(renderFolded(scene, { ...BARE, orient: true, layout: fitStep(scene) }));
+
+// One panel of the diagram, cut out of the column renderYr draws.
+const yr = renderYr(scene, { theme: LANDING_THEME }).doc;
+const panel = yr.root.children.find((n) => String(n.attrs?.["data-panel"]) === String(PANEL));
+if (!panel) throw new Error(`the crane's folding diagram has no panel ${PANEL}`);
+const one = createDoc(yr.width, 588);
+const { transform: _, ...attrs } = panel.attrs;
+one.root.children.push({ ...panel, attrs });
+const diagram = one.toString();
+
+const k = (s: string) => `<span class="bel-punct">"${s}"</span><span class="bel-punct">:</span>`;
+const str = (s: string) => `<span class="bel-number">"${s}"</span>`;
+const pt = (s: string) => `<span class="bel-point">"${s}"</span>`;
+const json = [
+  `{`,
+  `  ${k("vertices_coords")} [ … ${vertices} points … ],`,
+  `  ${k("file_frames")} [ … ${frames} states, one per step … ],`,
+  `  ${k("beloch:edges")} [{ ${k("name")} ${str(named.name!)},`,
+  `      ${k("axiom")} ${str(named.axiom)}, ${k("sources")} [${named.sources.map(pt).join(", ")}] }, …],`,
+  `  ${k("beloch:named_points")} { … ${points} points … }`,
+  `}`,
+];
+---
+
+<Band tone="quiet">
+  <div class="l-split l-flip">
+    <div class="l-text">
+      <h2 class="l-h2">One FOLD file. Every drawing you need.</h2>
+      <p class="l-p">
+        A run always writes one FOLD document, the format Origami Simulator and
+        Rabbit Ear already read. Beloch extends it with what only it knows,
+        because it built the model: the name of every point and crease, the
+        axiom and the program line behind each one, and the state after every fold.
+      </p>
+      <p class="l-p">
+        That is enough for very different renderers to work from the same file:
+        a crease pattern, the folded model, or a step-by-step diagram with its arrows.
+      </p>
+    </div>
+    <div class="l-vis ff">
+      <div class="ff-file">
+        <div class="l-card l-code bel-code-on-page">
+          {head.map((html) => <div set:html={html} />)}
+          <div class="bel-comment">; … {more} more lines</div>
+        </div>
+        <span class="ff-name">crane.bel</span>
+      </div>
+      <div class="ff-arrow"><span class="ff-chip"><span class="ff-prompt">$ </span>beloch fold crane.bel</span></div>
+      <div class="ff-file">
+        <div class="l-card l-code bel-code-on-page">
+          {json.map((html) => <div set:html={html} />)}
+        </div>
+        <span class="ff-name">crane.fold</span>
+      </div>
+      <div class="ff-arrow"><span class="ff-chip"><span class="ff-prompt">$ </span>beloch render crane.fold --view &lt;view&gt;</span></div>
+      <div class="ff-figs">
+        <figure class="l-figure">
+          <div class="ff-fig" role="img" aria-label="The crane's crease pattern" set:html={cp} />
+          <figcaption>crease pattern<code>--view cp</code></figcaption>
+        </figure>
+        <figure class="l-figure">
+          <div class="ff-fig ff-folded" role="img" aria-label="The folded crane" set:html={folded} />
+          <figcaption>folded state<code>--view folded</code></figcaption>
+        </figure>
+        <figure class="l-figure">
+          <div class="ff-fig" set:html={diagram} />
+          <figcaption>diagram, step {PANEL}<code>--view yr</code></figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</Band>
+
+<style>
+  .ff {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .ff-file {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .ff-file .l-code {
+    font-size: 12.5px;
+    line-height: 20px;
+    padding: 14px 18px 12px;
+  }
+  .ff-name {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    padding: 0 7px;
+    background: var(--bel-ui-surface);
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-control);
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-2xs);
+    line-height: 18px;
+    color: var(--bel-ui-text-muted);
+  }
+
+  /* An arrow down from one file to what is made of it, with the command
+     that makes it beside the arrow. */
+  .ff-arrow {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 14px 0;
+    padding-bottom: 8px;
+  }
+  .ff-arrow::before {
+    content: "";
+    width: 1.5px;
+    height: 36px;
+    background: var(--bel-ui-text-muted);
+  }
+  .ff-arrow::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: calc(50% - 5.5px);
+    border-inline: 5.5px solid transparent;
+    border-top: 8px solid var(--bel-ui-text-muted);
+  }
+  .ff-chip {
+    position: absolute;
+    left: calc(50% + 22px);
+    top: 7px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--bel-ui-code-inline);
+    font-family: var(--bel-font-mono);
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  .ff-prompt {
+    color: var(--bel-ui-text-muted);
+  }
+
+  .ff-figs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    width: 100%;
+    align-items: end;
+  }
+  .ff-figs figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ff-fig {
+    width: 100%;
+    max-width: 200px;
+  }
+  .ff-folded :global(svg) {
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  }
+  .ff-figs figcaption {
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-text-muted);
+    text-align: center;
+  }
+  .ff-figs figcaption code {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--bel-text-2xs);
+  }
+
+  @media (max-width: 720px) {
+    .ff-chip {
+      position: static;
+      white-space: normal;
+      margin-top: 14px;
+    }
+    .ff-arrow {
+      flex-direction: column;
+      align-items: center;
+    }
+    .ff-arrow::after {
+      top: 36px;
+      bottom: auto;
+    }
+    .ff-figs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: 24px;
+    }
+    .ff-figs figure:last-child {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: calc(50% - 10px);
+    }
+  }
+</style>

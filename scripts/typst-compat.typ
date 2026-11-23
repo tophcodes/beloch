@@ -22,9 +22,7 @@
 // white: these are HIGHLIGHT_TEXT in @beloch/render-svg's theme.ts, the same
 // values .figure-hl-<n> carries in packages/www/src/styles/theme.css.
 // theme-tokens.test.ts holds the three lists together.
-#show raw.where(lang: "figure-hl-0"): it => text(fill: rgb("#1C6B33"))[#it]
-#show raw.where(lang: "figure-hl-1"): it => text(fill: rgb("#c2004f"))[#it]
-#show raw.where(lang: "figure-hl-2"): it => text(fill: rgb("#8a2fd6"))[#it]
-#show raw.where(lang: "figure-hl-3"): it => text(fill: rgb("#b25600"))[#it]
-#show raw.where(lang: "figure-hl-4"): it => text(fill: rgb("#0b6fb0"))[#it]
-#show raw.where(lang: "figure-hl-5"): it => text(fill: rgb("#5f6600"))[#it]
+#show raw.where(lang: "figure-hl-0"): it => text(fill: rgb("#c2004f"))[#it]
+#show raw.where(lang: "figure-hl-1"): it => text(fill: rgb("#8a2fd6"))[#it]
+#show raw.where(lang: "figure-hl-2"): it => text(fill: rgb("#a65000"))[#it]
+#show raw.where(lang: "figure-hl-3"): it => text(fill: rgb("#0b6dac"))[#it]

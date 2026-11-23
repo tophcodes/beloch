@@ -23,6 +23,9 @@ export function evalBelToFold(source: string, opts: { trace?: boolean } = {}): u
       stdout = execFileSync("beloch", opts.trace ? ["fold", "--trace", file] : ["fold", file], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
+        // The frog's FOLD file runs to 5 MB, and the default buffer of 1 MB
+        // cuts it off with nothing on stderr.
+        maxBuffer: 64 * 1024 * 1024,
       });
     } catch (err) {
       const e = err as {
@@ -41,6 +44,34 @@ export function evalBelToFold(source: string, opts: { trace?: boolean } = {}): u
       throw new Error(`beloch fold failed:\n${stderr || e.message || String(err)}`);
     }
     return JSON.parse(stdout);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * The diagnostic `beloch fold` prints for a program that fails, with the
+ * program written to a file named `name`, so the message points at
+ * `name:line:column`. Throws when the program evaluates: a page that shows an
+ * error has to break the build once the kernel stops raising it.
+ */
+export function belDiagnostic(source: string, name: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "beloch-"));
+  try {
+    writeFileSync(join(dir, name), source);
+    try {
+      execFileSync("beloch", ["fold", name], { cwd: dir, encoding: "utf8", stdio: ["ignore", "ignore", "pipe"] });
+    } catch (err) {
+      const stderr = (err as { stderr?: Buffer | string }).stderr?.toString() ?? "";
+      // The devshell's `beloch` runs through `dune exec`, which reports the
+      // directory it enters and leaves on the same stream.
+      return stderr
+        .split("\n")
+        .filter((l) => !/^(Entering|Leaving) directory /.test(l))
+        .join("\n")
+        .trimEnd();
+    }
+    throw new Error(`beloch fold: ${name} evaluates, but the page shows the error it should raise`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

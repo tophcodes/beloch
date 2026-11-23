@@ -1,0 +1,42 @@
+---
+// A diagnostic of `beloch fold` on a card, as the kernel prints it for the
+// program `source` saved as `name` (lib/eval-bel.ts, belDiagnostic). The
+// message and the help line wrap under their own label; the source lines
+// and the carets keep their columns and scroll.
+import { belDiagnostic } from "../lib/eval-bel";
+import { diagnosticHtml } from "../lib/diagnostic-html";
+
+interface Props {
+  source: string;
+  name: string;
+  label?: string;
+}
+const { source, name, label } = Astro.props;
+const lines = await diagnosticHtml(belDiagnostic(source, name));
+const wraps = (html: string) => html.startsWith('<span class="dg-error">error') || html.includes('class="dg-help"');
+---
+
+<div class="l-card dg bel-code-on-page">
+  {label && <div class="l-label">{label}</div>}
+  <div class="l-code dg-code">
+    {lines.map((html) => <div class:list={{ "dg-wrap": wraps(html) }} set:html={html} />)}
+  </div>
+</div>
+
+<style>
+  .dg {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 16px 20px 18px;
+  }
+  .dg .dg-code {
+    padding: 0;
+  }
+  .dg .dg-code > .dg-wrap {
+    white-space: pre-wrap;
+    padding-left: 4ch;
+    text-indent: -4ch;
+  }
+</style>

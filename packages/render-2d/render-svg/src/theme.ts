@@ -66,41 +66,45 @@ export const yrLineStyle: LineStyleFn = (assignment, theme) => {
   }
 };
 
-// The entities a figure's caption refers to, one color each, taken in the
-// order the `highlight` attribute lists them. The same six colors carry the
-// caption's inline code on the docs site (`.figure-hl-<n>` in
-// packages/www/src/styles/theme.css) and in the PDF (scripts/typst-compat.typ),
-// so a name in the caption and the thing drawn read as one. They are literals
-// here because typst places the SVG into the PDF and resolves no var().
-// Each stroke sits at L* 49 to 56, which keeps it legible on the paper of a
-// drawing and on a page of either site theme, at least ΔE76 19 from every
-// Beloch token color and ΔE76 50 from the others here. A `highlight` longer
-// than the palette wraps round to the first color and two entities then share
-// one; six is well past the two the documents use today.
-// Six colors a caption can point with. Measured: L* 50.1 to 55.9, at least
-// dE76 55.3 from each other, 34.9 from mountain and valley, 27.2 from the
-// interface accent, so a highlight is never mistaken for a fold or a control.
-// Each wash is its stroke lightened towards white by 0.25, the ratio the
-// previous palette already used throughout.
+// Six colors a drawing can point with. A figure's highlights take the first
+// FIGURE_HIGHLIGHTS of them, one per entity in the order the `highlight`
+// attribute lists them, and the same colors carry the caption's inline code on
+// the docs site (`.figure-hl-<n>` in packages/www/src/styles/theme.css) and in
+// the PDF (scripts/typst-compat.typ), so a name in the caption and the thing
+// drawn read as one. The side view numbers its layers through all six. They
+// are literals here because typst places the SVG into the PDF and resolves no
+// var().
+// Measured: L* 51.7 to 55.5, which keeps each legible on the paper of a
+// drawing and on a page of either site theme; at least ΔE76 53.3 from each
+// other, 34.0 from mountain and valley, and 42.8 from the interface accent in
+// either mode, so a highlight is never mistaken for a fold or a control.
+// Each wash is its stroke lightened towards white by 0.25.
 export const HIGHLIGHT_PALETTE: HighlightColor[] = [
-  { stroke: "#079876", wash: "#c1e5dd" },
   { stroke: "#fb0069", wash: "#febfd9" },
   { stroke: "#a945ff", wash: "#e9d0ff" },
   { stroke: "#ce6400", wash: "#f3d8bf" },
   { stroke: "#0880d4", wash: "#c1dff4" },
-  { stroke: "#7d8700", wash: "#dee1bf" },
+  { stroke: "#009681", wash: "#bfe5e0" },
+  { stroke: "#bd5dae", wash: "#efd7eb" },
 ];
 
+// How many palette colors a figure's highlights take. A figure in the docs
+// highlights at most four entities, so the last two colors serve the side view
+// alone and need no text shade (HIGHLIGHT_TEXT) for a caption. A `highlight`
+// longer than this wraps round to the first color and two entities then share
+// one.
+export const FIGURE_HIGHLIGHTS = 4;
+
+/** The color of the `i`-th entity a figure highlights. */
+export function highlightColor(palette: HighlightColor[], i: number): HighlightColor {
+  return palette[i % Math.min(FIGURE_HIGHLIGHTS, palette.length)]!;
+}
+
 // A highlight used as caption text needs 4.5:1, which the stroke values do not
-// hold on white. These are the same hues, darkened, for text only — with one
-// exception: highlight 0 turns towards green, because its stroke is the same
-// teal-green as the interface accent and the two darkened values sat at dE76
-// 11.0 where B1.7 asks for 25. At #1C6B33 the caption holds dE76 27.5 to the
-// accent and 6.22:1 on the light surface. The stroke does not move, so the
-// drawings and the PDF are unchanged.
-export const HIGHLIGHT_TEXT: string[] = [
-  "#1C6B33", "#c2004f", "#8a2fd6", "#b25600", "#0b6fb0", "#5f6600",
-];
+// hold on white. These are the figure colors darkened, for text only: each
+// holds 4.6:1 or more on the light docs page (#E8ECE4) and ΔE76 61.4 or more
+// from the light interface accent.
+export const HIGHLIGHT_TEXT: string[] = ["#c2004f", "#8a2fd6", "#a65000", "#0b6dac"];
 
 // flat, unassigned and construction need a contrast of at least 3:1 on
 // white; below that a crease cannot be told from the sheet it is drawn on.

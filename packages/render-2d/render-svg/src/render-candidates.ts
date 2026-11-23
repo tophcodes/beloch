@@ -159,7 +159,7 @@ function overlay(
     }
   }
   const live = cand.removedBy === null;
-  const accent = theme.highlightPalette[1 % theme.highlightPalette.length]!.stroke;
+  const accent = theme.highlightPalette[0]!.stroke;
   const landings = landingsOf(entry);
   if (cand.landing && landings.length >= 2) {
     for (const poly of cellOf(cand.landing, landings, faces)) {

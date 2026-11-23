@@ -1,52 +1,103 @@
 ---
-// The landing at `/`. The hero says what the language is, shows the crease
-// pattern its program ends on, and lays the program out as a folding diagram:
-// one card per fold, each with its lines and the pattern after it. What it has
-// to say is that a program names what it folds and that the geometry comes
-// out exact. A visitor who wants to change something goes to `/playground/`,
-// which is the surface with an editor. The hero defines no token the docs do
-// not have.
+// The landing at `/`. The hero says what the language is and shows a whole
+// program beside the paper it folds, one fold at a time. The bands under it
+// take one claim each. A visitor who wants to change the program goes to
+// `/playground/`, which is the surface with an editor.
 import Shell from "../layouts/Shell.astro";
+import Band from "../components/Band.astro";
 import CitationMeta from "../components/CitationMeta.astro";
-import HeroSequence from "../components/HeroSequence.astro";
+import HeroProgram from "../components/HeroProgram.astro";
+import Names from "../components/landing/Names.astro";
+import FoldFile from "../components/landing/FoldFile.astro";
+import Exact from "../components/landing/Exact.astro";
+import Ambiguous from "../components/landing/Ambiguous.astro";
+import Errors from "../components/landing/Errors.astro";
+import Examples from "../components/landing/Examples.astro";
+import Learn from "../components/landing/Learn.astro";
 import { HERO_SRC } from "../lib/landing-examples";
 import { DESCRIPTION } from "../lib/description";
+import "../styles/landing.css";
+
+// The description's first sentence is the hero's lead, the rest its body.
+const cut = DESCRIPTION.indexOf(". ") + 1;
+const lead = DESCRIPTION.slice(0, cut);
+const body = DESCRIPTION.slice(cut + 1);
 ---
 
-<Shell title="Beloch" description={DESCRIPTION} url="https://belochlang.org/">
+<Shell title="Beloch" description={DESCRIPTION} url="https://belochlang.org/" bleed>
   <CitationMeta slot="head" />
-  <section class="hero">
-    <HeroSequence src={HERO_SRC}>
-      <h1>beloch</h1>
-      <p class="pronunciation">beh-LOK · /be&#712;l&#596;k/</p>
-      <p class="hero-body">{DESCRIPTION}</p>
-      <div class="hero-actions">
-        <a class="action action-primary" href="/playground/">Playground</a>
-        <a class="action" href="/language/">Docs</a>
+  <Band tone="chrome" class="hero">
+    <div class="hero-intro">
+      <div class="hero-name">
+        <h1>beloch</h1>
+        <p class="pronunciation">beh-LOK · /be&#712;l&#596;k/</p>
       </div>
-    </HeroSequence>
-  </section>
+      <div class="hero-copy">
+        <p class="lead">{lead}</p>
+        <p class="body">{body}</p>
+        <div class="hero-actions">
+          <a class="action action-primary" href="/playground/">Open the playground</a>
+          <a class="action" href="/guide/first-folds/">Read the guide</a>
+        </div>
+      </div>
+    </div>
+    <HeroProgram src={HERO_SRC} start={4} />
+  </Band>
+  <Names />
+  <FoldFile />
+  <Exact />
+  <Ambiguous />
+  <Errors />
+  <Examples />
+  <Learn />
 </Shell>
 
 <style>
+  .hero {
+    padding: 40px 0 64px;
+  }
+  .hero-intro {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px 64px;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+  .hero-name {
+    flex: 0 1 auto;
+    padding-top: 4px;
+  }
   .hero h1 {
+    margin: 0;
     font-family: var(--bel-font-mono);
-    font-size: var(--bel-text-hero);
+    font-size: clamp(36px, 10vw, 52px);
     font-weight: 600;
     letter-spacing: -0.02em;
-    margin: 0;
+    line-height: 1;
   }
   .pronunciation {
-    margin: 6px 0 0;
+    margin: 10px 0 0;
     font-family: var(--bel-font-mono);
     font-size: var(--bel-text-sm);
     color: var(--bel-ui-text-muted);
   }
-  .hero-body {
-    margin: 18px 0 0;
-    max-width: 52ch;
+  .hero-copy {
+    flex: 1 1 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .lead {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.35;
+  }
+  .body {
+    margin: 0;
+    max-width: 60ch;
     font-size: var(--bel-text-lg);
     line-height: var(--bel-line-height);
+    color: var(--bel-ui-text-muted);
     text-wrap: pretty;
   }
 
@@ -54,12 +105,14 @@ import { DESCRIPTION } from "../lib/description";
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: 22px;
     font-family: var(--bel-font-mono);
     font-size: var(--bel-text-sm);
   }
   .action {
-    padding: 7px 16px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
     border-radius: var(--bel-radius-control);
     border: 1px solid var(--bel-ui-control-border);
     color: var(--bel-ui-text);
@@ -73,8 +126,27 @@ import { DESCRIPTION } from "../lib/description";
     border-color: var(--bel-ui-accent);
     color: var(--bel-ui-accent-text);
   }
+  .action-primary:hover {
+    filter: brightness(1.08);
+  }
   .action:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
+  }
+
+  @media (max-width: 720px) {
+    .hero {
+      padding: 20px 0 48px;
+    }
+    .hero-intro {
+      gap: 16px;
+    }
+    .hero-copy {
+      gap: 12px;
+    }
+    .hero-actions a {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
   }
 </style>

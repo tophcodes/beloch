@@ -1,0 +1,29 @@
+---
+// One band of the landing: a section across the full width on one of the
+// grounds, its content held to the column the header aligns with.
+interface Props {
+  tone: "chrome" | "ground" | "quiet" | "band";
+  class?: string;
+}
+const { tone, class: extra } = Astro.props;
+---
+
+<section class:list={["band", `band-${tone}`, { "bel-chrome": tone === "chrome" }, extra]}>
+  <div class="band-in"><slot /></div>
+</section>
+
+<style>
+  .band {
+    padding: 72px 0;
+    color: var(--bel-ui-text);
+  }
+  .band-chrome { background: var(--bel-ui-chrome); }
+  .band-ground { background: var(--bel-ui-ground); }
+  .band-quiet { background: var(--bel-ui-quiet); }
+  .band-band { background: var(--bel-ui-band); }
+  .band-in {
+    max-width: 1168px;
+    margin: 0 auto;
+    padding: 0 var(--bel-shell-pad-x);
+  }
+</style>

@@ -147,67 +147,96 @@
 :root {
 	color-scheme: light dark;
 
-	/* The light column's neutrals are warm: the artifact is paper, and a card
-	   of paper on a cool gray page reads as a screenshot of paper. Surface is
-	   what a card is made of, ground is the page it lies on, and quiet is the
-	   fill of a control that is on. The dark column keeps the cool neutrals it
-	   had; warming it is its own pass with its own four checks. */
-	--bel-ui-surface:       light-dark(#FFFFFF, #1C1A17);
-	--bel-ui-ground:        light-dark(#FBFAF7, #13110F);   /* dE76 2.3 · 4.4 from surface */
-	--bel-ui-quiet:         light-dark(#F1EFEA, #2D2925);   /* dE76 6.1 · 7.6 from surface */
-	--bel-ui-text:          light-dark(#1A1D22, #EDE9E1);   /* 16.9:1 · 14.3:1 on surface */
-	--bel-ui-text-muted:    light-dark(#5C6068, #A09A92);   /*  6.3:1 ·  6.2:1 on surface */
+	/* The neutrals lean green-gray (the "Pine" palette): a card of white
+	   paper lies on a sage ground. Surface is what a card is made of, ground
+	   is the page it lies on, and quiet is the fill of a control that is on
+	   and the second band of the landing, which alternates its sections
+	   between ground and quiet. Band is the third, darker ground the landing
+	   ends on. */
+	--bel-ui-surface:       light-dark(#FFFFFF, #18221E);
+	--bel-ui-ground:        light-dark(#E8ECE4, #111915);
+	--bel-ui-quiet:         light-dark(#DCE1D7, #22302A);
+	--bel-ui-band:          light-dark(#CFD6C9, #1C2621);
+	--bel-ui-text:          light-dark(#1E1D19, #E6ECE4);   /* 16.9:1 · 13.6:1 on surface, 11.3:1 on light band */
+	--bel-ui-text-muted:    light-dark(#55524A, #A3B0A7);   /*  7.8:1 ·  7.3:1 on surface, 5.2:1 on light band */
 	/* The text of a switched-off control, carried together with the divider
 	   outline: the pair reads as "not available here" without the control
-	   disappearing, and the reason is in its title. At 2.2:1 it is the weakest
+	   disappearing, and the reason is in its title. Below 2:1 it is the weakest
 	   role in the file, which is what a control nobody can use should be. */
-	--bel-ui-text-faint:    light-dark(#B5B0A6, #56514B);
+	--bel-ui-text-faint:    light-dark(#B5C0B8, #4F5C55);
 
 	/* Two border roles, because they answer to different thresholds. A line
-	   between two areas only has to be found, so it stays quiet at 1.38:1
-	   light and 1.32:1 dark. The outline of a control is what says where the
-	   control is and needs 3:1, which these hold at 3.56:1 and 4.50:1 against
-	   surface. */
-	--bel-ui-divider:        light-dark(#DFDBD2, #33302B);
-	--bel-ui-control-border: light-dark(#8E877A, #878179);
+	   between two areas only has to be found, so it stays quiet at 1.67:1
+	   light and 1.37:1 dark against surface. The outline of a control is what
+	   says where the control is and needs 3:1, which these hold at 4.68:1 and
+	   4.11:1 against surface. */
+	--bel-ui-divider:        light-dark(#C3CBBE, #2C3A33);
+	--bel-ui-control-border: light-dark(#5F7A6C, #6E8577);
 
-	/* Accent and error. Kept clear of the crease colors so a focus ring next
-	   to a drawing cannot read as a valley fold: in the dark column the accent
-	   sits at dE76 30.1 from the nearest paper color, and at L* 35.8 against
-	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
-	--bel-ui-accent:        light-dark(#0D5F54, #7ED4CB);
-	--bel-ui-accent-text:   light-dark(#FFFFFF, #08221E);
+	/* Accent and error. The accent is a moss green, a hue no crease color
+	   uses, so a focus ring beside a drawing differs from a valley fold. Light it holds 6.8:1 on surface and 4.6:1 on the darkest band, dark
+	   9.7:1 on surface. */
+	--bel-ui-accent:        light-dark(#3E6512, #B5D36A);
+	--bel-ui-accent-text:   light-dark(#FFFFFF, #16210C);
 	--bel-ui-error:         light-dark(#b05641, #ff7d5e);
 
-	/* Two tinted grounds, one per meaning, for text that sits on a field
+	/* Two tinted grounds, one per meaning, for text drawn on a field
 	   rather than on the page: the anchor a link just jumped to, a callout,
 	   a badge. Measured against --bel-ui-text, --bel-ui-text-muted and the
 	   color that carries the tint.
-	     accent-low  text 14.54:1 · 12.03:1   muted 4.96:1 · 5.23:1   accent rule 6.30:1 · 8.44:1
-	     error-low   text 14.62:1 · 12.37:1   muted 4.98:1 · 5.37:1   error  rule 4.15:1 · 5.95:1
-	   Against --bel-ui-surface they hold dE76 6.5 / 13.0 and 7.3 / 11.8, far
-	   enough to be seen as a field and near enough not to read as a second
-	   page color. */
-	--bel-ui-accent-low:    light-dark(#E2EDEA, #162D29);
-	--bel-ui-error-low:     light-dark(#F4E9E5, #36221C);
+	     accent-low  text 13.2:1 · 11.5:1   muted 6.1:1 · 6.1:1   accent rule 5.4:1 · 8.2:1
+	     error-low   text 13.8:1 · 11.8:1   muted 6.4:1 · 6.3:1   error  rule 4.0:1 · 5.7:1 */
+	--bel-ui-accent-low:    light-dark(#DDE8C9, #233119);
+	--bel-ui-error-low:     light-dark(#F2E6E1, #3A2620);
 
 	/* Inline code stands inside a paragraph, not on the code panel: the dark
-	   surface would be a hole in the line. The light value is quiet, the same
-	   ground inline Beloch takes. Text holds 14.70:1 and 11.29:1. */
-	--bel-ui-code-inline:   light-dark(#F1EFEA, #312D28);
+	   surface would be a hole in the line. Every syntax color of the on-page
+	   set below holds 4.5:1 on it in both modes. */
+	--bel-ui-code-inline:   light-dark(#F0F2EC, #1C2621);
 
-	/* The code panel (the docs card and the playground) is
+	/* The code panel (the docs card, the playground and the landing hero) is
 	   the one dark area the light mode keeps; code that lies in prose takes the
 	   values at the end of this file. Every role that lands on the panel holds
 	   one value in both modes and is measured against this ground alone. That
 	   includes accent and error: the playground prints its diagnostics on the
-	   panel, where the light column's values reach 2.3:1 and 3.5:1. Line
-	   numbers are text and hold 4.5:1 like any other. */
-	--bel-ui-code-surface: #101C2E;
+	   panel. Line numbers are text and hold 4.5:1 like any other. */
+	--bel-ui-code-surface: #131E1A;
 	--bel-ui-code-text:    #C9D2DE;   /* 11.2:1 */
-	--bel-ui-code-gutter:  #7E889A;   /*  4.8:1 */
-	--bel-ui-code-accent:  #7ED4CB;   /*  9.9:1 */
+	--bel-ui-code-gutter:  #848B84;   /*  4.9:1 */
+	--bel-ui-code-accent:  #C8E27A;   /* 12.0:1 */
 	--bel-ui-code-error:   #ff7d5e;   /*  6.8:1 */
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Chrome: the dark green frame around every page, the header, the landing
+ * hero and the landing footer. It keeps one value in both modes, like the
+ * code panel, and is measured against --bel-ui-chrome alone.
+ *
+ * A component inside the chrome reads the ordinary --bel-ui-* roles: the
+ * .bel-chrome class below points them at these values, so the header's links,
+ * its toggle and Starlight's search button need no second set of rules.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-ui-chrome:             #1B2A24;
+	--bel-ui-chrome-line:        #2A3B33;
+	--bel-ui-chrome-text:        #EAF0E8;   /* 12.9:1 */
+	--bel-ui-chrome-muted:       #B2C0B6;   /*  7.9:1 */
+	--bel-ui-chrome-border:      #5F7A6C;   /*  3.2:1, a control's outline */
+	--bel-ui-chrome-accent:      #C8E27A;   /* 10.4:1 */
+	--bel-ui-chrome-accent-text: #1B2A10;   /* 10.6:1 on the accent */
+}
+.bel-chrome {
+	--bel-ui-surface:        var(--bel-ui-chrome);
+	--bel-ui-ground:         var(--bel-ui-chrome);
+	--bel-ui-quiet:          rgba(255, 255, 255, 0.10);
+	--bel-ui-text:           var(--bel-ui-chrome-text);
+	--bel-ui-text-muted:     var(--bel-ui-chrome-muted);
+	--bel-ui-text-faint:     var(--bel-ui-chrome-muted);
+	--bel-ui-divider:        var(--bel-ui-chrome-line);
+	--bel-ui-control-border: var(--bel-ui-chrome-border);
+	--bel-ui-accent:         var(--bel-ui-chrome-accent);
+	--bel-ui-accent-text:    var(--bel-ui-chrome-accent-text);
+	color-scheme: dark;
 }
 
 /* A stored choice pins the scheme; without one `light dark` above leaves it to
@@ -224,7 +253,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Syntax layer — ten roles on the navy panel, so they carry one value each.
+ * Syntax layer — ten roles on the code panel, so they carry one value each.
  *
  * There were 22 colors here, of which 18 pairs sat below dE76 15: the eye
  * could not use distinctions the stylesheet was making. The roles are grouped
@@ -248,14 +277,14 @@
 /* ──────────────────────────────────────────────────────────────────────────
  * Code on the page. A program that lies in prose (a fenced block, a grammar
  * fragment, inline Beloch, the outcome under a block) sits on the page rather
- * than on the navy panel, so in light mode it takes a second value for every
+ * than on the code panel, so in light mode it takes a second value for every
  * code role. The dark column keeps the panel's values, so a block in the dark
  * docs is the panel it was. Code outside the prose that lies on the page, the
  * step cards of the landing hero, opts in with .bel-code-on-page.
  *
  * A block is a card of --bel-ui-surface on the docs page's --bel-ui-ground,
- * and inline code sits on --bel-ui-quiet inside the line. Every syntax value
- * holds 4.5:1 on both; the ratios below are on surface · quiet. Error sits on
+ * and inline code is drawn on --bel-ui-code-inline inside the line. Every syntax value
+ * holds 4.5:1 on both; the ratios below are on surface · code-inline. Error sits on
  * blocks only. Comment stays italic, which carries it the rest of the way
  * from `punct` and `label`.
  * ────────────────────────────────────────────────────────────────────────── */
@@ -264,22 +293,22 @@
 .grammar-block,
 .bel-outcome,
 code.bel-inline {
-	--bel-ui-code-surface: light-dark(#FFFFFF, #101C2E);   /* = surface */
+	--bel-ui-code-surface: light-dark(#FFFFFF, #131E1A);   /* = surface */
 	--bel-ui-code-text:    light-dark(#1A1D22, #C9D2DE);   /* = text */
-	--bel-ui-code-accent:  light-dark(#0D5F54, #7ED4CB);   /* = accent, 7.6:1 */
+	--bel-ui-code-accent:  light-dark(#3E6512, #B5D36A);   /* = accent, 6.8:1 */
 	--bel-ui-code-error:   light-dark(#b05641, #ff7d5e);   /* = error,  4.9:1 */
 
-	--bel-syntax-keyword:  light-dark(#1A1D22, #E8EDF5);   /* 16.9 · 14.7 */
-	--bel-syntax-axiom:    light-dark(#0A6B78, #7FD1C1);   /*  6.2 ·  5.4 */
-	--bel-syntax-point:    light-dark(#A35200, #F2B45C);   /*  5.6 ·  4.9 */
-	--bel-syntax-line:     light-dark(#2C58B0, #8FB8F5);   /*  6.7 ·  5.8 */
-	--bel-syntax-selector: light-dark(#8B3DAF, #D89CF0);   /*  6.2 ·  5.4 */
-	--bel-syntax-sigil:    light-dark(#B8322E, #F08E7A);   /*  5.9 ·  5.2 */
-	--bel-syntax-punct:    light-dark(#626C80, #9AA9BF);   /*  5.3 ·  4.6 */
-	--bel-syntax-number:   light-dark(#43700C, #B9D97A);   /*  5.9 ·  5.1 */
-	--bel-syntax-label:    light-dark(#7A6440, #E3CFA0);   /*  5.6 ·  4.9 */
-	--bel-syntax-comment:  light-dark(#666960, #79937F);   /*  5.6 ·  4.9 */
+	--bel-syntax-keyword:  light-dark(#1A1D22, #E8EDF5);   /* 16.9 · 15.0 */
+	--bel-syntax-axiom:    light-dark(#0A6B78, #7FD1C1);   /*  6.2 ·  5.5 */
+	--bel-syntax-point:    light-dark(#A35200, #F2B45C);   /*  5.6 ·  5.0 */
+	--bel-syntax-line:     light-dark(#2C58B0, #8FB8F5);   /*  6.7 ·  6.0 */
+	--bel-syntax-selector: light-dark(#8B3DAF, #D89CF0);   /*  6.2 ·  5.5 */
+	--bel-syntax-sigil:    light-dark(#B8322E, #F08E7A);   /*  5.9 ·  5.3 */
+	--bel-syntax-punct:    light-dark(#626C80, #9AA9BF);   /*  5.3 ·  4.7 */
+	--bel-syntax-number:   light-dark(#43700C, #B9D97A);   /*  5.9 ·  5.2 */
+	--bel-syntax-label:    light-dark(#7A6440, #E3CFA0);   /*  5.6 ·  5.0 */
+	--bel-syntax-comment:  light-dark(#666960, #79937F);   /*  5.6 ·  5.0 */
 }
 code.bel-inline {
-	--bel-ui-code-surface: light-dark(#F1EFEA, #101C2E);   /* = quiet */
+	--bel-ui-code-surface: light-dark(#F0F2EC, #1C2621);   /* = code-inline */
 }

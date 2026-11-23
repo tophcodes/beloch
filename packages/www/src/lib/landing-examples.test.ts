@@ -9,8 +9,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.BELOCH_REPO_ROOT ?? join(here, "..", "..", "..", "..");
 
 // These two programs are what a first-time visitor sees, so one that stops
-// parsing fails in front of every one of them. The crane takes about 3 s to
-// evaluate; the limit leaves room for a slower machine.
+// parsing fails in front of every one of them. The limit leaves
+// room for a slow machine.
 test.each([
   ["landing hero", HERO_SRC],
   ["playground start", PLAYGROUND_SRC],
@@ -29,7 +29,7 @@ test.each([
 // the character counts the two editor columns hold at that width, at the
 // monospace size --bel-code-size fixes.
 test.each([
-  ["landing hero", HERO_SRC, 48],
+  ["landing hero", HERO_SRC, 56],
   ["playground start", PLAYGROUND_SRC, 50],
 ])("%s fits its editor column", (_name, src, cap) => {
   const longest = Math.max(...src.split("\n").map((l) => l.length));
@@ -61,9 +61,8 @@ function stripProvenance(value: unknown): unknown {
 // line instead of a comment block. Comparing evaluated FOLD output (not source
 // text) is what lets the two files differ in comments while still guaranteeing
 // the display copy's statements stay identical in effect to the corpus's.
-// Evaluating the crane twice takes about 6 s.
 test.each([
-  ["landing hero", HERO_SRC, "examples/crane.bel"],
+  ["landing hero", HERO_SRC, "examples/samurai-helmet.bel"],
   ["playground start", PLAYGROUND_SRC, "packages/core/tests/cases/bases/bird-base.bel"],
 ])(
   "%s matches its corpus file semantically",

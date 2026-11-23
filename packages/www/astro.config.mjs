@@ -39,6 +39,7 @@ process.env.BELOCH_REPO_ROOT = repoRoot;
 // so it never enters the client bundle.
 const sceneRoot = join(repoRoot, 'packages', 'render-2d', 'scene', 'src', 'index.ts');
 const renderSvgRoot = join(repoRoot, 'packages', 'render-2d', 'render-svg', 'src', 'index.ts');
+const yrRoot = join(repoRoot, 'packages', 'render-2d', 'yr', 'src', 'index.ts');
 // The runtime (packages/runtime) is the same kind of package: browser-safe TS
 // with no build step, aliased to its entrypoints.
 const runtimeRoot = join(repoRoot, 'packages', 'runtime', 'core', 'src', 'index.ts');
@@ -58,6 +59,7 @@ export default defineConfig({
 			alias: {
 				'@beloch/scene': sceneRoot,
 				'@beloch/render-svg': renderSvgRoot,
+				'@beloch/yr': yrRoot,
 				'@beloch/runtime': runtimeRoot,
 				'@beloch/runtime-render-dom': runtimeRenderDomRoot,
 				'@beloch/runtime-editor': runtimeEditorRoot,

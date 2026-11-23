@@ -1,0 +1,82 @@
+---
+// "Name what you fold": the first folds of the hero's helmet and the points
+// they make, beside the crease pattern with those points marked.
+import Band from "../Band.astro";
+import { parseFold } from "@beloch/scene";
+import { renderCP } from "@beloch/render-svg";
+import { cachedFold, DOT_MARGIN, LANDING_THEME, paperOnly } from "../../lib/landing-drawing";
+import { highlightBel, highlightBelInline } from "../../lib/highlight-bel";
+
+const SRC = `paper square
+fold (map .c onto .a) as --bd
+fold (map .d onto .a) as --l
+fold (map .b onto .a) as --r
+
+.o = --r * --l
+.sl = --l * --da
+.sr = --r * --ab`;
+
+// The points the drawing marks, in the order of their highlight colors.
+const POINTS = [".o", ".sl", ".sr"];
+
+const scene = parseFold(cachedFold(SRC) as object);
+const drawing = paperOnly(
+  renderCP(scene, { theme: LANDING_THEME, annotate: [], dots: "annotated", highlight: POINTS }),
+  DOT_MARGIN,
+);
+// A marked point's name takes the text shade of its dot's color, as a
+// caption in the docs does (.figure-hl-<n> in theme.css).
+const lines = (await highlightBel(SRC))
+  .replace(/<span class="bel-point" data-bel-name="(\w+)">/g, (span, name: string) => {
+    const i = POINTS.indexOf(`.${name}`);
+    return i < 0 ? span : `<span class="bel-point figure-hl-${i}" data-bel-name="${name}">`;
+  })
+  .split("\n");
+const c = async (s: string) => `<code class="bel-inline bel-code-on-page">${await highlightBelInline(s)}</code>`;
+---
+
+<Band tone="ground">
+  <div class="l-split">
+    <div class="l-text">
+      <h2 class="l-h2">Name what you fold.</h2>
+      <p class="l-p">
+        Points start with a dot, like <Fragment set:html={await c(".o")} />, lines with
+        two dashes, like <Fragment set:html={await c("--mid")} />. The sheet brings its
+        own: corners <Fragment set:html={await c(".a")} /> to <Fragment set:html={await c(".d")} />
+        and edges <Fragment set:html={await c("--ab")} /> to <Fragment set:html={await c("--da")} />.
+        Every fold you make and every point where creases meet can be named too, so
+        the next fold can refer to it.
+      </p>
+    </div>
+    <div class="l-vis names-duo">
+      <div class="l-card l-code bel-code-on-page">
+        {lines.map((html) => <div set:html={html || " "} />)}
+      </div>
+      <figure class="l-figure l-dots names-drawing" aria-label="Crease pattern with the named points" set:html={drawing} />
+    </div>
+  </div>
+</Band>
+
+<style>
+  .names-duo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 32px;
+    align-items: center;
+  }
+  .names-drawing {
+    margin: 0;
+    max-width: 360px;
+    justify-self: center;
+    width: 100%;
+  }
+  @media (max-width: 720px) {
+    .names-duo {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+    .names-drawing {
+      max-width: 80%;
+    }
+  }
+</style>
