@@ -9,6 +9,7 @@ import CitationMeta from "../components/CitationMeta.astro";
 import HeroProgram from "../components/HeroProgram.astro";
 import Names from "../components/landing/Names.astro";
 import FoldFile from "../components/landing/FoldFile.astro";
+import Exact from "../components/landing/Exact.astro";
 import { HERO_SRC } from "../lib/landing-examples";
 import { DESCRIPTION } from "../lib/description";
 import "../styles/landing.css";
@@ -45,6 +46,7 @@ const body = DESCRIPTION.slice(cut + 1);
   </Band>
   <Names />
   <FoldFile />
+  <Exact />
 </Shell>
 
 <style>

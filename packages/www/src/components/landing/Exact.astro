@@ -1,0 +1,167 @@
+---
+// "Exact": the helmet's last two folds, and where three of its points end
+// up, as the program asserts them. The kernel's test suite checks every
+// `; assert` of examples/ against the evaluator's exact state; the build
+// checks the same values against the coordinates in the FOLD file, so the
+// page cannot show a value the kernel does not reach.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import Band from "../Band.astro";
+import { parseFold } from "@beloch/scene";
+import { renderFolded, HIGHLIGHT_PALETTE, WEB_THEME } from "@beloch/render-svg";
+import { evalBelToFold } from "../../lib/eval-bel";
+import { highlightBel } from "../../lib/highlight-bel";
+import { HERO_SRC } from "../../lib/landing-examples";
+
+// The points the list names, in the order of their highlight colors.
+const POINTS = [".c", ".a", ".ql"];
+
+const root = process.env.BELOCH_REPO_ROOT!;
+const corpus = readFileSync(join(root, "examples", "samurai-helmet.bel"), "utf8");
+
+// `; assert .p = (x, y)` and `; assert .p = .q`, the two forms the list reads.
+const at = new Map<string, string>();
+const same = new Map<string, string>();
+for (const [, p, v] of corpus.matchAll(/^; assert (\.\w+) = (\([^)]*\)|\.\w+)\s*$/gm)) {
+  if (v!.startsWith("(")) at.set(p!, v!);
+  else same.set(p!, v!);
+}
+const num = (s: string) => {
+  const [n, d] = s.trim().split("/");
+  return Number(n) / Number(d ?? 1);
+};
+
+const fold = evalBelToFold(HERO_SRC) as Record<string, unknown>;
+const table = fold["beloch:named_points"] as Record<string, { table: [number, number] }>;
+const values = POINTS.map((p, i) => {
+  const twin = same.get(p);
+  const value = at.get(p) ?? (twin ? at.get(twin) : undefined);
+  if (!value) throw new Error(`examples/samurai-helmet.bel asserts no value for ${p}`);
+  const [x, y] = value.slice(1, -1).split(",").map(num);
+  const [tx, ty] = table[p.slice(1)]!.table;
+  if (Math.abs(tx - x!) > 1e-9 || Math.abs(ty - y!) > 1e-9) {
+    throw new Error(`${p} is at (${tx}, ${ty}), but the helmet asserts ${value}`);
+  }
+  return { p, value, twin, color: HIGHLIGHT_PALETTE[i]!.stroke };
+});
+
+// The last two folds of the hero's program, each statement joined and
+// wrapped again for the narrower card: a line breaks before a parenthesized
+// item or before `as`, and a continuation is indented, as the language reads
+// it. Only the whitespace changes.
+const WIDTH = 36;
+const wrap = (statement: string): string[] => {
+  const parts: string[] = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i < statement.length; i++) {
+    const ch = statement[i];
+    if (ch === "(" || ch === "[") depth++;
+    if (ch === ")" || ch === "]") depth--;
+    if (ch === " " && depth === 0 && /^(\(|as )/.test(statement.slice(i + 1))) {
+      parts.push(statement.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(statement.slice(start));
+  const out: string[] = [];
+  for (const part of parts) {
+    const last = out.length - 1;
+    if (last >= 0 && out[last]!.length + 1 + part.length <= WIDTH) out[last] += " " + part;
+    else out.push(out.length === 0 ? part : "  " + part);
+  }
+  return out;
+};
+const source = HERO_SRC.split("\n");
+const statements: string[] = [];
+for (const l of source.slice(source.findIndex((l) => /\bmoving \.x\b/.test(l)))) {
+  if (/^\s+\S/.test(l)) statements[statements.length - 1] += " " + l.trim();
+  else if (l.startsWith("fold")) statements.push(l.trim());
+}
+const lines = (await highlightBel(statements.flatMap(wrap).join("\n"))).split("\n");
+
+const scene = parseFold(fold);
+const drawing = renderFolded(scene, {
+  theme: WEB_THEME, orient: true, annotate: POINTS, dots: "annotated", highlight: POINTS,
+}).toString();
+// A coordinate pair is no Beloch expression, so it takes the number and
+// punctuation colors by hand.
+const pair = (v: string) =>
+  `<code class="bel-inline bel-code-on-page">${v
+    .replace(/[\d/]+/g, (n) => `<span class="bel-number">${n}</span>`)
+    .replace(/[(),]/g, (p) => `<span class="bel-punct">${p}</span>`)}</code>`;
+---
+
+<Band tone="ground">
+  <div class="l-split">
+    <div class="l-text">
+      <h2 class="l-h2">Exact, not approximately right.</h2>
+      <p class="l-p">
+        Beloch computes over exact real algebraic numbers, with no rounding and no
+        tolerance. When two folds bring corners together they meet exactly, so the
+        next fold can name that point and build on it. The values under the folds
+        are the ones the program asserts, and the test suite checks each against the
+        evaluator: <Fragment set:html={pair(values[0]!.value)} />,
+        not <code class="bel-inline bel-code-on-page"><span class="bel-number">0.37500001</span></code>.
+      </p>
+    </div>
+    <div class="l-vis exact-duo">
+      <div class="l-card l-code bel-code-on-page">
+        {lines.map((html) => <div set:html={html} />)}
+        <div class="l-label exact-label">values after the last fold</div>
+        {values.map((v) => (
+          <div class="exact-row">
+            <span class="exact-dot" style={`background: ${v.color}`} aria-hidden="true" />
+            <span class="bel-point">{v.p}</span>
+            <span>{v.value}{v.twin && `, the same place as ${v.twin}`}</span>
+          </div>
+        ))}
+      </div>
+      <figure class="l-figure exact-drawing" aria-label="The folded helmet with the three points marked" set:html={drawing} />
+    </div>
+  </div>
+</Band>
+
+<style>
+  .exact-duo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 32px;
+    align-items: center;
+  }
+  .exact-label {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--bel-ui-divider);
+  }
+  .exact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .exact-dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .exact-drawing {
+    margin: 0;
+    max-width: 380px;
+    width: 100%;
+    justify-self: center;
+  }
+  /* The names are drawn in the paper's ink, so the drawing keeps its own
+     light ground in both modes, as the figures in the docs do. */
+  .exact-drawing :global(svg) {
+    border-radius: var(--bel-radius-card);
+  }
+  .exact-drawing :global(text) {
+    font-size: 26px;
+  }
+  @media (max-width: 720px) {
+    .exact-duo {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+  }
+</style>
