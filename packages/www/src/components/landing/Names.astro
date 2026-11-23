@@ -16,12 +16,22 @@ fold (map .b onto .a) as --r
 .sl = --l * --da
 .sr = --r * --ab`;
 
+// The points the drawing marks, in the order of their highlight colors.
+const POINTS = [".o", ".sl", ".sr"];
+
 const scene = parseFold(cachedFold(SRC) as object);
 const drawing = paperOnly(
-  renderCP(scene, { theme: LANDING_THEME, annotate: [], dots: "annotated", highlight: [".o", ".sl", ".sr"] }),
+  renderCP(scene, { theme: LANDING_THEME, annotate: [], dots: "annotated", highlight: POINTS }),
   DOT_MARGIN,
 );
-const lines = (await highlightBel(SRC)).split("\n");
+// A marked point's name takes the text shade of its dot's color, as a
+// caption in the docs does (.figure-hl-<n> in theme.css).
+const lines = (await highlightBel(SRC))
+  .replace(/<span class="bel-point" data-bel-name="(\w+)">/g, (span, name: string) => {
+    const i = POINTS.indexOf(`.${name}`);
+    return i < 0 ? span : `<span class="bel-point figure-hl-${i}" data-bel-name="${name}">`;
+  })
+  .split("\n");
 const c = async (s: string) => `<code class="bel-inline bel-code-on-page">${await highlightBelInline(s)}</code>`;
 ---
 
