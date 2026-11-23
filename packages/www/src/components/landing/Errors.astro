@@ -1,0 +1,54 @@
+---
+// "Errors that suggest a way out": three diagnostics as the kernel prints
+// them. Two of them stop the crane after its front petal fold, where the
+// crease --s1 already lies in two pieces, and add the line that fails.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import Band from "../Band.astro";
+import Diagnostic from "../Diagnostic.astro";
+
+const root = process.env.BELOCH_REPO_ROOT!;
+const crane = readFileSync(join(root, "examples", "crane.bel"), "utf8").split("\n");
+const petal = crane.findIndex((l) => /\bas --pf\b/.test(l));
+if (petal < 0) throw new Error("examples/crane.bel names no --pf");
+const craneUpTo = (line: string) => [...crane.slice(0, petal + 1), line].join("\n");
+
+const CASES = [
+  {
+    label: "a misspelt name",
+    name: "fold.bel",
+    source: `paper square
+mark (through .a .c) as --diag
+fold (map .b onto .d) (up to --diagonal)`,
+  },
+  { label: "two creases, two crossings", name: "crane.bel", source: craneUpTo(".k = --s1 * --pf") },
+  { label: "a crease folded into pieces", name: "crane.bel", source: craneUpTo("fold (--s1) (moving .b) as --wing") },
+];
+---
+
+<Band tone="ground">
+  <div class="l-split errs">
+    <div class="l-text">
+      <h2 class="l-h2">Errors that suggest a way out.</h2>
+      <p class="l-p">
+        Where it can, an error says what you could write instead: the names that are
+        in scope, every point where two creases cross, the piece of a crease that is
+        still straight.
+      </p>
+    </div>
+    <div class="l-vis errs-list">
+      {CASES.map((c) => <Diagnostic {...c} />)}
+    </div>
+  </div>
+</Band>
+
+<style>
+  .l-split.errs {
+    align-items: flex-start;
+  }
+  .errs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+</style>
