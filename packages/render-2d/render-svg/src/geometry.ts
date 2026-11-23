@@ -393,10 +393,13 @@ export function paperEdgeSegments(
 
 // Where a named crease or line lies on the sheet, as segments in paper
 // coordinates. A crease is its own edges in the crease pattern, wherever later
-// folds took them. A line bound with `=` has no edges: its coefficients lie on
-// the table of the step its `step` names (step 0 is the flat sheet), and the paper
-// under that table line is found face by face and taken back through each
-// face's isometry. A name that is neither gives no segments.
+// folds took them. A named line without edges, such as a mark that cuts no
+// face, is read from its coefficients on the table of the step its `step`
+// names (step 0 is the flat sheet), and the paper under that table line is
+// found face by face and taken back through each face's isometry. The kernel
+// writes those coefficients on the table of the last state, so the pieces are
+// right only when no fold follows the step that bound the name. A name that is
+// neither gives no segments.
 export function namedSegments(scene: FoldScene, name: string): [Vec2, Vec2][] {
   const crease = scene.creases.find((c) => c.name === name);
   if (crease) return crease.segments.map((s): [Vec2, Vec2] => [s.a, s.b]);
