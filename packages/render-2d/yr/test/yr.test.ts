@@ -252,7 +252,8 @@ test("an existing crease ends short of the edges it ends on", async () => {
 });
 
 test("an existing crease touches the edge it runs under", async () => {
-  const three = panelSvg(renderYr(await scene("kite")).doc.toString(), "3");
+  const three = panelSvg(renderYr(await scene("kite"), { open: 0, gap: false }).doc.toString(), "3");
+  // drawn flat: the coordinates below are those of the state as it lies
   // the diagonal shows from the top corner down to the edges of the two flaps
   const ends = creaseEnds(three);
   expect(ends).toHaveLength(1);
