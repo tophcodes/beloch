@@ -203,16 +203,14 @@ function markArrow(faces: Vec2[][], [a, b]: [Vec2, Vec2]): [Vec2, Vec2] {
   return [tail, [tail[0] + (2 * d * dy) / L, tail[1] - (2 * d * dx) / L]];
 }
 
-// The turn-over arrows of a panel, in the panel's page pixels, and the
-// lowest point they reach. The line the table is mirrored in runs up the page
-// for a turn from side to side. That arrow lies below the model, where it may
-// reach past the panel's square; a turn from top to bottom lies right of the
-// model, as close as the panel's edge allows.
-function turnArrows(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): { nodes: SvgNode[]; bottom: number } {
+// The turn-over arrows of a panel, in the panel's page pixels. The line the
+// table is mirrored in runs up the page for a turn from side to side. That
+// arrow lies below the model; a turn from top to bottom lies right of the
+// model, as close as the panel's square allows.
+function turnArrows(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): SvgNode[] {
   const model = scene.steps[panel.base]!.frame.vertices.map(view.px);
   const xs = model.map((p) => p[0]), ys = model.map((p) => p[1]);
   const nodes: SvgNode[] = [];
-  let bottom = 0;
   for (const w of panel.writes) {
     const turn = turnOver(scene, w);
     if (!turn) continue;
@@ -220,13 +218,12 @@ function turnArrows(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): 
     if (Math.abs(e[1] - o[1]) >= Math.abs(e[0] - o[0])) {
       const center: Vec2 = [(Math.min(...xs) + Math.max(...xs)) / 2, Math.max(...ys) + 44];
       nodes.push(turnOverArrow(center, "side-to-side", ink));
-      bottom = Math.max(bottom, center[1] + 30);
     } else {
       const center: Vec2 = [Math.min(Math.max(...xs) + 34, view.layout.W - 30), (Math.min(...ys) + Math.max(...ys)) / 2];
       nodes.push(turnOverArrow(center, "top-to-bottom", ink));
     }
   }
-  return { nodes, bottom };
+  return nodes;
 }
 
 // How far the valley line of an inside reverse fold runs beyond the edge and
@@ -389,6 +386,59 @@ function wrap(text: string, width: number): string[] {
 
 const CAPTION = 22, LINE = 28, WRAP = 44, ROTATION = 88;
 
+// The room a panel keeps between what it draws and its edge, in page pixels.
+const MARGIN = 16;
+
+type Box = [number, number, number, number];  // min x, min y, max x, max y
+
+// The points the curve of an svg path passes through: the ends of its
+// commands, with each segment of an M, L, Q or C command in absolute
+// coordinates sampled at 16 points along it, so that a curve counts where it
+// runs and its control points do not.
+function pathInk(d: string): Vec2[] {
+  const pairs = (s: string) => [...s.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m): Vec2 => [Number(m[1]), Number(m[2])]);
+  const out: Vec2[] = [];
+  let at: Vec2 = [0, 0];
+  for (const [, cmd, args] of d.matchAll(/([MLQC])([^MLQC]*)/g)) {
+    const ps = pairs(args!);
+    if (cmd === "M") {
+      out.push(...ps);
+      at = ps.at(-1) ?? at;
+      continue;
+    }
+    const per = cmd === "Q" ? 2 : cmd === "C" ? 3 : 1;
+    for (let i = 0; i + per <= ps.length; i += per) {
+      const seg = [at, ...ps.slice(i, i + per)];
+      for (let k = 1; k <= 16; k++) {
+        // the point at k/16 along the curve, by repeated interpolation between its control points
+        let q = seg;
+        while (q.length > 1) q = q.slice(1).map((p, j): Vec2 => [q[j]![0] + ((p[0] - q[j]![0]) * k) / 16, q[j]![1] + ((p[1] - q[j]![1]) * k) / 16]);
+        out.push(q[0]!);
+      }
+      at = ps[i + per - 1]!;
+    }
+  }
+  return out;
+}
+
+// The box the lines, polygons and paths of `nodes` and their children reach,
+// or null when they draw none. A mask draws nothing of its own.
+function inkBox(nodes: SvgNode[]): Box | null {
+  const pts: Vec2[] = [];
+  const visit = (n: SvgNode) => {
+    if (n.tag === "mask") return;
+    const a = n.attrs;
+    if (n.tag === "line") pts.push([Number(a["x1"]), Number(a["y1"])], [Number(a["x2"]), Number(a["y2"])]);
+    if (n.tag === "polygon") pts.push(...pathInk(`M${String(a["points"])}`));
+    if (n.tag === "path") pts.push(...pathInk(String(a["d"])));
+    n.children.forEach(visit);
+  };
+  nodes.forEach(visit);
+  if (pts.length === 0) return null;
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
+
 // The size of a state: the greatest distance between two of its vertices,
 // which a rotation on the page leaves unchanged. Known ceiling: every pair of
 // vertices is measured, O(V²), which a few thousand vertices keep fast.
@@ -438,13 +488,22 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
       annotate: [], dots: "annotated", hidden: "hide",
       theme: { ...opts.theme, lineStyle: panelLineStyle, background: "none" },
     });
-    doc.layer("annotations").children.push(...overlays(scene, panel, view, ink));
+    const marks = overlays(scene, panel, view, ink);
+    doc.layer("annotations").children.push(...marks);
     const flips = turnArrows(scene, panel, view, ink);
     const caption = panel.text === null ? [] : wrap(panel.text, WRAP);
-    // the first line of the caption stands below the turn-over arrows
-    const top = Math.max(view.layout.H, flips.bottom + LINE);
+    // the panel's square, grown until everything it draws lies MARGIN inside
+    // it; the first line of the caption stands below that
+    const { W: S } = view.layout;
+    const reach = inkBox([...marks, ...flips]);
+    const box: Box = reach ? [
+      Math.min(0, reach[0] - MARGIN), Math.min(0, reach[1] - MARGIN),
+      Math.max(S, reach[2] + MARGIN), Math.max(S, reach[3] + MARGIN),
+    ] : [0, 0, S, S];
+    const top = Math.max(box[3], reach ? reach[3] + MARGIN + CAPTION : 0);
     return {
-      panel, doc, flips: flips.nodes, caption, top, turn: view.turn, height: top + caption.length * LINE + 16,
+      panel, doc, flips, caption, box, top, turn: view.turn,
+      height: top - box[1] + caption.length * LINE + 16,
     };
   });
   // the turn from the previous panel to each panel, where there is one
@@ -453,26 +512,34 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
     return Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta))) > 1e-9 ? turnFraction(delta) : null;
   });
 
-  const W = drawn[0]?.doc.width ?? 0;
+  // The column is as wide as the widest reach of any panel to either side of
+  // its square, the same on both sides, so that every model stands in the
+  // middle of the column.
+  const S = drawn[0]?.doc.width ?? 0;
+  const side = Math.ceil(Math.max(0, ...drawn.map(({ box }) => Math.max(-box[0], box[2] - S))));
+  const W = S + 2 * side;
   const H = drawn.reduce((s, d, i) => s + d.height + (turns[i] ? ROTATION : 0), 0);
   const column = createDoc(W, H);
   if (theme.background !== "none") column.root.children.push(el("rect", { width: W, height: H, fill: theme.background }));
   let y = 0;
-  drawn.forEach(({ panel, doc, flips, caption, top, height }, i) => {
+  drawn.forEach(({ panel, doc, flips, caption, box, top, height }, i) => {
     const turn = turns[i];
     if (turn) {
       column.root.children.push(rotationSymbol([W / 2, y + ROTATION / 2], turn, ink));
       y += ROTATION;
     }
+    // the drawing keeps the coordinates of the panel's square, its viewport
+    // grown to the panel's box so that nothing it draws is cut off
     const svg = doc.node();
+    const [x0, y0] = [-side, box[1]], [w, h] = [W, top - box[1]];
+    const drawing = { ...svg, attrs: { ...svg.attrs, x: x0, y: y0, width: w, height: h, viewBox: `${x0} ${y0} ${w} ${h}` } };
     const lines = caption.map((t, i) =>
       el("text", {
-        x: W / 2, y: top + i * LINE, "text-anchor": "middle",
+        x: W / 2, y: top - box[1] + i * LINE, "text-anchor": "middle",
         "font-size": CAPTION, fill: theme.ink,
       }, [], t));
     column.root.children.push(el("g", { "data-panel": panel.number, transform: `translate(0,${y})` }, [
-      { ...svg, attrs: { ...svg.attrs, x: 0, y: 0 } },
-      ...flips,
+      el("g", { transform: `translate(${side},${-box[1]})` }, [drawing, ...flips]),
       el("text", { x: 24, y: 48, "font-size": 36, "font-weight": 700, fill: theme.ink }, [], panel.number),
       ...lines,
     ]));

@@ -1,0 +1,208 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
+  "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
+  "vertices_coords": [
+    [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+  ],
+  "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+  "edges_assignment": [ "B", "B", "B", "B" ],
+  "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+  "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
+  "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+  "beloch:edges": [ null, null, null, null ],
+  "beloch:inspect": {
+    "creases": {},
+    "faces": {
+      "0": {
+        "vertices": [
+          [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+        ],
+        "flap": 0
+      }
+    },
+    "points": {
+      "a": { "face": 0, "flap": 0 },
+      "b": { "face": 0, "flap": 0 },
+      "c": { "face": 0, "flap": 0 },
+      "d": { "face": 0, "flap": 0 }
+    },
+    "edges": {
+      "ab": {
+        "name": "ab",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 0 ],
+            "paper": [ [ 0.0, 0.0 ], [ 1.0, 0.0 ] ],
+            "table": [ [ 1.0, 0.0 ], [ 0.0, 0.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "da": {
+        "name": "da",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 0 ],
+            "paper": [ [ 0.0, 1.0 ], [ 0.0, 0.0 ] ],
+            "table": [ [ 1.0, 1.0 ], [ 1.0, 0.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "bc": {
+        "name": "bc",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 0 ],
+            "paper": [ [ 1.0, 0.0 ], [ 1.0, 1.0 ] ],
+            "table": [ [ 0.0, 0.0 ], [ 0.0, 1.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "cd": {
+        "name": "cd",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 0 ],
+            "paper": [ [ 1.0, 1.0 ], [ 0.0, 1.0 ] ],
+            "table": [ [ 0.0, 1.0 ], [ 1.0, 1.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      }
+    }
+  },
+  "beloch:vertices_names": [ "a", "b", "c", "d" ],
+  "beloch:named_points": {
+    "a": {
+      "paper": [ 0.0, 0.0 ],
+      "table": [ 1.0, 0.0 ],
+      "step": 0,
+      "statement": null
+    },
+    "b": {
+      "paper": [ 1.0, 0.0 ],
+      "table": [ 0.0, 0.0 ],
+      "step": 0,
+      "statement": null
+    },
+    "c": {
+      "paper": [ 1.0, 1.0 ],
+      "table": [ 0.0, 1.0 ],
+      "step": 0,
+      "statement": null
+    },
+    "d": {
+      "paper": [ 0.0, 1.0 ],
+      "table": [ 1.0, 1.0 ],
+      "step": 0,
+      "statement": null
+    }
+  },
+  "beloch:named_lines": {},
+  "beloch:named_lines_frame": "creasePattern",
+  "beloch:marks": [],
+  "beloch:free": {},
+  "beloch:statements": [
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 8,
+      "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:8:1-5",
+      "frame_index": 1,
+      "kept_marks": []
+    }
+  ],
+  "beloch:references": [],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:1:9-29"
+        }
+      ]
+    },
+    {
+      "key": "step",
+      "namespace": null,
+      "target": [ 0, 0 ],
+      "frame_index": 0,
+      "source_line": 7,
+      "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:7:1-8:1",
+      "args": [
+        {
+          "text": "Turn the model over.",
+          "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:7:7-29"
+        }
+      ]
+    },
+    {
+      "key": "say",
+      "namespace": null,
+      "target": null,
+      "frame_index": 1,
+      "source_line": 10,
+      "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:10:1-11:1",
+      "args": [
+        {
+          "text": "Done.",
+          "span": "packages/render-2d/yr/test/fixtures/turn-over-square.bel:10:6-13"
+        }
+      ]
+    }
+  ],
+  "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
+      "faceOrders": [],
+      "beloch:source_line": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 1.0, 0.0 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ], [ 1.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ] ],
+      "faceOrders": [],
+      "beloch:source_line": 8,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    }
+  ]
+}

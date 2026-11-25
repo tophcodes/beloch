@@ -239,11 +239,51 @@ test("a petal fold's lift arrow ends past the paper and short of where the tip l
   expect(paper.some((poly) => pointInPolygon(tip, poly))).toBe(false);
 });
 
+// The points a panel draws through, in the coordinates of its drawing: the
+// ends of its lines, the corners of its polygons and the points its paths
+// pass through, which leaves out the control points of their curves.
+const drawnPoints = (svg: string): Vec2[] => {
+  const pairs = (s: string) => [...s.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m): Vec2 => [Number(m[1]), Number(m[2])]);
+  const lines = [...svg.matchAll(/<line [^>]*x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"/g)]
+    .flatMap((m): Vec2[] => [[Number(m[1]), Number(m[2])], [Number(m[3]), Number(m[4])]]);
+  const polygons = [...svg.matchAll(/<polygon points="([^"]+)"/g)].flatMap((m) => pairs(m[1]!));
+  const paths = [...svg.matchAll(/<path d="([^"]+)"/g)].flatMap((m) =>
+    [...m[1]!.matchAll(/([MLQC])([^MLQC]*)/g)].flatMap(([, cmd, args]) => {
+      const per = cmd === "Q" ? 2 : cmd === "C" ? 3 : 1;
+      return pairs(args!).filter((_, i) => i % per === per - 1);
+    }));
+  return [...lines, ...polygons, ...paths];
+};
+
+test("every panel is large enough for everything it draws, and its caption stands below it", async () => {
+  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse", "mountain", "top-layer", "turn-over", "turn-over-square", "petal"]) {
+    const svg = renderYr(await scene(name)).doc.toString();
+    for (const number of [...svg.matchAll(/data-panel="([^"]+)"/g)].map((m) => m[1]!)) {
+      const panel = panelSvg(svg, number);
+      const tag = panel.match(/<svg [^>]*>/)![0];
+      const [x, y, w, h] = ["x", "y", "width", "height"].map((k) => Number(tag.match(new RegExp(` ${k}="([^"]+)"`))![1]));
+      const pts = drawnPoints(panel.slice(panel.indexOf(tag)));
+      for (const [px, py] of pts) {
+        expect(px).toBeGreaterThanOrEqual(x!);
+        expect(px).toBeLessThanOrEqual(x! + w!);
+        expect(py).toBeGreaterThanOrEqual(y!);
+        expect(py).toBeLessThanOrEqual(y! + h!);
+      }
+      // the drawing's top edge is the panel's top; a caption's line of 22
+      // pixels stands below the lowest point
+      const low = Math.max(...pts.map((p) => p[1])) - y!;
+      for (const m of panel.matchAll(/<text x="[^"]+" y="([^"]+)" text-anchor="middle"/g)) {
+        expect(Number(m[1]) - 22).toBeGreaterThan(low);
+      }
+    }
+  }
+});
+
 // The drawings beside the programs are what the pull request shows; this
 // keeps them equal to what the library draws. To write them again:
-//   for f in kite book-twice rotate shrink inside-reverse outside-reverse mountain top-layer turn-over petal; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
+//   for f in kite book-twice rotate shrink inside-reverse outside-reverse mountain top-layer turn-over turn-over-square petal; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
 test("the committed drawings are the library's output", async () => {
-  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse", "mountain", "top-layer", "turn-over", "petal"]) {
+  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse", "mountain", "top-layer", "turn-over", "turn-over-square", "petal"]) {
     const drawn = renderYr(await scene(name)).doc.toString();
     const committed = await Bun.file(new URL(`./fixtures/${name}-yr.svg`, import.meta.url)).text();
     expect(drawn).toBe(committed);
