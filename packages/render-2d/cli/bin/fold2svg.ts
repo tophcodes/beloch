@@ -46,7 +46,7 @@ const FLAGS = new Set([
   "--title", "--view", "--hidden", "--labels", "--highlight", "--step", "--format", "--width",
   "--statement", "--source", "--stage", "--along",
 ]);
-const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side", "--plain"]);
+const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side", "--plain", "--flat"]);
 // An option this CLI does not know would otherwise read as a positional, and
 // `-o out.svg` would write a file named `-o`. `-` alone is stdin.
 const unknown = args.find(
@@ -103,7 +103,11 @@ try {
   // The diagram reports how it laid out the steps, such as a step group split
   // into 2a and 2b, as hints on stderr; the drawing is written either way.
   const yr = viewFlag === "yr"
-    ? renderYr(scene, args.includes("--plain") ? { theme: { background: "none" } } : {})
+    ? renderYr(scene, {
+      ...(args.includes("--plain") ? { theme: { background: "none" } } : {}),
+      // --flat draws every state as it lies, its layers and edges on each other
+      ...(args.includes("--flat") ? { open: 0, gap: false } : {}),
+    })
     : null;
   for (const hint of yr?.hints ?? []) process.stderr.write(`beloch-render: hint: ${hint}\n`);
   const doc = yr ? yr.doc : viewFlag === "folded"

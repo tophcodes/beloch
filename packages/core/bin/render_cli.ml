@@ -86,6 +86,8 @@ display options:
   --title TEXT              caption drawn in the top-left corner
   --hidden dashed|hide      how occluded creases are drawn in folded view
                             (default: hide)
+  --flat                    draw each state of the YR diagram as it lies,
+                            its stacked layers on each other
 
 output options:
   --format svg|png          overrides the format implied by OUT's extension

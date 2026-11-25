@@ -21,15 +21,97 @@ import type { FoldMotion } from "./motion";
 import { panels } from "./panels";
 import type { Panel } from "./panels";
 import { rotationSymbol, turnFraction } from "./rotation";
+import { gapFrame, openFrame } from "./open";
 
 export interface YrOptions {
   theme?: Partial<Theme> | undefined;
+  // the angle, in degrees, every fold stands open by in the drawing (see
+  // openFrame); absent, OPEN; 0 draws the state flat
+  open?: number | undefined;
+  // whether two raw edges that meet are drawn apart (see gapFrame); absent,
+  // they are
+  gap?: boolean | undefined;
+}
+
+// The angle every fold stands open by unless the caller sets another, in
+// degrees.
+const OPEN = 2;
+
+// The stroke width of the outline, in page units (see panelLineStyle).
+const OUTLINE = 2.2;
+
+// The width of a gap between two raw edges at its open end, and the largest
+// step between two layers, in outline widths: a step narrower than a line
+// would merge two edges into one.
+const GAP = 3.6, STEP = 1.5;
+
+// The state of a panel with its meeting raw edges drawn apart and drawn open
+// by `angle` degrees, a unit of height moving a point straight up the page,
+// and the panel's view with every point it places moved with the paper under
+// it. Up the page keeps a model that is symmetric about the vertical
+// symmetric in the drawing.
+function openPanel(scene: FoldScene, base: number, angle: number, gap: boolean, view: PanelView) {
+  const scale = view.layout.tx(1) - view.layout.tx(0);
+  const flat = scene.steps[base]!.frame;
+  const up: Vec2 = [Math.sin(view.turn), Math.cos(view.turn)];   // the page's up, on the table
+  const apart = gap ? gapFrame(flat, (GAP * OUTLINE) / scale) : { frame: flat, move: (p: Vec2) => p };
+  const opened = openFrame(apart.frame, angle, up, (STEP * OUTLINE) / scale);
+  const frame = opened.frame;
+  const move = (p: Vec2) => opened.move(apart.move(p));
+
+  // the flat view is affine: its inverse from the images of three points
+  const o = view.flatPx([0, 0]), ex = view.flatPx([1, 0]), ey = view.flatPx([0, 1]);
+  const det = (ex[0] - o[0]) * (ey[1] - o[1]) - (ey[0] - o[0]) * (ex[1] - o[1]);
+  const unpx = ([x, y]: Vec2): Vec2 => {
+    const dx = x - o[0], dy = y - o[1];
+    return [(dx * (ey[1] - o[1]) - dy * (ey[0] - o[0])) / det, ((ex[0] - o[0]) * dy - (ex[1] - o[1]) * dx) / det];
+  };
+  const movePage = (p: Vec2): Vec2 => view.flatPx(move(unpx(p)));
+  // A crease is a straight line between its two ends: the ends of all its
+  // pieces together move with the paper under them, and every piece lies on
+  // the line between the moved ends. Creases that meet at a point meet there
+  // after the move too.
+  const lines = (segs: [Vec2, Vec2][]): [Vec2, Vec2][] => {
+    const runs = new Map<string, { u: Vec2; ts: number[]; members: number[] }>();
+    segs.forEach(([p, q], i) => {
+      let a = Math.atan2(q[1] - p[1], q[0] - p[0]);
+      if (a < 0) a += Math.PI;
+      if (a >= Math.PI - 1e-6) a -= Math.PI;
+      const u: Vec2 = [Math.cos(a), Math.sin(a)];
+      const key = `${Math.round(a * 1e3)},${Math.round((-u[1] * p[0] + u[0] * p[1]) * 2)}`;
+      const run = runs.get(key) ?? { u, ts: [], members: [] };
+      run.ts.push(u[0] * p[0] + u[1] * p[1], u[0] * q[0] + u[1] * q[1]);
+      run.members.push(i);
+      runs.set(key, run);
+    });
+    const out = [...segs];
+    for (const { u, ts, members } of runs.values()) {
+      const t0 = Math.min(...ts), t1 = Math.max(...ts);
+      const [p0] = segs[members[0]!]!;
+      const base = u[0] * p0[0] + u[1] * p0[1];
+      const at = (t: number): Vec2 => [p0[0] + u[0] * (t - base), p0[1] + u[1] * (t - base)];
+      const [a, b] = [movePage(at(t0)), movePage(at(t1))];
+      const along = (p: Vec2): Vec2 => {
+        const s = t1 > t0 ? (u[0] * p[0] + u[1] * p[1] - t0) / (t1 - t0) : 0;
+        return [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s];
+      };
+      for (const i of members) out[i] = [along(segs[i]![0]), along(segs[i]![1])];
+    }
+    return out;
+  };
+  return {
+    scene: { ...scene, steps: scene.steps.map((s, i) => (i === base ? { ...s, frame } : s)) },
+    view: { ...view, px: (p: Vec2) => view.flatPx(move(p)), lines },
+  };
 }
 
 export interface PanelView {
   turn: number;                 // the rotation of the table onto the page, radians
   layout: Layout;
-  px: (table: Vec2) => Vec2;    // a table point of the panel's state to page pixels
+  px: (table: Vec2) => Vec2;    // a table point of the panel's state to page pixels, moved with the paper
+  flatPx: (table: Vec2) => Vec2;  // the same, of the state as it lies
+  // page segments of creases drawn through flatPx, moved with the paper
+  lines: (segs: [Vec2, Vec2][]) => [Vec2, Vec2][];
 }
 
 // The state a panel draws, turned by the `@orient` in force, with the center
@@ -52,10 +134,8 @@ export function panelView(scene: FoldScene, panel: Panel, half?: number): PanelV
   const { turn, place, cx, cy, half: own } = turned(scene, panel);
   const h = half ?? own;
   const layout = makeLayout([[cx - h, cy - h], [cx + h, cy + h]]);
-  return {
-    turn, layout,
-    px: (p) => { const q = place(p); return [layout.tx(q[0]), layout.ty(q[1])]; },
-  };
+  const px = (p: Vec2): Vec2 => { const q = place(p); return [layout.tx(q[0]), layout.ty(q[1])]; };
+  return { turn, layout, px, flatPx: px, lines: (segs) => segs };
 }
 
 // The paper in a panel: its outline in ink. The renderer draws the edges of
@@ -63,6 +143,38 @@ export function panelView(scene: FoldScene, panel: Panel, half?: number): PanelV
 // creases that lie flat, which the panel leaves to existingCreaseSegments.
 const panelLineStyle = (assignment: Assignment, theme: Theme): LineStyle =>
   assignment === "B" ? { stroke: theme.ink, strokeWidth: 2.2 } : { stroke: theme.ink, strokeWidth: 0, opacity: 0 };
+
+// The pieces of a fold line as one line per straight run: the faces a fold
+// crosses each give it a piece, and pieces that overlap would draw their dash
+// patterns out of step. Each run starts at its end with the smaller parameter
+// along a fixed direction, so that its dashes start at that end.
+function merged(segs: [Vec2, Vec2][]): [Vec2, Vec2][] {
+  const runs = new Map<string, { u: Vec2; n: Vec2; c: number; spans: [number, number][] }>();
+  for (const [p, q] of segs) {
+    let a = Math.atan2(q[1] - p[1], q[0] - p[0]);
+    if (a < 0) a += Math.PI;
+    if (a >= Math.PI - 1e-6) a -= Math.PI;
+    const u: Vec2 = [Math.cos(a), Math.sin(a)], n: Vec2 = [-u[1], u[0]];
+    const c = n[0] * p[0] + n[1] * p[1];
+    const key = `${Math.round(a * 1e3)},${Math.round(c * 2)}`;
+    const run = runs.get(key) ?? { u, n, c, spans: [] };
+    const t = [u[0] * p[0] + u[1] * p[1], u[0] * q[0] + u[1] * q[1]].sort((x, y) => x - y) as [number, number];
+    run.spans.push(t);
+    runs.set(key, run);
+  }
+  const out: [Vec2, Vec2][] = [];
+  for (const { u, n, c, spans } of runs.values()) {
+    spans.sort((x, y) => x[0] - y[0]);
+    let [t0, t1] = spans[0]!;
+    const at = (t: number): Vec2 => [n[0] * c + u[0] * t, n[1] * c + u[1] * t];
+    for (const [s0, s1] of spans.slice(1)) {
+      if (s0 <= t1 + 0.5) t1 = Math.max(t1, s1);
+      else { out.push([at(t0), at(t1)]); [t0, t1] = [s0, s1]; }
+    }
+    out.push([at(t0), at(t1)]);
+  }
+  return out;
+}
 
 const mid = (segs: [Vec2, Vec2][]): Vec2 | null => {
   if (segs.length === 0) return null;
@@ -140,8 +252,8 @@ const unit = (from: Vec2, to: Vec2): Vec2 => {
 // edge, and the two loops of `wrapArrows` around the flap.
 function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView, ink: Ink): SvgNode[] {
   const r = motion.reverse!;
-  const px = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.px(p), view.px(q)]);
-  const near = px(r.near), far = px(r.far);
+  const flat = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.flatPx(p), view.flatPx(q)]);
+  const near = merged(view.lines(flat(r.near))), far = merged(view.lines(flat(r.far)));
   const at = view.px(r.at), open = view.px(r.open), tipEnd = view.px(r.edge[1]);
   const along = unit(view.px(r.edge[0]), tipEnd);
   // the normal of the folded edge, toward the open edges
@@ -158,15 +270,16 @@ function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView,
       ...wrapArrows([at[0] + n[0] * width, at[1] + n[1] * width], at, unit(at, tipEnd), ink),
     ];
   }
-  const out = unit(at, open);
-  const beyond: [Vec2, Vec2] = [open, [open[0] + out[0] * BEYOND, open[1] + out[1] * BEYOND]];
+  // the valley line beyond the edge continues the one on the far layer
+  const flatAt = view.flatPx(r.at), flatOpen = view.flatPx(r.open), out = unit(flatAt, flatOpen);
+  const valley = merged(view.lines([...flat(r.far), [flatOpen, [flatOpen[0] + out[0] * BEYOND, flatOpen[1] + out[1] * BEYOND]]]));
   const pushAt: Vec2 = [at[0] + (tipEnd[0] - at[0]) * PUSH_ALONG, at[1] + (tipEnd[1] - at[1]) * PUSH_ALONG];
   const tail = view.px(motion.tail), head = view.px(motion.head);
   const crease = mid(near) ?? at;
   const away: Vec2 = [tail[0] + head[0] - crease[0], tail[1] + head[1] - crease[1]];
   return [
     ...near.map((s) => mountainLine(s, statement, ink)),
-    ...[...far, beyond].map((s) => valleyLine(s, statement, ink)),
+    ...valley.map((s) => valleyLine(s, statement, ink)),
     push(pushAt),
     valleyArrow(tail, head, away, ink),
   ];
@@ -174,14 +287,18 @@ function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView,
 
 function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): SvgNode[] {
   const out: SvgNode[] = [];
-  const toPx = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.px(p), view.px(q)]);
+  // a crease is drawn as it lies and moves with the paper as one line
+  const toPx = (segs: [Vec2, Vec2][]) =>
+    view.lines(segs.map(([p, q]): [Vec2, Vec2] => [view.flatPx(p), view.flatPx(q)]));
 
   // the creases of the panel's state, and the scored lines that stand in it
   // and are no edge of it
   const first = panel.writes[0]?.index ?? scene.statements.length;
   const standing: Statement | undefined = scene.statements[first - 1];
   const marks = (standing?.keptMarks ?? []).flatMap((m): [Vec2, Vec2][] => (m.kind === "seg" ? [[m.a, m.b]] : []));
-  for (const s of existingCreaseSegments(scene, panel.base, marks, view.px)) out.push(existingCrease(s, ink));
+  for (const s of view.lines(existingCreaseSegments(scene, panel.base, marks, view.flatPx))) {
+    out.push(existingCrease(s, ink));
+  }
 
   for (const w of panel.writes) {
     if (turnOver(scene, w)) continue;
@@ -191,7 +308,7 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
         out.push(...reverseOverlays(motion, w.index, view, ink));
         continue;
       }
-      const hinge = toPx(motion.hinge);
+      const hinge = merged(toPx(motion.hinge));
       const tail = view.px(motion.tail);
       if (motion.kind === "mountain") {
         for (const s of hinge) out.push(mountainLine(s, w.index, ink));
@@ -209,7 +326,7 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
       }
     } else if (w.mark?.kind === "seg") {
       const frame = scene.steps[w.frameIndex]!.frame;
-      const segs = toPx(segmentsInFrame(frame, [[w.mark.a, w.mark.b]]));
+      const segs = merged(toPx(segmentsInFrame(frame, [[w.mark.a, w.mark.b]])));
       for (const s of segs) out.push(valleyLine(s, w.index, ink));
       const faces = frame.facesVertices.map((f) => f.map((i) => view.px(frame.vertices[i]!)));
       const [tail, tip] = markArrow(faces, segs[0]!);
@@ -272,8 +389,11 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
 
   const halves = panelHalves(scene, list);
   const drawn = list.map((panel, i) => {
-    const view = panelView(scene, panel, halves[i]);
-    const doc = renderFolded(scene, {
+    const flat = panelView(scene, panel, halves[i]);
+    const [angle, gap] = [opts.open ?? OPEN, opts.gap ?? true];
+    const opened = angle || gap ? openPanel(scene, panel.base, angle, gap, flat) : { scene, view: flat };
+    const view = opened.view;
+    const doc = renderFolded(opened.scene, {
       step: String(panel.base), orient: true, layout: view.layout,
       annotate: [], dots: "annotated", hidden: "hide",
       theme: { ...opts.theme, lineStyle: panelLineStyle, background: "none" },
