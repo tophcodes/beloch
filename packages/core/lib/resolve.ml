@@ -579,6 +579,17 @@ let faces_containing (ctx : Ctx.ctx) (pp : Geom.point) : int list =
     (Fold_state.faces st);
   List.rev !acc
 
+let named_point_faces (ctx : Ctx.ctx) : (string * int) list =
+  List.concat_map
+    (fun (sc : Ctx.scope) -> Hashtbl.fold (fun k v acc -> (k, v) :: acc) sc.Ctx.points [])
+    ctx.Ctx.scopes
+  |> List.fold_left
+       (fun acc (k, v) -> if List.mem_assoc k acc then acc else (k, v) :: acc)
+       []
+  |> List.sort (fun (a, _) (b, _) -> String.compare a b)
+  |> List.filter_map (fun (k, p) ->
+         match faces_containing ctx p with [ i ] -> Some (k, i) | _ -> None)
+
 (* resolve a flap operand to its unique current flap: a coplanar cluster of
    faces (spec folded-state, "A flap is a set of faces joined flat": two
    faces joined only by a still-unfolded F edge are the same flap). Slots demand

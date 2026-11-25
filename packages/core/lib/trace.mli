@@ -99,6 +99,8 @@ type detail =
       emergent : segment option;
       stayer : Geom.point * Geom.point;
           (** the ends of the rays that bound the stayer, counter-clockwise *)
+      suggestion : string option;
+          (** where several states remain, the item the hint names for this one *)
     }
 
 type state_candidate = {
@@ -192,6 +194,8 @@ val fan :
   point:Geom.point ->
   rays:segment list ->
   emergent:segment option ->
+  suggestion:string option ->
   detail
-(** The fan of a flatten candidate: its rays from [point] and the sector
-    whose paper lies in [post] where it lay in [pre]. *)
+(** The fan of a flatten candidate: its rays from [point], the sector
+    whose paper lies in [post] where it lay in [pre], and the item the hint
+    of an ambiguous flatten names for it. *)

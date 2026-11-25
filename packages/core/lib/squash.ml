@@ -185,7 +185,7 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
     (List.map
        (fun s ->
          { Trace.state = Some s;
-           detail = Trace.fan ~pre:st ~post:s ~point:o ~rays ~emergent:None;
+           detail = Trace.fan ~pre:st ~post:s ~point:o ~rays ~emergent:None ~suggestion:None;
            removed = None;
            chosen = (match chosen with Some c -> c == s | None -> false) })
        states);

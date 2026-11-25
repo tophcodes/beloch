@@ -419,7 +419,8 @@ let test_flatten_suggest_one_letter_each () =
   Alcotest.(check string) "one letter per state"
     "flatten is ambiguous: 3 realizations; each of these keeps one state: \
      (--c mountain); (--b mountain); (--a mountain)"
-    (let m, h = Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id states in
+    (let m, h, _ = Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id ~points:[]
+         ~above:(fun _ _ _ -> false) states in
      m ^ "; " ^ h)
 
 let test_flatten_suggest_pair_and_layers () =
@@ -428,15 +429,20 @@ let test_flatten_suggest_pair_and_layers () =
                  [ true; true; false ] ] in
   Alcotest.(check string) "a pair of letters, and states that differ in layers only"
     "each of these keeps one state: (--b mountain); (--a mountain); 2 states \
-     differ in their layers only, which an (.p over .q) item orders"
-    (snd (Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id states))
+     differ in their layers only, and no named point lies in the faces whose \
+     order parts them"
+    (let _, h, _ = Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id ~points:[]
+         ~above:(fun _ _ _ -> false) states in
+     h)
 
 let test_flatten_suggest_split () =
   let names = List.map (fun n -> Some (Flatten.ray_item n)) [ "--a"; "--b" ] in
   let states = [ [ true; true ]; [ true; false ]; [ true; true ]; [ false; true ]; [ true; false ] ] in
   Alcotest.(check string) "the most even split above four states"
     "add (--b valley) or (--b mountain): they keep 3 and 2 of the 5 states"
-    (snd (Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id states))
+    (let _, h, _ = Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id ~points:[]
+         ~above:(fun _ _ _ -> false) states in
+     h)
 
 let test_flatten_mv_patterns_all_free () =
   Alcotest.(check int) "4 free rays -> 8 Maekawa patterns" 8
@@ -574,6 +580,56 @@ let test_flatten_over_compares_named_faces () =
     (rel up "p" "z" = Fold_state.Apart && rel down "p" "z" = Fold_state.Apart);
   expect_error "contradictory `over`" (fun () -> eval " (.p over .z)")
 
+(* The swivel fold of collapse/flatten-swivel-on-folded-base.bel leaves 2
+   states that differ in the side of two faces against two others, which no
+   letter parts. The hint names an over item of named points for each, and
+   each item added alone leaves one state. *)
+let swivel_base_src items =
+  "paper square\n\
+   mark (through .a .c) as --ac\n\
+   mark (through .b .d) as --bd\n\
+   mark (map --ab onto --cd) as --h\n\
+   mark (map --da onto --bc) as --v\n\
+   mark (align (--h onto --ac) (heading --h)) as --s\n\
+   mark (align (--h onto --bd) (heading --h)) as --t\n\
+   .q = free on --ab from .a at 1/4\n\
+   .r = free on --ab from .b at 1/4\n\
+   .z = free on --cd from .c at 1/4\n\
+   .e = free on --da from .d at 1/4\n\
+   .f = free on --da from .a at 1/4\n\
+   flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
+   (--bd & .b mountain) (--bd & .d)\n\
+   flatten (--h & --da) (--s & --da mountain) (--t & --da valley) (--ac & .a \
+   valley) (staying .q)"
+  ^ items ^ "\n"
+
+let test_flatten_suggest_over_items () =
+  let eval items = Eval.eval_folded (Beloch.parse ~filename:"t.bel" (swivel_base_src items)) in
+  match eval "" with
+  | _ -> Alcotest.fail "the swivel fold is ambiguous"
+  | exception Error.Beloch_error (_, m, hint) ->
+      Alcotest.(check string) "message" "flatten is ambiguous: 2 realizations" m;
+      Alcotest.(check (option string)) "an over item for each state"
+        (Some "each of these keeps one state: (.f over .r); (.r over .f)") hint;
+      List.iter
+        (fun item -> ignore (eval (" " ^ item)))
+        [ "(.f over .r)"; "(.r over .f)" ]
+
+(* A state that no letter parts and no over item of named points parts *)
+let test_flatten_suggest_no_named_point () =
+  let names = [ Some (Flatten.ray_item "--a"); None ] in
+  let states = [ [ true; false ]; [ false; false ]; [ false; false ] ] in
+  let _, hint, per_state =
+    Flatten.suggest ~verb:"flatten" ~items:names ~letters:Fun.id ~points:[ ("p", 0); ("q", 1) ]
+      ~above:(fun _ _ _ -> false) states
+  in
+  Alcotest.(check string) "the hint says that no named point lies in the faces"
+    "each of these keeps one state: (--a valley); 2 states differ in their \
+     layers only, and no named point lies in the faces whose order parts them"
+    hint;
+  Alcotest.(check (list (option string))) "the item for each state"
+    [ Some "(--a valley)"; None; None ] per_state
+
 let () =
   Alcotest.run "flatten bind"
     [
@@ -626,5 +682,9 @@ let () =
             `Quick test_flatten_no_flat_hinge_splits_taco;
           Alcotest.test_case "over compares the faces of its points"
             `Quick test_flatten_over_compares_named_faces;
+          Alcotest.test_case "suggest: an over item for each state"
+            `Quick test_flatten_suggest_over_items;
+          Alcotest.test_case "suggest: no named point in the faces"
+            `Quick test_flatten_suggest_no_named_point;
         ] );
     ]

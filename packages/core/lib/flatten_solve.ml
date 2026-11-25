@@ -545,14 +545,16 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      once, when a state lands or the statement fails *)
   let candidates = List.concat_map (fun (_, r, _) -> r) surviving in
   let traced = ref false in
-  let trace chosen =
+  let trace ?(suggest = fun _ -> None) chosen =
     if not !traced then begin
       traced := true;
       Ctx.record_write ctx (Trace.Flatten { point = o })
         (List.map
            (fun ((st, _, (rays, emergent), _) as r) ->
              { Trace.state = Some st;
-               detail = Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent;
+               detail =
+                 Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent
+                   ~suggestion:(suggest r);
                removed = None;
                chosen = (match chosen with Some c -> c == r | None -> false) })
            candidates)
@@ -647,6 +649,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          let stayer_of (st, _, (rays, emergent), _) =
            match
              Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent
+               ~suggestion:None
            with
            | Trace.Fan { stayer; _ } -> Some stayer
            | _ -> None
@@ -676,9 +679,15 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               if dir = Ast.MvFree then Some (Flatten.ray_item name) else None)
             elem_names winner_combo
         in
-        let message, hint =
-          Flatten.suggest ~verb ~items:names ~letters:(fun (_, _, _, l) -> l) many
+        let above (st, _, _, _) i j =
+          let nf = Array.length (Fold_state.faces st) in
+          i < nf && j < nf && Fold_state.rel st i j = Fold_state.Above
         in
+        let message, hint, items =
+          Flatten.suggest ~verb ~items:names ~letters:(fun (_, _, _, l) -> l)
+            ~points:(Resolve.named_point_faces ctx) ~above many
+        in
+        trace ~suggest:(fun r -> Option.join (List.assq_opt r (List.combine many items))) None;
         Error.fail ~hint span message
       else
         Error.fail span

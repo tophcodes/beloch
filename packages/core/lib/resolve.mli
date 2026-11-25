@@ -69,6 +69,12 @@ val resolve_sector_face : Ctx.ctx -> Ast.flap_arg -> Error.span -> int
     a collapse vertex is always one FACE, unlike
     `moving`/`up to`'s flap operand. *)
 
+val named_point_faces : Ctx.ctx -> (string * int) list
+(** Every point name in scope whose paper point lies in exactly one face of
+    the current state, with that face, sorted by name: the points an
+    `over` item can name, and the face [resolve_sector_face] resolves each
+    to. *)
+
 val side_of_flap_arg_res :
   Ctx.ctx ->
   Geom.line ->

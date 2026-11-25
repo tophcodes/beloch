@@ -310,7 +310,12 @@ none of this appears, and every other field is the same with and without it.
   vertex `point`. The entry has one candidate per candidate state, each with the
   `rays` of its fan that the program gave, its `emergent` ray or null, and
   its `stayer` as the ends of the two rays that bound the stayer sector,
-  counter-clockwise; a ray is a segment from the vertex. The letters of a
+  counter-clockwise; a ray is a segment from the vertex. Where several
+  candidates remain, each carries `suggestion`: the item the error's hint
+  names for it, as the program would write it (`"(--h & --bc mountain)"`,
+  `"(.f over .r)"`), chosen as `BELOCH-WRITES.md` states for `flatten`;
+  null where the hint names none, and on every candidate of a flatten that
+  decided. The letters of a
   candidate are the assignments in its frame. `removed_by` is null: the
   items of a flatten are conditions, and a state they rule out is no
   candidate (spec `multifold`, "Every item of a flatten is a condition on its
