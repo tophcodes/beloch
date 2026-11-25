@@ -7,7 +7,7 @@
 import type { Assignment, FoldScene, Statement, Vec2 } from "@beloch/scene";
 import { orientationAt, SceneError } from "@beloch/scene";
 import {
-  clipHalfPlane, createDoc, DEFAULT_THEME, el, makeLayout, renderFolded, segmentsInFrame, turnFrame,
+  clipHalfPlane, createDoc, DEFAULT_THEME, el, makeLayout, renderFolded, segInsideIntervals, segmentsInFrame, turnFrame,
 } from "@beloch/render-svg";
 import type { Layout, LineStyle, SvgDoc, SvgNode, Theme } from "@beloch/render-svg";
 import { existingCreaseSegments } from "./creases";
@@ -285,22 +285,38 @@ function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView,
   ];
 }
 
+// How far past the paper's outline the lift arrow of a petal fold ends, in
+// page pixels, as in [lang2011secrets, Fig. 2.31].
+const LIFT_PAST = 90;
+
+// Where the lift arrow from `tail` toward `landing` ends, in page pixels: on
+// the line between them, LIFT_PAST past the last point where that line leaves
+// the paper `paper` (polygons in page pixels), and never past `landing`.
+export function liftHead(tail: Vec2, landing: Vec2, paper: Vec2[][]): Vec2 {
+  const L = Math.hypot(landing[0] - tail[0], landing[1] - tail[1]);
+  const exit = Math.max(0, ...paper.flatMap((poly) => segInsideIntervals(tail, landing, poly).map(([, t1]) => t1)));
+  const t = Math.min(1, exit + LIFT_PAST / L);
+  return [tail[0] + (landing[0] - tail[0]) * t, tail[1] + (landing[1] - tail[1]) * t];
+}
+
 // The lines and arrows of a petal fold [lang2011secrets, Figs. 2.31 and 2.32,
 // step 5]: its creases on the top layer, the valley arrow that lifts the
-// flap from its tip to where the tip lands, and a push arrow at the middle of
-// each fan ray on the outline that swings in, square to that ray and into the paper.
-function petalOverlays(petal: Petal, statement: number, view: PanelView, ink: Ink): SvgNode[] {
+// flap from its tip toward where the tip lands, ending a short way past the
+// paper `paper` (see liftHead), and a push arrow at the middle of each fan ray
+// on the outline that swings in, square to that ray and into the paper.
+function petalOverlays(petal: Petal, statement: number, view: PanelView, paper: Vec2[][], ink: Ink): SvgNode[] {
   const flat = (seg: [Vec2, Vec2]): [Vec2, Vec2] => [view.flatPx(seg[0]), view.flatPx(seg[1])];
   const lines = (letter: "M" | "V") => merged(view.lines(petal.lines.filter((l) => l.letter === letter).map((l) => flat(l.seg))));
   const pushes = petal.pushes.map(({ at, normal }) => {
     const p = view.px(at), n = unit(p, view.px([at[0] + normal[0] * 1e-3, at[1] + normal[1] * 1e-3]));
     return pushArrow([p[0] - n[0] * PUSH_GAP, p[1] - n[1] * PUSH_GAP], n, ink);
   });
+  const tail = view.px(petal.tail);
   return [
     ...lines("V").map((s) => valleyLine(s, statement, ink)),
     ...lines("M").map((s) => mountainLine(s, statement, ink)),
     ...pushes,
-    valleyArrow(view.px(petal.tail), view.px(petal.head), null, ink),
+    valleyArrow(tail, liftHead(tail, view.px(petal.head), paper), null, ink),
   ];
 }
 
@@ -319,12 +335,14 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
     out.push(existingCrease(s, ink));
   }
 
+  const base = scene.steps[panel.base]!.frame;
+  const paper = base.facesVertices.map((f) => f.map((i) => view.px(base.vertices[i]!)));
   for (const w of panel.writes) {
     if (turnOver(scene, w)) continue;
     if (w.kind === "fold") {
       const petal = petalFold(scene, w);
       if (petal) {
-        out.push(...petalOverlays(petal, w.index, view, ink));
+        out.push(...petalOverlays(petal, w.index, view, paper, ink));
         continue;
       }
       const motion = foldMotion(scene, w);
@@ -336,8 +354,6 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
       const tail = view.px(motion.tail);
       if (motion.kind === "mountain") {
         for (const s of hinge) out.push(mountainLine(s, w.index, ink));
-        const base = scene.steps[panel.base]!.frame;
-        const paper = base.facesVertices.map((f) => f.map((i) => view.px(base.vertices[i]!)));
         out.push(mountainArrow(tail, view.px(motion.edge), motion.hooked, paper, `yr-behind-${w.index}`, ink));
       } else if (motion.hooked) {
         // the hook wraps the outer edge of the layers that move, and the arrow

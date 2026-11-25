@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";
 import type { Vec2 } from "@beloch/scene";
-import { resolveIsometry } from "@beloch/render-svg";
+import { pointInPolygon, resolveIsometry } from "@beloch/render-svg";
 import {
   CREASE_GAP, foldMotion, panelHalves, panels, panelView, petalFold, renderYr, turnFraction, turnOver, turnOverArrow,
 } from "@beloch/yr";
@@ -217,6 +217,26 @@ test("a petal fold draws a valley line, two mountain lines, two push arrows and 
   expect(count(svg, "mountain-line")).toBe(2);
   expect(count(svg, "push-arrow")).toBe(2);
   expect(count(svg, "valley-arrow")).toBe(1);
+});
+
+test("a petal fold's lift arrow ends past the paper and short of where the tip lands", async () => {
+  const s = await scene("petal");
+  const list = panels(s).panels;
+  const i = list.findIndex((x) => x.writes.some((w) => w.index === s.writes.at(-1)!.index));
+  const view = panelView(s, list[i]!, panelHalves(s, list)[i]);
+  const p = petalFold(s, s.writes.at(-1)!)!;
+  const tail = view.px(p.tail), landing = view.px(p.head);
+  // drawn flat, the view of the panel is the one above
+  const svg = panelSvg(renderYr(s, { open: 0, gap: false }).doc.toString(), list[i]!.number);
+  const tip = pathPoints(svg, "valley-arrow").at(-1)!;
+  // on the line from the tail to the landing point, short of the landing point
+  const along = [landing[0] - tail[0], landing[1] - tail[1]];
+  expect(Math.abs(along[0]! * (tip[1] - tail[1]) - along[1]! * (tip[0] - tail[0])) / Math.hypot(along[0]!, along[1]!)).toBeLessThan(0.05);
+  expect(Math.hypot(tip[0] - tail[0], tip[1] - tail[1])).toBeLessThan(Math.hypot(along[0]!, along[1]!) - 1);
+  // outside the paper
+  const frame = s.steps[list[i]!.base]!.frame;
+  const paper = frame.facesVertices.map((f) => f.map((v) => view.px(frame.vertices[v]!)));
+  expect(paper.some((poly) => pointInPolygon(tip, poly))).toBe(false);
 });
 
 // The drawings beside the programs are what the pull request shows; this
