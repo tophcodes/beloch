@@ -78,7 +78,7 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 | `--plain` | Writes out no names and draws no point dots and no background: the paper and its creases alone. |
 | `--title TEXT` | A caption in the top-left corner. |
 | `--hidden dashed\|hide` | Draws covered creases of the folded state dashed, or leaves them out (the default). |
-| `--flat` | With `--view yr`, draws each state as it lies. Without it, a panel draws its state as if let go: every fold stands open by 2°, a layer lies over the one below it by the opening the hinges around them allow, up to 1.5 outline widths per layer and 3 for a whole stack, and the drawing shows that height as a shift up the page, so that the edges of stacked layers show; two raw edges that meet on one line part by a gap that is closed at the end more faces meet at. Creases and arrows move with the paper under their ends. |
+| `--flat` | With `--view yr`, draws each state as it lies. Without it, a panel draws its state as if let go: where a layer lies under the raw edge of a layer above it, that edge of it shifts down the page by 5 outline widths, so that one band of the layer below shows beside the edge and its corners lie straight below the corners of the layer above; all covered layers shift alike, and two raw edges that meet on one line part by a gap that is closed at the end more faces meet at. Creases and arrows move with the paper under them. |
 | `--format svg\|png` | Overrides the format `OUT` implies. |
 | `--width N` | Width of a PNG in pixels. |
 | `--open` | Writes to a temporary file and opens it. |

@@ -106,7 +106,7 @@ try {
     ? renderYr(scene, {
       ...(args.includes("--plain") ? { theme: { background: "none" } } : {}),
       // --flat draws every state as it lies, its layers and edges on each other
-      ...(args.includes("--flat") ? { open: 0, gap: false } : {}),
+      ...(args.includes("--flat") ? { flat: true } : {}),
     })
     : null;
   for (const hint of yr?.hints ?? []) process.stderr.write(`beloch-render: hint: ${hint}\n`);

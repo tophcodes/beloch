@@ -21,47 +21,41 @@ import type { FoldMotion, Petal } from "./motion";
 import { panels } from "./panels";
 import type { Panel } from "./panels";
 import { rotationSymbol, turnFraction } from "./rotation";
-import { gapFrame, openFrame } from "./open";
+import { bandFrame, gapFrame } from "./open";
 
 export interface YrOptions {
   theme?: Partial<Theme> | undefined;
-  // the angle, in degrees, every fold stands open by in the drawing (see
-  // openFrame); absent, OPEN; 0 draws the state flat
-  open?: number | undefined;
-  // whether two raw edges that meet are drawn apart (see gapFrame); absent,
-  // they are
-  gap?: boolean | undefined;
+  // whether every state is drawn as it lies, its layers on each other;
+  // absent, each is drawn let go (see bandFrame and gapFrame)
+  flat?: boolean | undefined;
 }
-
-// The angle every fold stands open by unless the caller sets another, in
-// degrees.
-const OPEN = 2;
 
 // The stroke width of the outline, in page units (see panelLineStyle).
 const OUTLINE = 2.2;
 
-// The width of a gap between two raw edges at its open end, and the largest
-// step between two layers, in outline widths: a step narrower than a line
-// would merge two edges into one.
-const GAP = 3.6, STEP = 1.5;
+// How far a covered layer's raw edge shifts down the page, in outline widths:
+// on an edge at 45 degrees the band it shows is this over the square root of
+// two wide.
+const BAND = 5;
+
+// The width of the gap between two raw edges that meet, at its open end, in
+// outline widths (see gapFrame).
+const GAP = 4.5;
 
 // How far apart, in page pixels, two pieces of a crease may lie after the
 // paper moves and still be drawn as one line: less than a stroke width.
 const JOIN = 1;
 
-// The state of a panel with its meeting raw edges drawn apart and drawn open
-// by `angle` degrees, a unit of height moving a point straight up the page,
-// and the panel's view with every point it places moved with the paper under
-// it. Up the page keeps a model that is symmetric about the vertical
-// symmetric in the drawing.
-function openPanel(scene: FoldScene, base: number, angle: number, gap: boolean, view: PanelView) {
+// The state of a panel drawn let go, and the panel's view with every point it
+// places moved with the paper under it.
+function openPanel(scene: FoldScene, base: number, view: PanelView) {
   const scale = view.layout.tx(1) - view.layout.tx(0);
   const flat = scene.steps[base]!.frame;
-  const up: Vec2 = [Math.sin(view.turn), Math.cos(view.turn)];   // the page's up, on the table
-  const apart = gap ? gapFrame(flat, (GAP * OUTLINE) / scale) : { frame: flat, move: (p: Vec2) => p };
-  const opened = openFrame(apart.frame, angle, up, (STEP * OUTLINE) / scale);
-  const frame = opened.frame;
-  const move = (p: Vec2) => opened.move(apart.move(p));
+  const apart = gapFrame(flat, (GAP * OUTLINE) / scale);
+  const d = (BAND * OUTLINE) / scale;
+  const band = bandFrame(apart.frame, [-Math.sin(view.turn) * d, -Math.cos(view.turn) * d]);   // down the page, on the table
+  const frame = band.frame;
+  const move = (p: Vec2) => band.move(apart.move(p));
 
   // the flat view is affine: its inverse from the images of three points
   const o = view.flatPx([0, 0]), ex = view.flatPx([1, 0]), ey = view.flatPx([0, 1]);
@@ -512,8 +506,7 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
   const halves = panelHalves(scene, list);
   const drawn = list.map((panel, i) => {
     const flat = panelView(scene, panel, halves[i]);
-    const [angle, gap] = [opts.open ?? OPEN, opts.gap ?? true];
-    const opened = angle || gap ? openPanel(scene, panel.base, angle, gap, flat) : { scene, view: flat };
+    const opened = opts.flat ? { scene, view: flat } : openPanel(scene, panel.base, flat);
     const view = opened.view;
     const doc = renderFolded(opened.scene, {
       step: String(panel.base), orient: true, layout: view.layout,
