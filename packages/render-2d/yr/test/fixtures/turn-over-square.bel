@@ -1,0 +1,10 @@
+@author "Claude (Anthropic)"
+; Turning the flat square over: the turn-over arrow below the model reaches
+; past the square the model fills, and the panel grows down to hold it.
+
+paper square
+
+@step "Turn the model over."
+flip
+
+@say "Done."
