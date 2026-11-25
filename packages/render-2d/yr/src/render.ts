@@ -64,6 +64,38 @@ export function panelView(scene: FoldScene, panel: Panel, half?: number): PanelV
 const panelLineStyle = (assignment: Assignment, theme: Theme): LineStyle =>
   assignment === "B" ? { stroke: theme.ink, strokeWidth: 2.2 } : { stroke: theme.ink, strokeWidth: 0, opacity: 0 };
 
+// The pieces of a fold line as one line per straight run: the faces a fold
+// crosses each give it a piece, and pieces that overlap would draw their dash
+// patterns out of step. Each run starts at its end with the smaller parameter
+// along a fixed direction, so that its dashes start at that end.
+function merged(segs: [Vec2, Vec2][]): [Vec2, Vec2][] {
+  const runs = new Map<string, { u: Vec2; n: Vec2; c: number; spans: [number, number][] }>();
+  for (const [p, q] of segs) {
+    let a = Math.atan2(q[1] - p[1], q[0] - p[0]);
+    if (a < 0) a += Math.PI;
+    if (a >= Math.PI - 1e-6) a -= Math.PI;
+    const u: Vec2 = [Math.cos(a), Math.sin(a)], n: Vec2 = [-u[1], u[0]];
+    const c = n[0] * p[0] + n[1] * p[1];
+    const key = `${Math.round(a * 1e3)},${Math.round(c * 2)}`;
+    const run = runs.get(key) ?? { u, n, c, spans: [] };
+    const t = [u[0] * p[0] + u[1] * p[1], u[0] * q[0] + u[1] * q[1]].sort((x, y) => x - y) as [number, number];
+    run.spans.push(t);
+    runs.set(key, run);
+  }
+  const out: [Vec2, Vec2][] = [];
+  for (const { u, n, c, spans } of runs.values()) {
+    spans.sort((x, y) => x[0] - y[0]);
+    let [t0, t1] = spans[0]!;
+    const at = (t: number): Vec2 => [n[0] * c + u[0] * t, n[1] * c + u[1] * t];
+    for (const [s0, s1] of spans.slice(1)) {
+      if (s0 <= t1 + 0.5) t1 = Math.max(t1, s1);
+      else { out.push([at(t0), at(t1)]); [t0, t1] = [s0, s1]; }
+    }
+    out.push([at(t0), at(t1)]);
+  }
+  return out;
+}
+
 const mid = (segs: [Vec2, Vec2][]): Vec2 | null => {
   if (segs.length === 0) return null;
   const pts = segs.flat();
@@ -141,7 +173,7 @@ const unit = (from: Vec2, to: Vec2): Vec2 => {
 function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView, ink: Ink): SvgNode[] {
   const r = motion.reverse!;
   const px = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.px(p), view.px(q)]);
-  const near = px(r.near), far = px(r.far);
+  const near = merged(px(r.near)), far = merged(px(r.far));
   const at = view.px(r.at), open = view.px(r.open), tipEnd = view.px(r.edge[1]);
   const along = unit(view.px(r.edge[0]), tipEnd);
   // the normal of the folded edge, toward the open edges
@@ -166,7 +198,7 @@ function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView,
   const away: Vec2 = [tail[0] + head[0] - crease[0], tail[1] + head[1] - crease[1]];
   return [
     ...near.map((s) => mountainLine(s, statement, ink)),
-    ...[...far, beyond].map((s) => valleyLine(s, statement, ink)),
+    ...merged([...far, beyond]).map((s) => valleyLine(s, statement, ink)),
     push(pushAt),
     valleyArrow(tail, head, away, ink),
   ];
@@ -191,7 +223,7 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
         out.push(...reverseOverlays(motion, w.index, view, ink));
         continue;
       }
-      const hinge = toPx(motion.hinge);
+      const hinge = merged(toPx(motion.hinge));
       const tail = view.px(motion.tail);
       if (motion.kind === "mountain") {
         for (const s of hinge) out.push(mountainLine(s, w.index, ink));
@@ -209,7 +241,7 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
       }
     } else if (w.mark?.kind === "seg") {
       const frame = scene.steps[w.frameIndex]!.frame;
-      const segs = toPx(segmentsInFrame(frame, [[w.mark.a, w.mark.b]]));
+      const segs = merged(toPx(segmentsInFrame(frame, [[w.mark.a, w.mark.b]])));
       for (const s of segs) out.push(valleyLine(s, w.index, ink));
       const faces = frame.facesVertices.map((f) => f.map((i) => view.px(frame.vertices[i]!)));
       const [tail, tip] = markArrow(faces, segs[0]!);
