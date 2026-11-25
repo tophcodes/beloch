@@ -16,8 +16,8 @@ import {
   valleyArrow, valleyLine, wrapArrows,
 } from "./draw";
 import type { Ink } from "./draw";
-import { foldMotion, turnOver, unionCentroid } from "./motion";
-import type { FoldMotion } from "./motion";
+import { foldMotion, petalFold, turnOver, unionCentroid } from "./motion";
+import type { FoldMotion, Petal } from "./motion";
 import { panels } from "./panels";
 import type { Panel } from "./panels";
 import { rotationSymbol, turnFraction } from "./rotation";
@@ -285,6 +285,25 @@ function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView,
   ];
 }
 
+// The lines and arrows of a petal fold [lang2011secrets, Figs. 2.31 and 2.32,
+// step 5]: its creases on the top layer, the valley arrow that lifts the
+// flap from its tip to where the tip lands, and a push arrow at the middle of
+// each fan ray on the outline that swings in, square to that ray and into the paper.
+function petalOverlays(petal: Petal, statement: number, view: PanelView, ink: Ink): SvgNode[] {
+  const flat = (seg: [Vec2, Vec2]): [Vec2, Vec2] => [view.flatPx(seg[0]), view.flatPx(seg[1])];
+  const lines = (letter: "M" | "V") => merged(view.lines(petal.lines.filter((l) => l.letter === letter).map((l) => flat(l.seg))));
+  const pushes = petal.pushes.map(({ at, normal }) => {
+    const p = view.px(at), n = unit(p, view.px([at[0] + normal[0] * 1e-3, at[1] + normal[1] * 1e-3]));
+    return pushArrow([p[0] - n[0] * PUSH_GAP, p[1] - n[1] * PUSH_GAP], n, ink);
+  });
+  return [
+    ...lines("V").map((s) => valleyLine(s, statement, ink)),
+    ...lines("M").map((s) => mountainLine(s, statement, ink)),
+    ...pushes,
+    valleyArrow(view.px(petal.tail), view.px(petal.head), null, ink),
+  ];
+}
+
 function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): SvgNode[] {
   const out: SvgNode[] = [];
   // a crease is drawn as it lies and moves with the paper as one line
@@ -303,6 +322,11 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
   for (const w of panel.writes) {
     if (turnOver(scene, w)) continue;
     if (w.kind === "fold") {
+      const petal = petalFold(scene, w);
+      if (petal) {
+        out.push(...petalOverlays(petal, w.index, view, ink));
+        continue;
+      }
       const motion = foldMotion(scene, w);
       if (motion.reverse) {
         out.push(...reverseOverlays(motion, w.index, view, ink));

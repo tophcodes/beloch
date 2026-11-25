@@ -1,0 +1,28 @@
+@author "Claude (Anthropic)"
+@design traditional
+@source "[randlett1961art, p. 69]"
+; The preliminary base, then the petal fold of its top flap, the first
+; petal fold of the crane's bird base.
+
+paper square
+
+@orient .a .c up
+fold (map .d onto .b) as --ac
+fold (map .a onto .c) as --bd
+squash (--ac & --ab onto --bd) as --s1
+flip
+squash (--ac & --bc onto --bd) as --s2
+flip
+
+.o = --ac * --bd
+mark (through .c .o) as --mid
+.sr = --ab * --s1
+.sl = --da * --s1
+
+@orient .a .o up
+@step "Petal-fold the top flap."
+flatten (fan (--s1 & .sr) (map .sr onto --mid through .a valley) as .e1)
+        (fan (--s1 & .sl) (map .sl onto --mid through .a valley) as .e2)
+        (staying .o)
+
+@say "The petal fold."

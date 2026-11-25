@@ -1,0 +1,2185 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
+  "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
+  "vertices_coords": [
+    [ 1.0, 0.0 ],
+    [ 1.0, 0.5 ],
+    [ 0.5, 0.5 ],
+    [ 1.0, 1.0 ],
+    [ 0.5, 1.0 ],
+    [ 0.0, 1.0 ],
+    [ 0.20710678118654752, 0.5 ],
+    [ 0.0, 0.5 ],
+    [ 0.0, 0.0 ],
+    [ 0.3535533905932738, 0.3535533905932738 ],
+    [ 0.5, 0.0 ],
+    [ 0.5, 0.20710678118654752 ]
+  ],
+  "edges_vertices": [
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 0 ],
+    [ 1, 3 ],
+    [ 3, 2 ],
+    [ 2, 4 ],
+    [ 4, 5 ],
+    [ 5, 2 ],
+    [ 3, 4 ],
+    [ 5, 6 ],
+    [ 6, 2 ],
+    [ 5, 7 ],
+    [ 7, 6 ],
+    [ 8, 9 ],
+    [ 9, 6 ],
+    [ 6, 8 ],
+    [ 7, 8 ],
+    [ 9, 2 ],
+    [ 10, 0 ],
+    [ 0, 11 ],
+    [ 11, 10 ],
+    [ 2, 11 ],
+    [ 8, 10 ],
+    [ 11, 8 ],
+    [ 11, 9 ]
+  ],
+  "edges_assignment": [
+    "B", "V", "M", "B", "F", "V", "B", "M", "B", "V", "V", "B", "F", "F",
+    "M", "V", "B", "F", "B", "V", "F", "V", "B", "V", "M"
+  ],
+  "edges_foldAngle": [
+    0.0, 180.0, -180.0, 0.0, 0.0, 180.0, 0.0, -180.0, 0.0, 180.0, 180.0, 0.0,
+    0.0, 0.0, -180.0, 180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 180.0,
+    -180.0
+  ],
+  "edges_faces": [
+    [ 0 ],
+    [ 0, 1 ],
+    [ 0, 10 ],
+    [ 1 ],
+    [ 1, 3 ],
+    [ 2, 3 ],
+    [ 2 ],
+    [ 2, 4 ],
+    [ 3 ],
+    [ 4, 5 ],
+    [ 4, 8 ],
+    [ 5 ],
+    [ 5, 7 ],
+    [ 6, 12 ],
+    [ 6, 8 ],
+    [ 6, 7 ],
+    [ 7 ],
+    [ 8, 13 ],
+    [ 9 ],
+    [ 9, 10 ],
+    [ 9, 11 ],
+    [ 10, 13 ],
+    [ 11 ],
+    [ 11, 12 ],
+    [ 12, 13 ]
+  ],
+  "faces_vertices": [
+    [ 0, 1, 2 ],
+    [ 1, 3, 2 ],
+    [ 2, 4, 5 ],
+    [ 2, 3, 4 ],
+    [ 2, 5, 6 ],
+    [ 5, 7, 6 ],
+    [ 8, 9, 6 ],
+    [ 8, 6, 7 ],
+    [ 9, 2, 6 ],
+    [ 10, 0, 11 ],
+    [ 0, 2, 11 ],
+    [ 8, 10, 11 ],
+    [ 8, 11, 9 ],
+    [ 11, 2, 9 ]
+  ],
+  "beloch:edges": [
+    null,
+    {
+      "axiom": "squash",
+      "sources": [ "--ac & --bc", "--bd" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+      "statement": 4,
+      "name": "s2",
+      "crease_id": 4
+    },
+    {
+      "axiom": "axiom2",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".d", ".b" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "squash",
+      "sources": [ "--ac & --bc", "--bd" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+      "statement": 4,
+      "name": "s2",
+      "crease_id": 4
+    },
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    null,
+    {
+      "axiom": "flatten",
+      "sources": [],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "statement": 10,
+      "name": null,
+      "crease_id": 8
+    },
+    {
+      "axiom": "squash",
+      "sources": [ "--ac & --ab", "--bd" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+      "statement": 2,
+      "name": "s1",
+      "crease_id": 2
+    },
+    null,
+    {
+      "axiom": "squash",
+      "sources": [ "--ac & --ab", "--bd" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+      "statement": 2,
+      "name": "s1",
+      "crease_id": 2
+    },
+    {
+      "axiom": "axiom2",
+      "sources": [ ".d", ".b" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "flatten",
+      "sources": [],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "statement": 10,
+      "name": null,
+      "crease_id": 9
+    },
+    {
+      "axiom": "flatten",
+      "sources": [],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "statement": 10,
+      "name": null,
+      "crease_id": 8
+    },
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".d", ".b" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    null,
+    {
+      "axiom": "flatten",
+      "sources": [],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "statement": 10,
+      "name": null,
+      "crease_id": 7
+    },
+    {
+      "axiom": "squash",
+      "sources": [ "--ac & --ab", "--bd" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+      "statement": 2,
+      "name": "s1",
+      "crease_id": 2
+    },
+    {
+      "axiom": "squash",
+      "sources": [ "--ac & --ab", "--bd" ],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+      "statement": 2,
+      "name": "s1",
+      "crease_id": 2
+    },
+    null,
+    {
+      "axiom": "flatten",
+      "sources": [],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "statement": 10,
+      "name": null,
+      "crease_id": 7
+    },
+    {
+      "axiom": "flatten",
+      "sources": [],
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "statement": 10,
+      "name": null,
+      "crease_id": 9
+    }
+  ],
+  "beloch:inspect": {
+    "creases": {
+      "1": {
+        "name": "bd",
+        "axiom": "axiom2",
+        "sources": [ ".a", ".c" ],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+        "segments": [
+          {
+            "faces": [ 2, 4 ],
+            "paper": [ [ 0.0, 1.0 ], [ 0.5, 0.5 ] ],
+            "table": [ [ 1.0, 0.0 ], [ 0.5, 0.5 ] ],
+            "assignment": "M"
+          },
+          {
+            "faces": [ 0, 10 ],
+            "paper": [ [ 1.0, 0.0 ], [ 0.5, 0.5 ] ],
+            "table": [ [ 1.0, 0.0 ], [ 0.5, 0.5 ] ],
+            "assignment": "M"
+          }
+        ]
+      },
+      "0": {
+        "name": "ac",
+        "axiom": "axiom2",
+        "sources": [ ".d", ".b" ],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+        "segments": [
+          {
+            "faces": [ 13, 8 ],
+            "paper": [
+              [ 0.3535533905932738, 0.3535533905932738 ], [ 0.5, 0.5 ]
+            ],
+            "table": [
+              [ 0.6464466094067263, 0.3535533905932738 ], [ 0.5, 0.5 ]
+            ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 12, 6 ],
+            "paper": [
+              [ 0.0, 0.0 ], [ 0.3535533905932738, 0.3535533905932738 ]
+            ],
+            "table": [
+              [ 0.2928932188134525, 0.7071067811865476 ],
+              [ 0.6464466094067263, 0.3535533905932738 ]
+            ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 1, 3 ],
+            "paper": [ [ 0.5, 0.5 ], [ 1.0, 1.0 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 1.0, 0.0 ] ],
+            "assignment": "F"
+          }
+        ]
+      },
+      "9": {
+        "name": null,
+        "axiom": "flatten",
+        "sources": [],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+        "segments": [
+          {
+            "faces": [ 12, 13 ],
+            "paper": [
+              [ 0.5, 0.20710678118654752 ],
+              [ 0.3535533905932738, 0.3535533905932738 ]
+            ],
+            "table": [
+              [ 0.5, 0.20710678118654752 ],
+              [ 0.6464466094067263, 0.3535533905932738 ]
+            ],
+            "assignment": "M"
+          },
+          {
+            "faces": [ 6, 8 ],
+            "paper": [
+              [ 0.3535533905932738, 0.3535533905932738 ],
+              [ 0.20710678118654752, 0.5 ]
+            ],
+            "table": [
+              [ 0.6464466094067263, 0.3535533905932738 ],
+              [ 0.7928932188134524, 0.5 ]
+            ],
+            "assignment": "M"
+          }
+        ]
+      },
+      "4": {
+        "name": "s2",
+        "axiom": "squash",
+        "sources": [ "--ac & --bc", "--bd" ],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+        "segments": [
+          {
+            "faces": [ 1, 0 ],
+            "paper": [ [ 0.5, 0.5 ], [ 1.0, 0.5 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 0.5, 0.0 ] ],
+            "assignment": "V"
+          },
+          {
+            "faces": [ 3, 2 ],
+            "paper": [ [ 0.5, 0.5 ], [ 0.5, 1.0 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 1.0, 0.5 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "7": {
+        "name": null,
+        "axiom": "flatten",
+        "sources": [],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+        "segments": [
+          {
+            "faces": [ 11, 12 ],
+            "paper": [ [ 0.5, 0.20710678118654752 ], [ 0.0, 0.0 ] ],
+            "table": [
+              [ 0.5, 0.20710678118654752 ],
+              [ 0.2928932188134525, 0.7071067811865476 ]
+            ],
+            "assignment": "V"
+          },
+          {
+            "faces": [ 9, 10 ],
+            "paper": [ [ 0.5, 0.20710678118654752 ], [ 1.0, 0.0 ] ],
+            "table": [ [ 0.5, 0.20710678118654752 ], [ 1.0, 0.0 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "8": {
+        "name": null,
+        "axiom": "flatten",
+        "sources": [],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+        "segments": [
+          {
+            "faces": [ 6, 7 ],
+            "paper": [ [ 0.20710678118654752, 0.5 ], [ 0.0, 0.0 ] ],
+            "table": [
+              [ 0.7928932188134524, 0.5 ],
+              [ 0.2928932188134525, 0.7071067811865476 ]
+            ],
+            "assignment": "V"
+          },
+          {
+            "faces": [ 4, 5 ],
+            "paper": [ [ 0.20710678118654752, 0.5 ], [ 0.0, 1.0 ] ],
+            "table": [ [ 0.7928932188134524, 0.5 ], [ 1.0, 0.0 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "2": {
+        "name": "s1",
+        "axiom": "squash",
+        "sources": [ "--ac & --ab", "--bd" ],
+        "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+        "segments": [
+          {
+            "faces": [ 10, 13 ],
+            "paper": [ [ 0.5, 0.5 ], [ 0.5, 0.20710678118654752 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 0.5, 0.20710678118654752 ] ],
+            "assignment": "V"
+          },
+          {
+            "faces": [ 9, 11 ],
+            "paper": [ [ 0.5, 0.20710678118654752 ], [ 0.5, 0.0 ] ],
+            "table": [
+              [ 0.5, 0.20710678118654752 ],
+              [ 0.6464466094067263, 0.3535533905932738 ]
+            ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 4, 8 ],
+            "paper": [ [ 0.5, 0.5 ], [ 0.20710678118654752, 0.5 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 0.7928932188134524, 0.5 ] ],
+            "assignment": "V"
+          },
+          {
+            "faces": [ 5, 7 ],
+            "paper": [ [ 0.20710678118654752, 0.5 ], [ 0.0, 0.5 ] ],
+            "table": [
+              [ 0.7928932188134524, 0.5 ],
+              [ 0.6464466094067263, 0.3535533905932738 ]
+            ],
+            "assignment": "F"
+          }
+        ]
+      }
+    },
+    "faces": {
+      "0": {
+        "vertices": [ [ 1.0, 0.0 ], [ 1.0, 0.5 ], [ 0.5, 0.5 ] ],
+        "flap": 0
+      },
+      "1": {
+        "vertices": [ [ 1.0, 0.5 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ] ],
+        "flap": 3
+      },
+      "2": {
+        "vertices": [ [ 0.5, 0.5 ], [ 0.5, 1.0 ], [ 0.0, 1.0 ] ],
+        "flap": 2
+      },
+      "3": {
+        "vertices": [ [ 0.5, 0.5 ], [ 1.0, 1.0 ], [ 0.5, 1.0 ] ],
+        "flap": 3
+      },
+      "4": {
+        "vertices": [
+          [ 0.5, 0.5 ], [ 0.0, 1.0 ], [ 0.20710678118654752, 0.5 ]
+        ],
+        "flap": 4
+      },
+      "5": {
+        "vertices": [
+          [ 0.0, 1.0 ], [ 0.0, 0.5 ], [ 0.20710678118654752, 0.5 ]
+        ],
+        "flap": 7
+      },
+      "6": {
+        "vertices": [
+          [ 0.0, 0.0 ],
+          [ 0.3535533905932738, 0.3535533905932738 ],
+          [ 0.20710678118654752, 0.5 ]
+        ],
+        "flap": 6
+      },
+      "7": {
+        "vertices": [
+          [ 0.0, 0.0 ], [ 0.20710678118654752, 0.5 ], [ 0.0, 0.5 ]
+        ],
+        "flap": 7
+      },
+      "8": {
+        "vertices": [
+          [ 0.3535533905932738, 0.3535533905932738 ],
+          [ 0.5, 0.5 ],
+          [ 0.20710678118654752, 0.5 ]
+        ],
+        "flap": 8
+      },
+      "9": {
+        "vertices": [
+          [ 0.5, 0.0 ], [ 1.0, 0.0 ], [ 0.5, 0.20710678118654752 ]
+        ],
+        "flap": 11
+      },
+      "10": {
+        "vertices": [
+          [ 1.0, 0.0 ], [ 0.5, 0.5 ], [ 0.5, 0.20710678118654752 ]
+        ],
+        "flap": 10
+      },
+      "11": {
+        "vertices": [
+          [ 0.0, 0.0 ], [ 0.5, 0.0 ], [ 0.5, 0.20710678118654752 ]
+        ],
+        "flap": 11
+      },
+      "12": {
+        "vertices": [
+          [ 0.0, 0.0 ],
+          [ 0.5, 0.20710678118654752 ],
+          [ 0.3535533905932738, 0.3535533905932738 ]
+        ],
+        "flap": 6
+      },
+      "13": {
+        "vertices": [
+          [ 0.5, 0.20710678118654752 ],
+          [ 0.5, 0.5 ],
+          [ 0.3535533905932738, 0.3535533905932738 ]
+        ],
+        "flap": 8
+      }
+    },
+    "points": {
+      "a": { "face": null, "flap": null },
+      "b": { "face": null, "flap": null },
+      "c": { "face": null, "flap": null },
+      "d": { "face": null, "flap": null },
+      "e1": { "face": null, "flap": null },
+      "e2": { "face": null, "flap": null },
+      "o": { "face": null, "flap": null },
+      "sl": { "face": null, "flap": null },
+      "sr": { "face": null, "flap": null }
+    },
+    "edges": {
+      "da": {
+        "name": "da",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 5 ],
+            "paper": [ [ 0.0, 1.0 ], [ 0.0, 0.5 ] ],
+            "table": [
+              [ 1.0, 0.0 ], [ 0.6464466094067263, 0.3535533905932738 ]
+            ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 7 ],
+            "paper": [ [ 0.0, 0.5 ], [ 0.0, 0.0 ] ],
+            "table": [
+              [ 0.6464466094067263, 0.3535533905932738 ],
+              [ 0.2928932188134525, 0.7071067811865476 ]
+            ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "ab": {
+        "name": "ab",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 9 ],
+            "paper": [ [ 0.5, 0.0 ], [ 1.0, 0.0 ] ],
+            "table": [
+              [ 0.6464466094067263, 0.3535533905932738 ], [ 1.0, 0.0 ]
+            ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 11 ],
+            "paper": [ [ 0.0, 0.0 ], [ 0.5, 0.0 ] ],
+            "table": [
+              [ 0.2928932188134525, 0.7071067811865476 ],
+              [ 0.6464466094067263, 0.3535533905932738 ]
+            ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "bc": {
+        "name": "bc",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 0 ],
+            "paper": [ [ 1.0, 0.0 ], [ 1.0, 0.5 ] ],
+            "table": [ [ 1.0, 0.0 ], [ 0.5, 0.0 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 1 ],
+            "paper": [ [ 1.0, 0.5 ], [ 1.0, 1.0 ] ],
+            "table": [ [ 0.5, 0.0 ], [ 1.0, 0.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "cd": {
+        "name": "cd",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 2 ],
+            "paper": [ [ 0.5, 1.0 ], [ 0.0, 1.0 ] ],
+            "table": [ [ 1.0, 0.5 ], [ 1.0, 0.0 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 3 ],
+            "paper": [ [ 1.0, 1.0 ], [ 0.5, 1.0 ] ],
+            "table": [ [ 1.0, 0.0 ], [ 1.0, 0.5 ] ],
+            "assignment": "B"
+          }
+        ]
+      }
+    }
+  },
+  "beloch:vertices_names": [
+    "b", null, "o", "c", null, "d", "e2", "sl", "a", null, "sr", "e1"
+  ],
+  "beloch:named_points": {
+    "a": {
+      "paper": [ 0.0, 0.0 ],
+      "table": [ 0.2928932188134525, 0.7071067811865476 ],
+      "step": 0,
+      "statement": null
+    },
+    "b": {
+      "paper": [ 1.0, 0.0 ],
+      "table": [ 1.0, 0.0 ],
+      "step": 0,
+      "statement": null
+    },
+    "c": {
+      "paper": [ 1.0, 1.0 ],
+      "table": [ 1.0, 0.0 ],
+      "step": 0,
+      "statement": null
+    },
+    "d": {
+      "paper": [ 0.0, 1.0 ],
+      "table": [ 1.0, 0.0 ],
+      "step": 0,
+      "statement": null
+    },
+    "e1": {
+      "paper": [ 0.5, 0.20710678118654752 ],
+      "table": [ 0.5, 0.20710678118654752 ],
+      "step": 6,
+      "statement": 10
+    },
+    "e2": {
+      "paper": [ 0.20710678118654752, 0.5 ],
+      "table": [ 0.7928932188134524, 0.5 ],
+      "step": 6,
+      "statement": 10
+    },
+    "o": {
+      "paper": [ 0.5, 0.5 ],
+      "table": [ 0.5, 0.5 ],
+      "step": 6,
+      "statement": 6
+    },
+    "sl": {
+      "paper": [ 0.0, 0.5 ],
+      "table": [ 0.6464466094067263, 0.3535533905932738 ],
+      "step": 6,
+      "statement": 9
+    },
+    "sr": {
+      "paper": [ 0.5, 0.0 ],
+      "table": [ 0.6464466094067263, 0.3535533905932738 ],
+      "step": 6,
+      "statement": 8
+    }
+  },
+  "beloch:named_lines": {
+    "ac": {
+      "coeffs": [
+        0.14644660940672624, 0.14644660940672624, 0.14644660940672624
+      ],
+      "step": 1,
+      "statement": 0
+    },
+    "bd": { "coeffs": [ 1.0, 1.0, 1.0 ], "step": 2, "statement": 1 },
+    "mid": { "coeffs": [ 0.5, 0.5, 0.5 ], "step": 6, "statement": 7 }
+  },
+  "beloch:named_lines_frame": "creasePattern",
+  "beloch:marks": [],
+  "beloch:free": {},
+  "beloch:statements": [
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 10,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+      "frame_index": 1,
+      "kept_marks": []
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 11,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+      "frame_index": 2,
+      "kept_marks": []
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 12,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+      "frame_index": 3,
+      "kept_marks": []
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 13,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:13:1-5",
+      "frame_index": 4,
+      "kept_marks": []
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 14,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+      "frame_index": 5,
+      "kept_marks": []
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 15,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:15:1-5",
+      "frame_index": 6,
+      "kept_marks": []
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 17,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:17:1-17",
+      "frame_index": 6,
+      "kept_marks": []
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 1.0, 0.0 ],
+        "b": [ 0.5, 0.5 ],
+        "line": [ 0.5, 0.5, 0.5 ],
+        "intent": "V",
+        "crease_id": 6
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 18,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:18:1-30",
+      "frame_index": 6,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, 0.5, 0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, -0.5, -0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, 0.5, 0.0 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, -0.5, -0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, -0.5, 0.0 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, 0.5, 0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 19,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:19:1-18",
+      "frame_index": 6,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, 0.5, 0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, -0.5, -0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, 0.5, 0.0 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, -0.5, -0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, -0.5, 0.0 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, 0.5, 0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 20,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:20:1-18",
+      "frame_index": 6,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, 0.5, 0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, -0.5, -0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, 0.5, 0.0 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 1.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ -0.5, -0.5, -0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, -0.5, 0.0 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.5, 0.5 ],
+          "line": [ 0.5, 0.5, 0.5 ],
+          "intent": "V",
+          "crease_id": 6
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 24,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+      "frame_index": 7,
+      "kept_marks": []
+    }
+  ],
+  "beloch:references": [
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:26-30",
+      "crease_id": 1
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:9-13",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:16-20",
+      "edge": "ab"
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:26-30",
+      "crease_id": 1
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:9-13",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:16-20",
+      "edge": "bc"
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:17:6-10",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:17:13-17",
+      "crease_id": 1
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:19:7-11",
+      "edge": "ab"
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:19:14-18",
+      "crease_id": 2
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:20:7-11",
+      "edge": "da"
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:20:14-18",
+      "crease_id": 2
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:15-19",
+      "crease_id": 2
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:25:15-19",
+      "crease_id": 2
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:41-46",
+      "crease_id": 6
+    },
+    {
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:25:41-46",
+      "crease_id": 6
+    }
+  ],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:1:9-29"
+        }
+      ]
+    },
+    {
+      "key": "design",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 2,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:2:1-3:1",
+      "args": [
+        {
+          "word": "traditional",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:2:9-20"
+        }
+      ]
+    },
+    {
+      "key": "source",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 3,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:3:1-4:1",
+      "args": [
+        {
+          "text": "[randlett1961art, p. 69]",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:3:9-35"
+        }
+      ]
+    },
+    {
+      "key": "orient",
+      "namespace": null,
+      "target": [ 0, 0 ],
+      "frame_index": 0,
+      "source_line": 9,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:9:1-10:1",
+      "args": [
+        {
+          "point": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] },
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:9:9-11"
+        },
+        {
+          "point": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:9:12-14"
+        },
+        {
+          "word": "up",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:9:15-17"
+        }
+      ]
+    },
+    {
+      "key": "orient",
+      "namespace": null,
+      "target": [ 10, 10 ],
+      "frame_index": 6,
+      "source_line": 22,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:22:1-23:1",
+      "args": [
+        {
+          "point": { "paper": [ 0.0, 0.0 ], "table": [ 1.0, 0.0 ] },
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:22:9-11"
+        },
+        {
+          "point": { "paper": [ 0.5, 0.5 ], "table": [ 0.5, 0.5 ] },
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:22:12-14"
+        },
+        {
+          "word": "up",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:22:15-17"
+        }
+      ]
+    },
+    {
+      "key": "step",
+      "namespace": null,
+      "target": [ 10, 10 ],
+      "frame_index": 6,
+      "source_line": 23,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:23:1-24:1",
+      "args": [
+        {
+          "text": "Petal-fold the top flap.",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:23:7-33"
+        }
+      ]
+    },
+    {
+      "key": "say",
+      "namespace": null,
+      "target": null,
+      "frame_index": 7,
+      "source_line": 28,
+      "span": "packages/render-2d/yr/test/fixtures/petal.bel:28:1-29:1",
+      "args": [
+        {
+          "text": "The petal fold.",
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:28:6-23"
+        }
+      ]
+    }
+  ],
+  "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
+      "faceOrders": [],
+      "beloch:source_line": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 1.0, 0.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 0 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "V", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 180.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0, 1 ], [ 1 ], [ 1 ] ],
+      "faces_vertices": [ [ 0, 1, 2 ], [ 0, 2, 3 ] ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ], [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ]
+      ],
+      "faceOrders": [ [ 0, 1, 1 ] ],
+      "beloch:source_line": 10,
+      "beloch:edges": [
+        null,
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        null
+      ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 1, 3 ],
+        [ 3, 2 ],
+        [ 4, 2 ],
+        [ 3, 4 ],
+        [ 4, 0 ]
+      ],
+      "edges_assignment": [ "B", "V", "V", "B", "M", "V", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 180.0, 180.0, 0.0, -180.0, 180.0, 0.0, 0.0 ],
+      "edges_faces": [
+        [ 0 ], [ 0, 1 ], [ 0, 3 ], [ 1 ], [ 1, 2 ], [ 2, 3 ], [ 2 ], [ 3 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ], [ 2, 1, 3 ], [ 4, 2, 3 ], [ 4, 0, 2 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
+        [ -1.0, 0.0, 0.0, -1.0, 1.0, 1.0 ],
+        [ 0.0, -1.0, -1.0, 0.0, 1.0, 1.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 0, 2, -1 ],
+        [ 0, 3, 1 ],
+        [ 1, 2, -1 ],
+        [ 1, 3, 1 ],
+        [ 2, 3, 1 ]
+      ],
+      "beloch:source_line": 11,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        null
+      ],
+      "beloch:vertices_names": [ "b", "c", "o", "d", "a" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 1.0, 0.0 ],
+        [ 1.0, 1.0 ],
+        [ 0.5, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 0.5, 0.0 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 1, 3 ],
+        [ 3, 2 ],
+        [ 3, 4 ],
+        [ 4, 2 ],
+        [ 5, 2 ],
+        [ 4, 5 ],
+        [ 6, 0 ],
+        [ 2, 6 ],
+        [ 5, 6 ]
+      ],
+      "edges_assignment": [
+        "B", "V", "F", "B", "M", "B", "V", "F", "B", "B", "V", "B"
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, 0.0, 0.0, -180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 180.0, 0.0
+      ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0, 4 ],
+        [ 1 ],
+        [ 1, 2 ],
+        [ 2 ],
+        [ 2, 3 ],
+        [ 3, 5 ],
+        [ 3 ],
+        [ 4 ],
+        [ 4, 5 ],
+        [ 5 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ],
+        [ 2, 1, 3 ],
+        [ 2, 3, 4 ],
+        [ 5, 2, 4 ],
+        [ 6, 0, 2 ],
+        [ 5, 6, 2 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
+        [ -1.0, 0.0, 0.0, -1.0, 1.0, 1.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 0, 2, -1 ],
+        [ 0, 3, 1 ],
+        [ 1, 2, -1 ],
+        [ 1, 3, 1 ],
+        [ 2, 3, 1 ],
+        [ 4, 5, 1 ]
+      ],
+      "beloch:source_line": 12,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        null
+      ],
+      "beloch:vertices_names": [ "b", "c", "o", "d", "sl", "a", "sr" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.5, 0.0 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 1.0 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 1, 3 ],
+        [ 3, 2 ],
+        [ 2, 4 ],
+        [ 4, 0 ],
+        [ 2, 5 ],
+        [ 5, 4 ],
+        [ 2, 6 ],
+        [ 6, 5 ],
+        [ 3, 6 ]
+      ],
+      "edges_assignment": [
+        "B", "V", "F", "B", "F", "V", "B", "M", "B", "V", "B", "B"
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, 0.0, 0.0, 0.0, 180.0, 0.0, -180.0, 0.0, 180.0, 0.0, 0.0
+      ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0, 2 ],
+        [ 1 ],
+        [ 1, 5 ],
+        [ 2, 3 ],
+        [ 2 ],
+        [ 3, 4 ],
+        [ 3 ],
+        [ 4, 5 ],
+        [ 4 ],
+        [ 5 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ],
+        [ 1, 3, 2 ],
+        [ 0, 2, 4 ],
+        [ 2, 5, 4 ],
+        [ 2, 6, 5 ],
+        [ 3, 6, 2 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.5, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.5, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.5, 0.0 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.5, 1.0 ],
+        [ 0.0, -1.0, 1.0, 0.0, 1.5, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.5, 0.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 2, 3, 1 ],
+        [ 2, 4, -1 ],
+        [ 2, 5, 1 ],
+        [ 3, 4, -1 ],
+        [ 3, 5, 1 ],
+        [ 4, 5, 1 ]
+      ],
+      "beloch:source_line": 13,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        null
+      ],
+      "beloch:vertices_names": [ "a", "sr", "o", "b", "sl", "d", "c" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.5, 0.0 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 1.0, 0.0 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 1, 3 ],
+        [ 3, 2 ],
+        [ 2, 4 ],
+        [ 4, 0 ],
+        [ 2, 5 ],
+        [ 5, 4 ],
+        [ 2, 6 ],
+        [ 6, 7 ],
+        [ 7, 2 ],
+        [ 7, 5 ],
+        [ 8, 6 ],
+        [ 2, 8 ],
+        [ 3, 8 ]
+      ],
+      "edges_assignment": [
+        "B", "V", "F", "B", "M", "V", "B", "M", "B", "F", "B", "V", "B", "B",
+        "V", "B"
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, 0.0, 0.0, -180.0, 180.0, 0.0, -180.0, 0.0, 0.0, 0.0,
+        180.0, 0.0, 0.0, 180.0, 0.0
+      ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0, 2 ],
+        [ 1 ],
+        [ 1, 7 ],
+        [ 2, 3 ],
+        [ 2 ],
+        [ 3, 5 ],
+        [ 3 ],
+        [ 4, 6 ],
+        [ 4 ],
+        [ 4, 5 ],
+        [ 5 ],
+        [ 6 ],
+        [ 6, 7 ],
+        [ 7 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ],
+        [ 1, 3, 2 ],
+        [ 0, 2, 4 ],
+        [ 2, 5, 4 ],
+        [ 2, 6, 7 ],
+        [ 2, 7, 5 ],
+        [ 8, 6, 2 ],
+        [ 3, 8, 2 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.5, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.5, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.5, 0.0 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.5, 1.0 ],
+        [ 0.0, -1.0, -1.0, 0.0, 1.5, 1.0 ],
+        [ 0.0, -1.0, 1.0, 0.0, 1.5, 0.0 ],
+        [ 0.0, -1.0, -1.0, 0.0, 1.5, 1.0 ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.5, 1.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 0, 6, 1 ],
+        [ 0, 7, -1 ],
+        [ 1, 6, 1 ],
+        [ 1, 7, -1 ],
+        [ 2, 3, 1 ],
+        [ 2, 4, 1 ],
+        [ 2, 5, -1 ],
+        [ 3, 4, 1 ],
+        [ 3, 5, -1 ],
+        [ 4, 5, 1 ],
+        [ 6, 7, 1 ]
+      ],
+      "beloch:source_line": 14,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --bc", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+          "statement": 4,
+          "name": "s2",
+          "crease_id": 4
+        },
+        null,
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --bc", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+          "statement": 4,
+          "name": "s2",
+          "crease_id": 4
+        },
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", "sr", "o", "b", "sl", "d", "c", null, null
+      ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 1.0, 0.0 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 0.5, 0.0 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 1, 3 ],
+        [ 3, 2 ],
+        [ 2, 4 ],
+        [ 4, 5 ],
+        [ 5, 2 ],
+        [ 3, 4 ],
+        [ 5, 6 ],
+        [ 6, 2 ],
+        [ 7, 2 ],
+        [ 6, 7 ],
+        [ 8, 0 ],
+        [ 2, 8 ],
+        [ 7, 8 ]
+      ],
+      "edges_assignment": [
+        "B", "V", "M", "B", "F", "V", "B", "M", "B", "B", "V", "F", "B", "B",
+        "V", "B"
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, -180.0, 0.0, 0.0, 180.0, 0.0, -180.0, 0.0, 0.0, 180.0,
+        0.0, 0.0, 0.0, 180.0, 0.0
+      ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0, 6 ],
+        [ 1 ],
+        [ 1, 3 ],
+        [ 2, 3 ],
+        [ 2 ],
+        [ 2, 4 ],
+        [ 3 ],
+        [ 4 ],
+        [ 4, 5 ],
+        [ 5, 7 ],
+        [ 5 ],
+        [ 6 ],
+        [ 6, 7 ],
+        [ 7 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ],
+        [ 1, 3, 2 ],
+        [ 2, 4, 5 ],
+        [ 2, 3, 4 ],
+        [ 2, 5, 6 ],
+        [ 7, 2, 6 ],
+        [ 8, 0, 2 ],
+        [ 7, 8, 2 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 0.0, -1.0, -1.0, 0.0, 1.0, 1.0 ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.0, 1.0 ],
+        [ -1.0, 0.0, 0.0, -1.0, 1.0, 1.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 0, 6, -1 ],
+        [ 0, 7, 1 ],
+        [ 1, 6, -1 ],
+        [ 1, 7, 1 ],
+        [ 2, 3, 1 ],
+        [ 2, 4, -1 ],
+        [ 2, 5, 1 ],
+        [ 3, 4, -1 ],
+        [ 3, 5, 1 ],
+        [ 4, 5, 1 ],
+        [ 6, 7, 1 ]
+      ],
+      "beloch:source_line": 15,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --bc", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+          "statement": 4,
+          "name": "s2",
+          "crease_id": 4
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --bc", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+          "statement": 4,
+          "name": "s2",
+          "crease_id": 4
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        null
+      ],
+      "beloch:vertices_names": [
+        "b", null, "o", "c", null, "d", "sl", "a", "sr"
+      ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 1.0, 0.0 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 0.7928932188134524, 0.5 ],
+        [ 0.6464466094067263, 0.3535533905932738 ],
+        [ 0.2928932188134525, 0.7071067811865476 ],
+        [ 0.6464466094067263, 0.3535533905932738 ],
+        [ 0.6464466094067263, 0.3535533905932738 ],
+        [ 0.5, 0.20710678118654752 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 1, 3 ],
+        [ 3, 2 ],
+        [ 2, 4 ],
+        [ 4, 5 ],
+        [ 5, 2 ],
+        [ 3, 4 ],
+        [ 5, 6 ],
+        [ 6, 2 ],
+        [ 5, 7 ],
+        [ 7, 6 ],
+        [ 8, 9 ],
+        [ 9, 6 ],
+        [ 6, 8 ],
+        [ 7, 8 ],
+        [ 9, 2 ],
+        [ 10, 0 ],
+        [ 0, 11 ],
+        [ 11, 10 ],
+        [ 2, 11 ],
+        [ 8, 10 ],
+        [ 11, 8 ],
+        [ 11, 9 ]
+      ],
+      "edges_assignment": [
+        "B", "V", "M", "B", "F", "V", "B", "M", "B", "V", "V", "B", "F", "F",
+        "M", "V", "B", "F", "B", "V", "F", "V", "B", "V", "M"
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, -180.0, 0.0, 0.0, 180.0, 0.0, -180.0, 0.0, 180.0, 180.0,
+        0.0, 0.0, 0.0, -180.0, 180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0,
+        180.0, -180.0
+      ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0, 10 ],
+        [ 1 ],
+        [ 1, 3 ],
+        [ 2, 3 ],
+        [ 2 ],
+        [ 2, 4 ],
+        [ 3 ],
+        [ 4, 5 ],
+        [ 4, 8 ],
+        [ 5 ],
+        [ 5, 7 ],
+        [ 6, 12 ],
+        [ 6, 8 ],
+        [ 6, 7 ],
+        [ 7 ],
+        [ 8, 13 ],
+        [ 9 ],
+        [ 9, 10 ],
+        [ 9, 11 ],
+        [ 10, 13 ],
+        [ 11 ],
+        [ 11, 12 ],
+        [ 12, 13 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ],
+        [ 1, 3, 2 ],
+        [ 2, 4, 5 ],
+        [ 2, 3, 4 ],
+        [ 2, 5, 6 ],
+        [ 5, 7, 6 ],
+        [ 8, 9, 6 ],
+        [ 8, 6, 7 ],
+        [ 9, 2, 6 ],
+        [ 10, 0, 11 ],
+        [ 0, 2, 11 ],
+        [ 8, 10, 11 ],
+        [ 8, 11, 9 ],
+        [ 11, 2, 9 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 0.0, -1.0, -1.0, 0.0, 1.0, 1.0 ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.0, 1.0 ],
+        [ -1.0, 0.0, 0.0, -1.0, 1.0, 1.0 ],
+        [
+          0.7071067811865476, 0.7071067811865476, 0.7071067811865476,
+          -0.7071067811865476, 0.2928932188134525, 0.7071067811865476
+        ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.2928932188134525, 0.7071067811865476 ],
+        [
+          0.7071067811865476, 0.7071067811865476, 0.7071067811865476,
+          -0.7071067811865476, 0.2928932188134525, 0.7071067811865476
+        ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ],
+        [
+          0.7071067811865476, -0.7071067811865476, -0.7071067811865476,
+          -0.7071067811865476, 0.2928932188134525, 0.7071067811865476
+        ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [
+          0.7071067811865476, -0.7071067811865476, -0.7071067811865476,
+          -0.7071067811865476, 0.2928932188134525, 0.7071067811865476
+        ],
+        [ 0.0, 1.0, -1.0, 0.0, 0.2928932188134525, 0.7071067811865476 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 0, 9, 1 ],
+        [ 0, 10, -1 ],
+        [ 0, 11, 1 ],
+        [ 0, 12, -1 ],
+        [ 0, 13, 1 ],
+        [ 1, 9, 1 ],
+        [ 1, 10, -1 ],
+        [ 1, 11, 1 ],
+        [ 1, 12, -1 ],
+        [ 1, 13, 1 ],
+        [ 2, 3, 1 ],
+        [ 2, 4, -1 ],
+        [ 2, 5, 1 ],
+        [ 2, 6, -1 ],
+        [ 2, 7, 1 ],
+        [ 2, 8, 1 ],
+        [ 3, 4, -1 ],
+        [ 3, 5, 1 ],
+        [ 3, 6, -1 ],
+        [ 3, 7, 1 ],
+        [ 3, 8, 1 ],
+        [ 4, 5, 1 ],
+        [ 4, 6, -1 ],
+        [ 4, 7, 1 ],
+        [ 4, 8, 1 ],
+        [ 6, 7, 1 ],
+        [ 6, 8, -1 ],
+        [ 7, 8, -1 ],
+        [ 9, 10, 1 ],
+        [ 10, 11, 1 ],
+        [ 10, 12, -1 ],
+        [ 10, 13, 1 ],
+        [ 11, 12, 1 ],
+        [ 11, 13, -1 ],
+        [ 12, 13, -1 ]
+      ],
+      "beloch:source_line": 24,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --bc", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+          "statement": 4,
+          "name": "s2",
+          "crease_id": 4
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --bc", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:14:1-39",
+          "statement": 4,
+          "name": "s2",
+          "crease_id": 4
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:11:1-30",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "flatten",
+          "sources": [],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+          "statement": 10,
+          "name": null,
+          "crease_id": 8
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        null,
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "flatten",
+          "sources": [],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+          "statement": 10,
+          "name": null,
+          "crease_id": 9
+        },
+        {
+          "axiom": "flatten",
+          "sources": [],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+          "statement": 10,
+          "name": null,
+          "crease_id": 8
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".b" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:10:1-30",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        {
+          "axiom": "flatten",
+          "sources": [],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+          "statement": 10,
+          "name": null,
+          "crease_id": 7
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "squash",
+          "sources": [ "--ac & --ab", "--bd" ],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:12:1-39",
+          "statement": 2,
+          "name": "s1",
+          "crease_id": 2
+        },
+        null,
+        {
+          "axiom": "flatten",
+          "sources": [],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+          "statement": 10,
+          "name": null,
+          "crease_id": 7
+        },
+        {
+          "axiom": "flatten",
+          "sources": [],
+          "span": "packages/render-2d/yr/test/fixtures/petal.bel:24:1-26:21",
+          "statement": 10,
+          "name": null,
+          "crease_id": 9
+        }
+      ],
+      "beloch:vertices_names": [
+        "b", null, "o", "c", null, "d", "e2", "sl", "a", null, "sr", "e1"
+      ]
+    }
+  ]
+}

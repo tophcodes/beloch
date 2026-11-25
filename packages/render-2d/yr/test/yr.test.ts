@@ -3,7 +3,7 @@ import { parseFold } from "@beloch/scene";
 import type { Vec2 } from "@beloch/scene";
 import { resolveIsometry } from "@beloch/render-svg";
 import {
-  CREASE_GAP, foldMotion, panelHalves, panels, panelView, renderYr, turnFraction, turnOver, turnOverArrow,
+  CREASE_GAP, foldMotion, panelHalves, panels, panelView, petalFold, renderYr, turnFraction, turnOver, turnOverArrow,
 } from "@beloch/yr";
 
 const scene = async (name: string) =>
@@ -188,11 +188,42 @@ test("an outside reverse fold draws a push arrow and two arrows that wrap around
   }
 });
 
+// The fixture folds the preliminary base with its open corners at (1, 0) and
+// its apex at the paper center, then petal-folds its top flap.
+test("a petal fold lifts its flap about a hinge that the swinging sides meet at both ends", async () => {
+  const s = await scene("petal");
+  const p = petalFold(s, s.writes.at(-1)!)!;
+  expect(p).not.toBeNull();
+  // the hinge runs square to the center line, from one side edge to the other
+  const [a, b] = p.hinge;
+  expect((b[1] - a[1]) - (b[0] - a[0])).toBeCloseTo(0, 9);
+  // the tip of the flap lifts past the apex
+  near(p.tail, [1, 0]);
+  expect(p.head[0]).toBeLessThan(0.5);
+  expect(p.head[1]).toBeGreaterThan(0.5);
+  // seen from above: the hinge a valley, the sides mountains
+  expect(p.lines.filter((l) => l.letter === "V").length).toBeGreaterThan(0);
+  expect(p.lines.filter((l) => l.letter === "M").length).toBeGreaterThan(0);
+  // a plain fold is no petal fold
+  const k = await scene("kite");
+  expect(petalFold(k, k.writes.at(-1)!)).toBeNull();
+});
+
+test("a petal fold draws a valley line, two mountain lines, two push arrows and a valley arrow", async () => {
+  const s = await scene("petal");
+  const panel = panels(s).panels.find((x) => x.writes.some((w) => w.index === s.writes.at(-1)!.index))!;
+  const svg = panelSvg(renderYr(s).doc.toString(), panel.number);
+  expect(count(svg, "valley-line")).toBe(1);
+  expect(count(svg, "mountain-line")).toBe(2);
+  expect(count(svg, "push-arrow")).toBe(2);
+  expect(count(svg, "valley-arrow")).toBe(1);
+});
+
 // The drawings beside the programs are what the pull request shows; this
 // keeps them equal to what the library draws. To write them again:
-//   for f in kite book-twice rotate shrink inside-reverse outside-reverse mountain top-layer turn-over; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
+//   for f in kite book-twice rotate shrink inside-reverse outside-reverse mountain top-layer turn-over petal; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
 test("the committed drawings are the library's output", async () => {
-  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse", "mountain", "top-layer", "turn-over"]) {
+  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse", "mountain", "top-layer", "turn-over", "petal"]) {
     const drawn = renderYr(await scene(name)).doc.toString();
     const committed = await Bun.file(new URL(`./fixtures/${name}-yr.svg`, import.meta.url)).text();
     expect(drawn).toBe(committed);

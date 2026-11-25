@@ -5,7 +5,9 @@
 // a valley fold from a mountain fold and from a reverse fold.
 import type { FoldScene, Frame, Isometry, Statement, Vec2 } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";
-import { clipHalfPlane, clipSegmentToPoly, pointInPolygon, resolveIsometry, signedArea, toPaper, toTable } from "@beloch/render-svg";
+import {
+  clipHalfPlane, clipSegmentToPoly, pointInPolygon, pointInPolygonInclusive, resolveIsometry, signedArea, toPaper, toTable,
+} from "@beloch/render-svg";
 
 // How a fold moves its paper, seen from above: onto the paper that stays,
 // under it, or as a reverse fold, between its layers (inside) or around them
@@ -301,6 +303,150 @@ export function foldMotion(scene: FoldScene, write: Statement): FoldMotion {
     reverse,
   };
 }
+
+// A petal fold, in table coordinates of the state before it: a flap lifts
+// about a hinge across the top layer while the paper beside it, at both ends
+// of the hinge, swings in under it [lang2011secrets, Fig. 2.31].
+export interface Petal {
+  lines: { seg: [Vec2, Vec2]; letter: "M" | "V" }[];  // the new creases where they show from above, by the fold seen from above
+  hinge: [Vec2, Vec2];        // the crease the flap lifts about, from end to end
+  tail: Vec2;                 // the point of the lifting flap farthest from the hinge
+  head: Vec2;                 // where that point lands
+  // the fan rays on the outline that swing in: the middle of each, and the
+  // unit normal there that points into the paper
+  pushes: { at: Vec2; normal: Vec2 }[];
+}
+
+// The parts of the segment [p, q] that no polygon of `above` covers.
+function uncovered([p, q]: [Vec2, Vec2], above: Vec2[][]): [Vec2, Vec2][] {
+  const at = (t: number): Vec2 => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+  const ts = [0, 1];
+  for (const poly of above) {
+    const cut = clipSegmentToPoly(p, q, poly);
+    if (!cut) continue;
+    const L2 = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2;
+    for (const c of cut) ts.push(((c[0] - p[0]) * (q[0] - p[0]) + (c[1] - p[1]) * (q[1] - p[1])) / L2);
+  }
+  ts.sort((a, b) => a - b);
+  const out: [Vec2, Vec2][] = [];
+  for (let i = 0; i + 1 < ts.length; i++) {
+    const [a, b] = [ts[i]!, ts[i + 1]!];
+    if (b - a < 1e-7 || above.some((poly) => pointInPolygon(at((a + b) / 2), poly))) continue;
+    const last = out.at(-1);
+    if (last && Math.hypot(last[1][0] - at(a)[0], last[1][1] - at(a)[1]) < 1e-9) last[1] = at(b);
+    else out.push([at(a), at(b)]);
+  }
+  return out;
+}
+
+// The petal fold a write of kind "fold" makes, or null when it makes none.
+// The hinge is made of the new creases on the top layer that part a face
+// that moves from one that stays; every face across them moves by one and
+// the same motion, the lift. A write is a petal fold when, at both ends of
+// the hinge, paper that moves by another motion meets it: the sides that
+// swing in.
+export function petalFold(scene: FoldScene, write: Statement): Petal | null {
+  if (write.kind !== "fold") return null;
+  const { A, B, before, holder, beforeMatrix, afterMatrix } = frames(scene, write);
+  if (!A.edgesFaces) return null;
+  const motion = afterMatrix.map((Ma, f) => relative(beforeMatrix[f]!, Ma));
+  const stays = (f: number) => sameIsometry(beforeMatrix[f]!, afterMatrix[f]!);
+  const { order, faceUp } = resolveIsometry(scene, { kind: "step", index: before });
+  const rank = new Map(order.map((g, i) => [g, i]));
+  const tableB = (g: number) => B.facesVertices[g]!.map((i) => B.vertices[i]!);
+  const above = (g: number) => order.slice(rank.get(g)! + 1).map(tableB);
+  // a point of face f of A, in table coordinates of B
+  const back = (f: number, p: Vec2) => toTable(beforeMatrix[f]!, toPaper(afterMatrix[f]!, p));
+
+  const lines: Petal["lines"] = [];
+  const hinge: [Vec2, Vec2][] = [];
+  let lift: number[] | null = null;
+  for (let e = 0; e < A.edgesVertices.length; e++) {
+    const letter = A.edgesAssignment[e];
+    if ((letter !== "M" && letter !== "V") || A.edgesProvenance[e]?.statement !== write.index) continue;
+    const fs = A.edgesFaces[e]!, f = fs[0]!, g = holder[f]!;
+    const [u, v] = A.edgesVertices[e]!;
+    const shows = uncovered([back(f, A.vertices[u]!), back(f, A.vertices[v]!)], above(g));
+    // the fold seen from above: a face of B that shows its back shows every
+    // crease on it the other way
+    const seen = faceUp[g] ? letter : letter === "M" ? "V" : "M";
+    for (const seg of shows) lines.push({ seg, letter: seen });
+    const moving = fs.filter((x) => !stays(x));
+    if (shows.length === 0 || fs.length !== 2 || moving.length !== 1) continue;
+    const m = motion[moving[0]!]!;
+    if (lift && !sameIsometry(lift as Isometry, m as Isometry)) return null;
+    lift = m;
+    hinge.push(...shows);
+  }
+  if (!lift || hinge.length === 0) return null;
+  const L = lift as Isometry;
+
+  // the hinge from end to end, along the line of its first piece
+  const [o, p1] = hinge[0]!;
+  const len = Math.hypot(p1[0] - o[0], p1[1] - o[1]);
+  const dir: Vec2 = [(p1[0] - o[0]) / len, (p1[1] - o[1]) / len];
+  if (hinge.some((s) => s.some((p) => distanceToLine(p, [o, p1]) > 1e-7))) return null;
+  const ts = hinge.flat().map((p) => (p[0] - o[0]) * dir[0] + (p[1] - o[1]) * dir[1]);
+  const ends: [Vec2, Vec2] = [Math.min(...ts), Math.max(...ts)]
+    .map((t): Vec2 => [o[0] + t * dir[0], o[1] + t * dir[1]]) as [Vec2, Vec2];
+
+  // the faces that lift, and those that move by another motion, in B's table
+  const moved = afterMatrix.map((_, f) => f).filter((f) => !stays(f));
+  const poly = (f: number) => A.facesVertices[f]!.map((i) => back(f, A.vertices[i]!));
+  const lifting = moved.filter((f) => sameIsometry(motion[f]! as Isometry, L));
+  const swinging = moved.filter((f) => !sameIsometry(motion[f]! as Isometry, L));
+  const touches = (p: Vec2) => swinging.some((f) => pointInPolygonInclusive(p, poly(f), 1e-12));
+  if (!ends.every(touches)) return null;
+
+  const corners = lifting.flatMap(poly);
+  const far = Math.max(...corners.map((p) => distanceToLine(p, ends)));
+  const tips = corners.filter((p) => distanceToLine(p, ends) > far - 1e-7);
+  const tail: Vec2 = [tips.reduce((s, p) => s + p[0], 0) / tips.length, tips.reduce((s, p) => s + p[1], 0) / tips.length];
+  return { lines, hinge: ends, tail, head: toTable(L, tail), pushes: swingingRays(B, swinging.map(poly), ends) };
+}
+
+// The fan rays that swing in: at each end of the hinge, the edges of the
+// outline of B that leave that end along paper that swings. For each, the
+// middle of the longest such edge, and the unit normal there that points into
+// the paper. The edges of several layers along one ray count as one.
+function swingingRays(B: Frame, swinging: Vec2[][], ends: [Vec2, Vec2]): Petal["pushes"] {
+  const faces = B.facesVertices.map((f) => f.map((i) => B.vertices[i]!));
+  const inPaper = (p: Vec2) => faces.some((f) => pointInPolygon(p, f));
+  const same = (p: Vec2, q: Vec2) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 1e-7;
+  const out: Petal["pushes"] = [];
+  for (const [end, other] of [ends, [ends[1], ends[0]]] as [Vec2, Vec2][]) {
+    const rays = new Map<string, { far: Vec2; len: number }>();
+    for (const poly of swinging) {
+      poly.forEach((p, k) => {
+        if (!same(p, end)) return;
+        for (const q of [poly[(k + 1) % poly.length]!, poly[(k + poly.length - 1) % poly.length]!]) {
+          const len = Math.hypot(q[0] - end[0], q[1] - end[1]);
+          const u: Vec2 = [(q[0] - end[0]) / len, (q[1] - end[1]) / len];
+          // the hinge itself lifts; it is no ray that swings
+          const h = unitOf(end, other);
+          if (Math.abs(u[0] * h[1] - u[1] * h[0]) < 1e-7 && u[0] * h[0] + u[1] * h[1] > 0) continue;
+          const m: Vec2 = [(end[0] + q[0]) / 2, (end[1] + q[1]) / 2], n: Vec2 = [-u[1] * 1e-6, u[0] * 1e-6];
+          if (inPaper([m[0] + n[0], m[1] + n[1]]) === inPaper([m[0] - n[0], m[1] - n[1]])) continue;
+          const key = `${Math.round(u[0] * 1e6)},${Math.round(u[1] * 1e6)}`;
+          if ((rays.get(key)?.len ?? 0) < len) rays.set(key, { far: q, len });
+        }
+      });
+    }
+    for (const { far } of rays.values()) {
+      const at: Vec2 = [(end[0] + far[0]) / 2, (end[1] + far[1]) / 2];
+      const u = unitOf(end, far);
+      let normal: Vec2 = [-u[1], u[0]];
+      if (!inPaper([at[0] + normal[0] * 1e-6, at[1] + normal[1] * 1e-6])) normal = [-normal[0], -normal[1]];
+      out.push({ at, normal });
+    }
+  }
+  return out;
+}
+
+const unitOf = (from: Vec2, to: Vec2): Vec2 => {
+  const dx = to[0] - from[0], dy = to[1] - from[1], l = Math.hypot(dx, dy);
+  return [dx / l, dy / l];
+};
 
 // The layers a reverse fold creases and the folded edge it turns, or null when
 // the fold turns no folded edge and so is no reverse fold. `tip` holds
