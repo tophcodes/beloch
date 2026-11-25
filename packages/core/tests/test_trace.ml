@@ -401,6 +401,35 @@ let test_flatten_ambiguous () =
   Alcotest.(check bool) "several stay open" true
     (count (fun c -> removed c = None) cs >= 2)
 
+(* The swivel fold of collapse/flatten-swivel-on-folded-base.bel leaves 2
+   states that no letter parts: each candidate carries the over item the hint
+   names for it, and the flatten that decided carries none. *)
+let test_flatten_suggestions () =
+  let json, failed =
+    fold_traced
+      "paper square\nmark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
+       mark (map --ab onto --cd) as --h\nmark (map --da onto --bc) as --v\n\
+       mark (align (--h onto --ac) (heading --h)) as --s\n\
+       mark (align (--h onto --bd) (heading --h)) as --t\n\
+       .q = free on --ab from .a at 1/4\n.r = free on --ab from .b at 1/4\n\
+       .f = free on --da from .a at 1/4\n\
+       flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
+       (--bd & .b mountain) (--bd & .d)\n\
+       flatten (--h & --da) (--s & --da mountain) (--t & --da valley) \
+       (--ac & .a valley) (staying .q)\n"
+  in
+  Alcotest.(check bool) "the program fails" true failed;
+  let suggestions e =
+    List.map (fun c -> c |> member "suggestion" |> to_string_option) (candidates e)
+  in
+  match write_entries json with
+  | [ decided; ambiguous ] ->
+      Alcotest.(check (list (option string))) "a decided flatten suggests nothing"
+        [ None ] (suggestions decided);
+      Alcotest.(check (list (option string))) "an over item for each candidate"
+        [ Some "(.f over .r)"; Some "(.r over .f)" ] (suggestions ambiguous)
+  | es -> Alcotest.failf "expected two write entries, got %d" (List.length es)
+
 let test_flatten_odd () =
   let json, failed =
     fold_traced
@@ -558,5 +587,7 @@ let () =
           Alcotest.test_case "an ambiguous flatten keeps its states" `Quick
             test_flatten_ambiguous;
           Alcotest.test_case "an odd flatten's emergent ray" `Quick test_flatten_odd;
+          Alcotest.test_case "an ambiguous flatten suggests an item per state" `Quick
+            test_flatten_suggestions;
         ] );
     ]

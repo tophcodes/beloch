@@ -521,8 +521,14 @@ where one does not part it from the rest (`` each of these keeps one
 state: (--v & --ab mountain); (--h & --bc mountain); … ``); for more, the ray
 whose letter splits the states most evenly (`` add (--h & --bc valley)
 or (--h & --bc mountain): they keep 9 and 9 of the 18 states ``). States
-that no letter parts differ in their layers only, and an `over` item
-orders them. A ray of a fan that is a construction is named by where it
+that no letter parts differ in their layers only. For each of them the
+hint names an `over` item of two named points in scope whose faces lie in
+that order in this state and in no other, or two such items that hold
+together in no other state (`` each of these keeps one state: (.f over .r);
+(.r over .f) ``). A point on a crease lies in several faces and is not
+tried. Where no item of named points parts a
+state, the hint says so (`` 2 states differ in their layers only, and no
+named point lies in the faces whose order parts them ``). A ray of a fan that is a construction is named by where it
 stands in the program. An odd fan closes on an emergent ray on a new
 line or on the far side of a given ray, and the states of both count
 alike, so their stayers can differ; states that hold different wedges

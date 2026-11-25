@@ -169,9 +169,17 @@ let mv_patterns (constraints : Ast.mv_constraint list) : bool list list =
    it. Up to [max_listed] states get an item each: the letter of one ray that no
    other state shares, or the letters of two rays where one does not part it
    from the rest. A state that no letter parts from another differs from it in
-   its layers only. Above [max_listed] the hint names the ray whose letter
-   splits the states most evenly. Ceiling: the pair search is quadratic in the
-   rays per state, which stays small for the fans a program writes. *)
+   its layers only, and gets an `over` item, or two, of the named points
+   [points] instead: [(name, face)] is a point and the one face of the state the
+   flatten reads that holds it, and [above s i j] says whether face [i] lies
+   above face [j] in [s], as an `over` item compares them. Where no item of
+   named points parts the state, the hint says so. Above [max_listed] the hint
+   names the ray whose letter splits the states most evenly. Returns the
+   message, the hint and the item the hint names for each state, [None] where
+   it names none. Ceiling: the pair searches are quadratic in the rays per
+   state and in the items of named points that hold in a state, which stays
+   small for the programs written so far; a program with hundreds of named
+   points would want the faces that differ found first. *)
 let max_listed = 4
 
 (* a ray item with its letter, as the program writes it *)
@@ -179,7 +187,9 @@ let ray_item (name : string) (valley : bool) : string =
   Printf.sprintf "(%s %s)" name (if valley then "valley" else "mountain")
 
 let suggest ~(verb : string) ~(items : (bool -> string) option list)
-    ~(letters : 'a -> bool list) (states : 'a list) : string * string =
+    ~(letters : 'a -> bool list) ~(points : (string * int) list)
+    ~(above : 'a -> int -> int -> bool) (states : 'a list) :
+    string * string * string option list =
   let n = List.length states in
   let message = Printf.sprintf "%s is ambiguous: %d realizations" verb n in
   let item k l = (Option.get (List.nth items k)) l in
@@ -209,7 +219,47 @@ let suggest ~(verb : string) ~(items : (bool -> string) option list)
                 ks)
             ks
     in
-    let found = List.mapi parts ls in
+    (* every over item of two named points in different faces, with the
+       states it holds in *)
+    let overs =
+      lazy
+      (List.concat_map
+        (fun (p, fp) ->
+          List.filter_map
+            (fun (q, fq) ->
+              if fp = fq then None
+              else
+                Some
+                  ( Printf.sprintf "(.%s over .%s)" p q,
+                    List.map (fun s -> above s fp fq) states ))
+            points)
+        points)
+    in
+    let ordered i =
+      let holds = List.filter (fun (_, h) -> List.nth h i) (Lazy.force overs) in
+      let apart sel =
+        List.for_all Fun.id (List.filteri (fun j _ -> j <> i) (List.init n sel))
+      in
+      match List.find_opt (fun (_, h) -> apart (fun j -> not (List.nth h j))) holds with
+      | Some (t, _) -> Some t
+      | None ->
+          List.find_map
+            (fun (t1, h1) ->
+              List.find_map
+                (fun (t2, h2) ->
+                  if
+                    t1 < t2
+                    && apart (fun j -> not (List.nth h1 j && List.nth h2 j))
+                  then Some (t1 ^ " and " ^ t2)
+                  else None)
+                holds)
+            holds
+    in
+    let found =
+      List.mapi
+        (fun i own -> match parts i own with Some t -> Some t | None -> ordered i)
+        ls
+    in
     let items = List.filter_map Fun.id found in
     let layered = List.length (List.filter Option.is_none found) in
     let listed =
@@ -220,23 +270,26 @@ let suggest ~(verb : string) ~(items : (bool -> string) option list)
       if layered = 0 then []
       else
         [ Printf.sprintf
-            "%d states differ in their layers only, which an (.p over .q) item \
-             orders"
+            "%d states differ in their layers only, and no named point lies \
+             in the faces whose order parts them"
             layered ]
     in
-    (message, String.concat "; " (listed @ layers))
+    (message, String.concat "; " (listed @ layers), found)
   end
   else
     let split k =
       let v = List.length (List.filter (fun l -> List.nth l k) ls) in
       (abs ((2 * v) - n), k, v)
     in
+    let none = List.map (fun _ -> None) states in
     match List.sort compare (List.map split ks) with
     | (_, k, v) :: _ when v > 0 && v < n ->
         ( message,
           Printf.sprintf "add %s or %s: they keep %d and %d of the %d states"
-            (item k true) (item k false) v (n - v) n )
+            (item k true) (item k false) v (n - v) n,
+          none )
     | _ ->
         ( message,
           "the states differ in their layers only, which an (.p over .q) item \
-           orders" )
+           orders",
+          none )

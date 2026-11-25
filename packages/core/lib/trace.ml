@@ -57,6 +57,7 @@ type detail =
       rays : segment list;
       emergent : segment option;
       stayer : Geom.point * Geom.point;
+      suggestion : string option;
     }
 
 type state_candidate = {
@@ -178,10 +179,11 @@ let detail_json = function
   | Spine { spine; halves; bodies } ->
       [ ("spine", segment spine); ("halves", pair region halves);
         ("bodies", pair region bodies) ]
-  | Fan { rays; emergent; stayer = a, b } ->
+  | Fan { rays; emergent; stayer = a, b; suggestion } ->
       [ ("rays", `List (List.map segment rays));
         ("emergent", match emergent with Some s -> segment s | None -> `Null);
-        ("stayer", `List [ point a; point b ]) ]
+        ("stayer", `List [ point a; point b ]);
+        ("suggestion", match suggestion with Some t -> `String t | None -> `Null) ]
 
 let to_json ~frame (e : entry) : Yojson.Safe.t =
   let head = [ ("statement", `Int e.statement); ("frame_index", `Int e.frame) ] in
@@ -356,7 +358,7 @@ let reverse_write st ~axis ~move_side ~tip ~inside ~keeps attempts =
    from the vertex towards the two ray ends, and the probe has to lie in the
    faces that touch the vertex. A fan whose faces at the vertex are smaller
    than that would need the probe placed from the faces themselves. *)
-let fan ~pre ~post ~point:o ~rays ~emergent =
+let fan ~pre ~post ~point:o ~rays ~emergent ~suggestion =
   let ends =
     List.map snd (Option.to_list emergent @ rays)
     |> List.sort (Geom.ccw_compare ~center:o)
@@ -402,4 +404,4 @@ let fan ~pre ~post ~point:o ~rays ~emergent =
     | Some s -> s
     | None -> List.hd sectors
   in
-  Fan { rays; emergent; stayer }
+  Fan { rays; emergent; stayer; suggestion }

@@ -895,14 +895,15 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let segs =
     Array.to_list (Array.map (fun (r : ray) -> (verts.(r.fan), r.far)) rays)
   in
-  let trace chosen =
+  let trace ?(suggest = fun _ -> None) chosen =
     Ctx.record_write ctx (Trace.Flatten { point = verts.(0) })
       (List.map
          (fun s ->
            { Trace.state = Some s;
              detail =
                Trace.fan ~pre:pre_st ~post:s ~point:verts.(0) ~rays:segs
-                 ~emergent:(Option.map (fun _ -> (verts.(0), verts.(1))) !derived);
+                 ~emergent:(Option.map (fun _ -> (verts.(0), verts.(1))) !derived)
+                 ~suggestion:(suggest s);
              removed = None;
              chosen = (match chosen with Some c -> c == s | None -> false) })
          states)
@@ -928,7 +929,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | Some e -> e
         | None -> "the fans do not fold flat together")
   | many ->
-      trace None;
       (* each ray as the program could letter it, in the order of [rays]: the
          rays of each fan item, then the derived crease, which no item names *)
       let item (r : Ast.fan_ray) =
@@ -956,9 +956,15 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                   @ if !derived = None then [] else [ None ])
                 fans))
       in
-      let message, hint =
-        Flatten.suggest ~verb:"flatten" ~items ~letters:(fun s -> List.assq s pattern_of) many
+      let above s i j =
+        let nf = Array.length (Fold_state.faces s) in
+        i < nf && j < nf && Fold_state.rel s i j = Fold_state.Above
       in
+      let message, hint, suggestions =
+        Flatten.suggest ~verb:"flatten" ~items ~letters:(fun s -> List.assq s pattern_of)
+          ~points:(Resolve.named_point_faces ctx) ~above many
+      in
+      trace ~suggest:(fun s -> Option.join (List.assq_opt s (List.combine many suggestions))) None;
       Error.fail ~hint span message);
   (* the vertices a fan binds, as their paper points *)
   Array.iteri
