@@ -41,6 +41,8 @@ mark (through .c .o) as --mid           ; center line of the base
 ; the apex. Each fan binds the point where its kite crease meets the crease
 ; between the two fans. The kite creases fold as valleys: the side edges
 ; fold in under the lifted flap.
+; Drawn as Lang draws a petal fold, the open point down [lang2011secrets, Fig. 2.31].
+@orient .a .o up
 flatten (fan (--s1 & .sr) (map .sr onto --mid through .a valley) as .e1)
         (fan (--s1 & .sl) (map .sl onto --mid through .a valley) as .e2)
         (staying .o) as --pf
