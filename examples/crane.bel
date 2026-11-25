@@ -84,13 +84,36 @@ reverse (perp --n2 through .sr) (moving .d) (--n2 & .pt mountain) (--n4 & .pt4 m
 .hp = free on --bd & .b from .b at 1/4
 reverse (through .hp .ht) (moving .b) as --head
 
-; the finished crane stands on its center line, the wing tip .c up
+; the crane stands on its center line, turned with the wing tip .c up
+; while the wings still stand
 @orient .o .c up
 
-; assert steps = 15
-; assert faces = 64
+; the wings fold down along the line across the body through the two points
+; where the neck and the tail leave it. On each petal these are the points
+; where a narrowing crease turns at the petal's kite crease: the piece of the
+; narrowing crease that crosses the petal hinge (--pf, --pb) meets its other
+; pieces there and nowhere else. On the table the line runs perpendicular to
+; the center line.
+.y1 = --n1 * --pf
+.w1 = (--n1 & #[.a .y1]) * (--n1 \ .y1)
+.y2 = --n2 * --pf
+.w2 = (--n2 & #[.a .y2]) * (--n2 \ .y2)
+.y3 = --n3 * --pb
+.w3 = (--n3 & #[.c .y3]) * (--n3 \ .y3)
+.y4 = --n4 * --pb
+.w4 = (--n4 & #[.c .y4]) * (--n4 \ .y4)
 
-; the two wings lie together at the far end, the paper center stays put
+; the front wing folds down toward the viewer, the back wing behind. Each
+; `up to` names the face of the petal between its tip and the two points, so
+; the neck, the tail and the layers around the paper center stay.
+fold (through .w1 .w2) (moving .a) (up to #[.a .w1 .w2]) as --wa
+fold (through .w3 .w4) (moving .c) (up to #[.c .w3 .w4]) (mountain) as --wc
+
+; assert steps = 17
+; assert faces = 72
+
+; the two wing tips meet below the body, the paper center stays put and
+; stands between the wings as the crane's back
 ; assert .a = .c
 ; assert .o = (1/2, 1/2)
 
