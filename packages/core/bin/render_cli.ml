@@ -86,6 +86,8 @@ display options:
   --title TEXT              caption drawn in the top-left corner
   --hidden dashed|hide      how occluded creases are drawn in folded view
                             (default: hide)
+  --hide-flat               folded: leave out the creases that lie flat,
+                            such as a line marked only to place a point
   --flat                    draw each state of the YR diagram as it lies,
                             its stacked layers on each other
 

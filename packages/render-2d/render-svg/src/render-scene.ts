@@ -57,6 +57,9 @@ export interface SceneOptions {
   view?: "top" | "bottom" | undefined; // folded only
   hidden?: "dashed" | "hide" | "depth" | undefined; // folded only: drop buried segments,
   // draw them uniformly, or fade each by how many layers cover it
+  // folded only: true leaves out every crease that lies flat in the state
+  // drawn (assignment F), such as a line marked only to place a point
+  hideFlat?: boolean | undefined;
   markOverlay?: MarkOverlay | undefined; // draw these marks instead of the scene's final ones — projected onto the step's faces when folded, in paper space when flat
   // The frame to draw in; absent, the scene's own (sceneLayout). A view that
   // draws beyond the paper, or at another scale, passes its own.
@@ -376,6 +379,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         const faces = incident[i]!;
         if (!faces.length) return;
         const assignment = A[i]!;
+        if (opts.hideFlat && assignment === "F") return;
         const name = prov[i]?.name;
         const cid = prov[i]?.creaseId ?? null;
         const a0 = V[e[0]]!, b0 = V[e[1]]!;

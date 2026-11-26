@@ -46,7 +46,7 @@ const FLAGS = new Set([
   "--title", "--view", "--hidden", "--labels", "--highlight", "--step", "--format", "--width",
   "--statement", "--source", "--stage", "--along",
 ]);
-const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side", "--plain", "--flat"]);
+const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side", "--plain", "--flat", "--hide-flat"]);
 // An option this CLI does not know would otherwise read as a positional, and
 // `-o out.svg` would write a file named `-o`. `-` alone is stdin.
 const unknown = args.find(
@@ -111,7 +111,8 @@ try {
     : null;
   for (const hint of yr?.hints ?? []) process.stderr.write(`beloch-render: hint: ${hint}\n`);
   const doc = yr ? yr.doc : viewFlag === "folded"
-    ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step, orient: true })
+    ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step, orient: true,
+      hideFlat: args.includes("--hide-flat") })
     : viewFlag === "candidates"
       ? renderCandidates(scene, { ...opts, statement })
       : viewFlag === "op"

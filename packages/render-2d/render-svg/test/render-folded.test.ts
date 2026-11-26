@@ -486,3 +486,13 @@ test("a layer cycle hides the creases under each flap", async () => {
     expect({ line: m[0].slice(0, 60), buried }).toEqual({ line: m[0].slice(0, 60), buried: [] });
   }
 });
+
+// A crease that lies flat in the state drawn, such as a construction line the
+// program marked to place a point, is drawn unless hideFlat leaves it out.
+test("hideFlat leaves out the creases that lie flat", async () => {
+  const scene = parseFold(await golden("square-twist.fold"));
+  const flat = (svg: string) => (svg.match(/class="crease-F"/g) ?? []).length;
+  expect(flat(renderFolded(scene).toString())).toBeGreaterThan(0);
+  expect(flat(renderFolded(scene, { hideFlat: true }).toString())).toBe(0);
+  expect(flat(renderFolded(scene, { view: "bottom", hideFlat: true }).toString())).toBe(0);
+});
