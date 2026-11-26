@@ -205,15 +205,16 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   if (theme.background !== "none") {
     doc.root.children.push(el("rect", { width: layout.W, height: layout.H, fill: theme.background }));
   }
-  doc.root.children.push(el("defs", {}, [
+  const defs = el("defs", {}, [
     el("filter", { id: "layerShadow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, [
       el("feDropShadow", {
         dx: 0, dy: 1, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
       }),
     ]),
-  ]));
+  ]);
+  doc.root.children.push(defs);
 
-  const { frame, order, occlude, place } = resolveIsometry(scene, opts.isometry);
+  const { frame, order, above, occlude, place } = resolveIsometry(scene, opts.isometry);
   const upTo = opts.texture.upToStatement;
 
   const V = frame.vertices;
@@ -242,21 +243,36 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const mx = (x: number) => (bottom ? layout.W - tx(x) : tx(x));
     const paint = bottom ? [...order].reverse() : order;
     const edgeIx = faceEdgeIndex(E);
+    // Whether face g lies over face f as this view shows them.
+    const over = (g: number, f: number): boolean => (bottom ? above[g]!.has(f) : above[f]!.has(g));
+    const pts = (fi: number) => F[fi]!.map((idx) => `${mx(V[idx]![0])},${ty(V[idx]![1])}`).join(" ");
 
     if (opts.texture.faces === "filled") {
-      for (const fi of paint) {
-        const face = F[fi]!;
-        const poly = face.map((idx) => V[idx]!);
+      // A face is painted over the faces before it in `paint`. Where the layer
+      // relation has a cycle, a face painted earlier can lie over this one;
+      // a mask leaves those faces' area out of it, so each point of the
+      // drawing shows the face on top there.
+      paint.forEach((fi, k) => {
+        const poly = F[fi]!.map((idx) => V[idx]!);
         const showFront = (sideUp(poly) === "front") !== bottom;
         const lit = highlightFaces.get(fi);
         const fill = lit ? lit.wash : showFront ? theme.front : theme.back;
-        const pts = face.map((idx) => `${mx(V[idx]![0])},${ty(V[idx]![1])}`).join(" ");
+        const cut = paint.slice(0, k).filter((g) => over(g, fi));
+        if (cut.length) {
+          defs.children.push(el("mask", {
+            id: `cover-${fi}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: layout.W, height: layout.H,
+          }, [
+            el("rect", { width: layout.W, height: layout.H, fill: "white" }),
+            ...cut.map((g) => el("polygon", { points: pts(g), fill: "black", "data-face-index": g })),
+          ]));
+        }
         paper.children.push(el("polygon", {
-          points: pts, fill, stroke: "none", filter: "url(#layerShadow)",
+          points: pts(fi), fill, stroke: "none", filter: "url(#layerShadow)",
+          ...(cut.length ? { mask: `url(#cover-${fi})` } : {}),
           "data-kind": "face", "data-face-index": fi,
           ...(lit ? { "data-highlight": "true" } : {}),
         }));
-      }
+      });
     }
 
     const incident: number[][] = E.map(() => []);
@@ -269,7 +285,16 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         else phantom.push({ a, b, fi });
       }
     });
-    const pos = new Map(order.map((f, i) => [f, i]));
+    // The faces that lie over the uppermost of `faces` in this view: those
+    // painted after it that the layer relation does not put under it, and
+    // those painted before it that the relation puts over it. Without a cycle
+    // the second group is empty and the first is every face painted after it.
+    const rank = new Map(paint.map((f, i) => [f, i]));
+    const coverOf = (faces: number[]): number[] => {
+      const free = faces.filter((f) => !faces.some((g) => g !== f && over(g, f)));
+      const top = (free.length ? free : faces).reduce((a, b) => (rank.get(b)! > rank.get(a)! ? b : a));
+      return paint.filter((g) => g !== top && (rank.get(g)! > rank.get(top)! ? !over(top, g) : over(g, top)));
+    };
     const dashedLines: SvgNode[] = [];
     const showHidden = opts.hidden === "dashed" || opts.hidden === "depth";
 
@@ -284,9 +309,9 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       Number(Math.max(HIDDEN_FLOOR, HIDDEN_BASE * HIDDEN_FALLOFF ** (n - 1)).toFixed(3));
     // The buried runs of one edge, as {t0,t1,depth}. depth is 0 for the
     // uniform mode, which is the signal not to stamp a fade at all.
-    const buriedRuns = (a0: Vec2, b0: Vec2, refPos: number, cov: [number, number][]) =>
+    const buriedRuns = (a0: Vec2, b0: Vec2, cover: number[], cov: [number, number][]) =>
       opts.hidden === "depth"
-        ? coverageDepth(a0, b0, order, refPos, F, V, bottom)
+        ? coverageDepth(a0, b0, cover, F, V)
         : cov.map(([t0, t1]) => ({ t0, t1, depth: 0 }));
 
     // A crease that has been folded stacks its two faces onto the SAME side of
@@ -367,10 +392,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             : outline
               ? { stroke: theme.boundary, strokeWidth: 2 }
               : theme.lineStyle(assignment, theme);
-        const refPos = bottom
-          ? Math.min(...faces.map((fi) => pos.get(fi)!))
-          : Math.max(...faces.map((fi) => pos.get(fi)!));
-        const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
+        const cover = coverOf(faces);
+        const covered = coveredIntervals(a0, b0, cover, F, V);
         const lerp = (t: number): [number, number] =>
           [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];
 
@@ -427,7 +450,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           const stroke = isB ? "#475569" : "#94a3b8";
           const dashWgt = isB ? 2 : 1.2;
           const dash = isB ? "6 3" : "4 3";
-          for (const { t0, t1, depth } of buriedRuns(a0, b0, refPos, covered)) {
+          for (const { t0, t1, depth } of buriedRuns(a0, b0, cover, covered)) {
             const p0 = lerp(t0), p1 = lerp(t1);
             const attrs: Record<string, string | number> = {
               class: `crease-${assignment}`,
@@ -453,8 +476,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
 
       for (const { a, b, fi } of phantom) {
         const a0 = V[a]!, b0 = V[b]!;
-        const refPos = pos.get(fi)!;
-        const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
+        const cover = coverOf([fi]);
+        const covered = coveredIntervals(a0, b0, cover, F, V);
         const lerp = (t: number): [number, number] =>
           [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];
 
@@ -477,7 +500,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         }
 
         if (showHidden) {
-          for (const { t0, t1, depth } of buriedRuns(a0, b0, refPos, covered)) {
+          for (const { t0, t1, depth } of buriedRuns(a0, b0, cover, covered)) {
             const p0 = lerp(t0), p1 = lerp(t1);
             dashedLines.push(el("line", {
               class: "crease-U",
@@ -527,9 +550,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const occludedPt = (i: number): boolean => {
       const faces = vertexFaces[i]!;
       if (!faces.length) return false;
-      const ps = faces.map((fi) => pos.get(fi)!);
-      const refPos = bottom ? Math.min(...ps) : Math.max(...ps);
-      return pointCovered(fverts[i]!, order, refPos, F, V, bottom);
+      return pointCovered(fverts[i]!, coverOf(faces), F, V);
     };
     const MUTED = "#94a3b8"; // matches occluded (non-boundary) crease gray
     frame.verticesNames.forEach((nm, i) => {

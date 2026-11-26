@@ -98,12 +98,12 @@ test("coveredIntervals: only the sub-segment under a higher face is covered", ()
     [0, 0], [1, 0], [1, 1], [0, 1], // face 1 (unit square)
   ];
   const order = [0, 1]; // 1 above 0
-  const cov = coveredIntervals([-1, 0.5], [2, 0.5], order, 0, F, V); // edge of face 0
+  const cov = coveredIntervals([-1, 0.5], [2, 0.5], order.slice(1), F, V); // edge of face 0
   expect(cov.length).toBe(1);
   expect(cov[0]![0]).toBeCloseTo(1 / 3, 5); // x=0
   expect(cov[0]![1]).toBeCloseTo(2 / 3, 5); // x=1
-  // below-rule: face 0 lies below pos 1 and fully spans the segment
-  expect(coveredIntervals([-1, 0.5], [2, 0.5], order, 1, F, V, true)).toEqual([[0, 1]]);
+  // seen from below, face 0 covers face 1 and fully spans the segment
+  expect(coveredIntervals([-1, 0.5], [2, 0.5], [0], F, V)).toEqual([[0, 1]]);
 });
 
 // coverageDepth answers "covered by HOW MANY", which coveredIntervals throws
@@ -120,7 +120,7 @@ test("coverageDepth counts the layers over each sub-segment", () => {
   const order = [0, 1, 2];
   // Parameterize x in [-1, 2] so t = (x + 1) / 3.
   const t = (x: number) => (x + 1) / 3;
-  const d = coverageDepth([-1, 0.5], [2, 0.5], order, 0, F, V);
+  const d = coverageDepth([-1, 0.5], [2, 0.5], order.slice(1), F, V);
   expect(d.map((s) => s.depth)).toEqual([1, 2, 1]);
   expect(d[0]!.t0).toBeCloseTo(t(0), 5);
   expect(d[0]!.t1).toBeCloseTo(t(0.5), 5); // one layer: face 1 alone
@@ -136,8 +136,8 @@ test("coverageDepth and coveredIntervals describe the same covered set", () => {
     [0.5, 0], [1.5, 0], [1.5, 1], [0.5, 1],
   ];
   const order = [0, 1, 2];
-  const merged = coveredIntervals([-1, 0.5], [2, 0.5], order, 0, F, V);
-  const d = coverageDepth([-1, 0.5], [2, 0.5], order, 0, F, V);
+  const merged = coveredIntervals([-1, 0.5], [2, 0.5], order.slice(1), F, V);
+  const d = coverageDepth([-1, 0.5], [2, 0.5], order.slice(1), F, V);
   // The depth intervals are contiguous here, so their hull is the single
   // merged interval.
   expect(merged.length).toBe(1);
@@ -150,5 +150,5 @@ test("coverageDepth and coveredIntervals describe the same covered set", () => {
 test("coverageDepth reports nothing when no face lies above", () => {
   const F = [[0, 1, 2, 3]];
   const V: Vec2[] = [[-1, 0], [2, 0], [2, 1], [-1, 1]];
-  expect(coverageDepth([-1, 0.5], [2, 0.5], [0], 0, F, V)).toEqual([]);
+  expect(coverageDepth([-1, 0.5], [2, 0.5], [], F, V)).toEqual([]);
 });

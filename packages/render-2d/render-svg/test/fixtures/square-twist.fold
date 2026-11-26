@@ -1,0 +1,3166 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
+  "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
+  "vertices_coords": [
+    [ 1.0, 0.0 ],
+    [ 1.0, 0.8125 ],
+    [ 0.625, 0.625 ],
+    [ 0.875, 0.125 ],
+    [ 0.9375, 0.0 ],
+    [ 0.625, 0.375 ],
+    [ 0.375, 0.375 ],
+    [ 0.125, 0.125 ],
+    [ 0.0, 0.1875 ],
+    [ 0.0, 0.0625 ],
+    [ 1.0, 0.9375 ],
+    [ 0.875, 0.875 ],
+    [ 0.375, 0.625 ],
+    [ 0.0, 0.0 ],
+    [ 0.8125, 0.0 ],
+    [ 0.5, 0.5 ],
+    [ 1.0, 1.0 ],
+    [ 0.1875, 1.0 ],
+    [ 0.125, 0.875 ],
+    [ 0.0625, 1.0 ],
+    [ 0.0, 1.0 ]
+  ],
+  "edges_vertices": [
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 3 ],
+    [ 3, 0 ],
+    [ 4, 0 ],
+    [ 3, 4 ],
+    [ 5, 6 ],
+    [ 6, 7 ],
+    [ 7, 5 ],
+    [ 6, 8 ],
+    [ 8, 9 ],
+    [ 9, 7 ],
+    [ 1, 10 ],
+    [ 10, 11 ],
+    [ 11, 2 ],
+    [ 11, 12 ],
+    [ 12, 2 ],
+    [ 7, 13 ],
+    [ 13, 14 ],
+    [ 14, 5 ],
+    [ 9, 13 ],
+    [ 5, 2 ],
+    [ 2, 15 ],
+    [ 15, 5 ],
+    [ 15, 6 ],
+    [ 12, 15 ],
+    [ 12, 6 ],
+    [ 10, 16 ],
+    [ 16, 11 ],
+    [ 17, 12 ],
+    [ 16, 17 ],
+    [ 5, 3 ],
+    [ 14, 4 ],
+    [ 18, 19 ],
+    [ 19, 20 ],
+    [ 20, 18 ],
+    [ 6, 18 ],
+    [ 20, 8 ],
+    [ 17, 19 ],
+    [ 18, 12 ]
+  ],
+  "edges_assignment": [
+    "B", "V", "M", "F", "B", "M", "V", "F", "M", "V", "B", "M", "B", "M",
+    "F", "M", "V", "F", "B", "V", "B", "V", "F", "F", "F", "F", "V", "B",
+    "F", "V", "B", "F", "B", "M", "B", "F", "M", "B", "B", "F"
+  ],
+  "edges_foldAngle": [
+    0.0, 180.0, -180.0, 0.0, 0.0, -180.0, 180.0, 0.0, -180.0, 180.0, 0.0,
+    -180.0, 0.0, -180.0, 0.0, -180.0, 180.0, 0.0, 0.0, 180.0, 0.0, 180.0,
+    0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, -180.0, 0.0,
+    0.0, -180.0, 0.0, 0.0, 0.0
+  ],
+  "edges_faces": [
+    [ 0 ],
+    [ 0, 4 ],
+    [ 0, 14 ],
+    [ 0, 1 ],
+    [ 1 ],
+    [ 1, 15 ],
+    [ 2, 9 ],
+    [ 2, 3 ],
+    [ 2, 6 ],
+    [ 3, 17 ],
+    [ 3 ],
+    [ 3, 7 ],
+    [ 4 ],
+    [ 4, 12 ],
+    [ 4, 5 ],
+    [ 5, 13 ],
+    [ 5, 10 ],
+    [ 6, 7 ],
+    [ 6 ],
+    [ 6, 15 ],
+    [ 7 ],
+    [ 8, 14 ],
+    [ 8, 10 ],
+    [ 8, 9 ],
+    [ 9, 11 ],
+    [ 10, 11 ],
+    [ 11, 19 ],
+    [ 12 ],
+    [ 12, 13 ],
+    [ 13, 18 ],
+    [ 13 ],
+    [ 14, 15 ],
+    [ 15 ],
+    [ 16, 18 ],
+    [ 16 ],
+    [ 16, 17 ],
+    [ 17, 19 ],
+    [ 17 ],
+    [ 18 ],
+    [ 18, 19 ]
+  ],
+  "faces_vertices": [
+    [ 0, 1, 2, 3 ],
+    [ 4, 0, 3 ],
+    [ 5, 6, 7 ],
+    [ 6, 8, 9, 7 ],
+    [ 2, 1, 10, 11 ],
+    [ 2, 11, 12 ],
+    [ 5, 7, 13, 14 ],
+    [ 7, 9, 13 ],
+    [ 5, 2, 15 ],
+    [ 6, 5, 15 ],
+    [ 12, 15, 2 ],
+    [ 12, 6, 15 ],
+    [ 11, 10, 16 ],
+    [ 17, 12, 11, 16 ],
+    [ 5, 3, 2 ],
+    [ 5, 14, 4, 3 ],
+    [ 18, 19, 20 ],
+    [ 8, 6, 18, 20 ],
+    [ 12, 17, 19, 18 ],
+    [ 6, 12, 18 ]
+  ],
+  "beloch:edges": [
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p3", ".e3" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:42:1-49",
+      "statement": 27,
+      "name": "k3",
+      "crease_id": 10
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p3", ".f2" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:41:1-49",
+      "statement": 27,
+      "name": "m2",
+      "crease_id": 9
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p3", ".f2" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:41:1-49",
+      "statement": 27,
+      "name": "m2",
+      "crease_id": 9
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p1", ".p2" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:34:1-49",
+      "statement": 27,
+      "name": "s1",
+      "crease_id": 2
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p2", ".f1" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:39:1-49",
+      "statement": 27,
+      "name": "m1",
+      "crease_id": 7
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p1", ".e1" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:38:1-49",
+      "statement": 27,
+      "name": "k1",
+      "crease_id": 6
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p2", ".f1" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:39:1-49",
+      "statement": 27,
+      "name": "m1",
+      "crease_id": 7
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p4", ".f3" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:43:1-49",
+      "statement": 27,
+      "name": "m3",
+      "crease_id": 11
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p4", ".f3" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:43:1-49",
+      "statement": 27,
+      "name": "m3",
+      "crease_id": 11
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p3", ".p4" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:36:1-49",
+      "statement": 27,
+      "name": "s3",
+      "crease_id": 4
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p2", ".e2" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:40:1-49",
+      "statement": 27,
+      "name": "k2",
+      "crease_id": 8
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p2", ".p3" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:35:1-49",
+      "statement": 27,
+      "name": "s2",
+      "crease_id": 3
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p4", ".p1" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:37:1-49",
+      "statement": 27,
+      "name": "s4",
+      "crease_id": 5
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "statement": 0,
+      "name": "ac",
+      "crease_id": 0
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p4", ".e4" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:44:1-49",
+      "statement": 27,
+      "name": "k4",
+      "crease_id": 12
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p1", ".f4" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:45:1-49",
+      "statement": 27,
+      "name": "m4",
+      "crease_id": 13
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p1", ".f4" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:45:1-49",
+      "statement": 27,
+      "name": "m4",
+      "crease_id": 13
+    },
+    null,
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "statement": 1,
+      "name": "bd",
+      "crease_id": 1
+    }
+  ],
+  "beloch:inspect": {
+    "creases": {
+      "1": {
+        "name": "bd",
+        "axiom": "axiom1",
+        "sources": [ ".b", ".d" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+        "segments": [
+          {
+            "faces": [ 18, 19 ],
+            "paper": [ [ 0.125, 0.875 ], [ 0.375, 0.625 ] ],
+            "table": [ [ 0.625, 0.875 ], [ 0.375, 0.625 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 16, 17 ],
+            "paper": [ [ 0.0, 1.0 ], [ 0.125, 0.875 ] ],
+            "table": [ [ 0.65, 1.05 ], [ 0.625, 0.875 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 14, 15 ],
+            "paper": [ [ 0.625, 0.375 ], [ 0.875, 0.125 ] ],
+            "table": [ [ 0.625, 0.375 ], [ 0.375, 0.125 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 10, 11 ],
+            "paper": [ [ 0.375, 0.625 ], [ 0.5, 0.5 ] ],
+            "table": [ [ 0.375, 0.625 ], [ 0.5, 0.5 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 8, 9 ],
+            "paper": [ [ 0.5, 0.5 ], [ 0.625, 0.375 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 0.625, 0.375 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 0, 1 ],
+            "paper": [ [ 0.875, 0.125 ], [ 1.0, 0.0 ] ],
+            "table": [ [ 0.375, 0.125 ], [ 0.35, -0.05 ] ],
+            "assignment": "F"
+          }
+        ]
+      },
+      "10": {
+        "name": "k3",
+        "axiom": "axiom1",
+        "sources": [ ".p3", ".e3" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:42:1-49",
+        "segments": [
+          {
+            "faces": [ 4, 0 ],
+            "paper": [ [ 0.625, 0.625 ], [ 1.0, 0.8125 ] ],
+            "table": [ [ 0.625, 0.625 ], [ 1.0, 0.4375 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "0": {
+        "name": "ac",
+        "axiom": "axiom1",
+        "sources": [ ".a", ".c" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+        "segments": [
+          {
+            "faces": [ 12, 13 ],
+            "paper": [ [ 1.0, 1.0 ], [ 0.875, 0.875 ] ],
+            "table": [ [ 1.05, 0.35 ], [ 0.875, 0.375 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 9, 11 ],
+            "paper": [ [ 0.5, 0.5 ], [ 0.375, 0.375 ] ],
+            "table": [ [ 0.5, 0.5 ], [ 0.375, 0.375 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 8, 10 ],
+            "paper": [ [ 0.625, 0.625 ], [ 0.5, 0.5 ] ],
+            "table": [ [ 0.625, 0.625 ], [ 0.5, 0.5 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 6, 7 ],
+            "paper": [ [ 0.125, 0.125 ], [ 0.0, 0.0 ] ],
+            "table": [ [ 0.125, 0.625 ], [ -0.05, 0.65 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 4, 5 ],
+            "paper": [ [ 0.875, 0.875 ], [ 0.625, 0.625 ] ],
+            "table": [ [ 0.875, 0.375 ], [ 0.625, 0.625 ] ],
+            "assignment": "F"
+          },
+          {
+            "faces": [ 2, 3 ],
+            "paper": [ [ 0.375, 0.375 ], [ 0.125, 0.125 ] ],
+            "table": [ [ 0.375, 0.375 ], [ 0.125, 0.625 ] ],
+            "assignment": "F"
+          }
+        ]
+      },
+      "11": {
+        "name": "m3",
+        "axiom": "axiom1",
+        "sources": [ ".p4", ".f3" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:43:1-49",
+        "segments": [
+          {
+            "faces": [ 13, 5 ],
+            "paper": [ [ 0.375, 0.625 ], [ 0.875, 0.875 ] ],
+            "table": [ [ 0.375, 0.625 ], [ 0.875, 0.375 ] ],
+            "assignment": "M"
+          },
+          {
+            "faces": [ 12, 4 ],
+            "paper": [ [ 0.875, 0.875 ], [ 1.0, 0.9375 ] ],
+            "table": [ [ 0.875, 0.375 ], [ 1.0, 0.3125 ] ],
+            "assignment": "M"
+          }
+        ]
+      },
+      "9": {
+        "name": "m2",
+        "axiom": "axiom1",
+        "sources": [ ".p3", ".f2" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:41:1-49",
+        "segments": [
+          {
+            "faces": [ 1, 15 ],
+            "paper": [ [ 0.875, 0.125 ], [ 0.9375, 0.0 ] ],
+            "table": [ [ 0.375, 0.125 ], [ 0.3125, 0.0 ] ],
+            "assignment": "M"
+          },
+          {
+            "faces": [ 0, 14 ],
+            "paper": [ [ 0.625, 0.625 ], [ 0.875, 0.125 ] ],
+            "table": [ [ 0.625, 0.625 ], [ 0.375, 0.125 ] ],
+            "assignment": "M"
+          }
+        ]
+      },
+      "4": {
+        "name": "s3",
+        "axiom": "axiom1",
+        "sources": [ ".p3", ".p4" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:36:1-49",
+        "segments": [
+          {
+            "faces": [ 5, 10 ],
+            "paper": [ [ 0.375, 0.625 ], [ 0.625, 0.625 ] ],
+            "table": [ [ 0.375, 0.625 ], [ 0.625, 0.625 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "5": {
+        "name": "s4",
+        "axiom": "axiom1",
+        "sources": [ ".p4", ".p1" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:37:1-49",
+        "segments": [
+          {
+            "faces": [ 19, 11 ],
+            "paper": [ [ 0.375, 0.375 ], [ 0.375, 0.625 ] ],
+            "table": [ [ 0.375, 0.375 ], [ 0.375, 0.625 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "12": {
+        "name": "k4",
+        "axiom": "axiom1",
+        "sources": [ ".p4", ".e4" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:44:1-49",
+        "segments": [
+          {
+            "faces": [ 18, 13 ],
+            "paper": [ [ 0.375, 0.625 ], [ 0.1875, 1.0 ] ],
+            "table": [ [ 0.375, 0.625 ], [ 0.5625, 1.0 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "13": {
+        "name": "m4",
+        "axiom": "axiom1",
+        "sources": [ ".p1", ".f4" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:45:1-49",
+        "segments": [
+          {
+            "faces": [ 17, 19 ],
+            "paper": [ [ 0.375, 0.375 ], [ 0.125, 0.875 ] ],
+            "table": [ [ 0.375, 0.375 ], [ 0.625, 0.875 ] ],
+            "assignment": "M"
+          },
+          {
+            "faces": [ 16, 18 ],
+            "paper": [ [ 0.125, 0.875 ], [ 0.0625, 1.0 ] ],
+            "table": [ [ 0.625, 0.875 ], [ 0.6875, 1.0 ] ],
+            "assignment": "M"
+          }
+        ]
+      },
+      "7": {
+        "name": "m1",
+        "axiom": "axiom1",
+        "sources": [ ".p2", ".f1" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:39:1-49",
+        "segments": [
+          {
+            "faces": [ 7, 3 ],
+            "paper": [ [ 0.125, 0.125 ], [ 0.0, 0.0625 ] ],
+            "table": [ [ 0.125, 0.625 ], [ 0.0, 0.6875 ] ],
+            "assignment": "M"
+          },
+          {
+            "faces": [ 6, 2 ],
+            "paper": [ [ 0.625, 0.375 ], [ 0.125, 0.125 ] ],
+            "table": [ [ 0.625, 0.375 ], [ 0.125, 0.625 ] ],
+            "assignment": "M"
+          }
+        ]
+      },
+      "3": {
+        "name": "s2",
+        "axiom": "axiom1",
+        "sources": [ ".p2", ".p3" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:35:1-49",
+        "segments": [
+          {
+            "faces": [ 8, 14 ],
+            "paper": [ [ 0.625, 0.375 ], [ 0.625, 0.625 ] ],
+            "table": [ [ 0.625, 0.375 ], [ 0.625, 0.625 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "8": {
+        "name": "k2",
+        "axiom": "axiom1",
+        "sources": [ ".p2", ".e2" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:40:1-49",
+        "segments": [
+          {
+            "faces": [ 15, 6 ],
+            "paper": [ [ 0.625, 0.375 ], [ 0.8125, 0.0 ] ],
+            "table": [ [ 0.625, 0.375 ], [ 0.4375, 0.0 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "6": {
+        "name": "k1",
+        "axiom": "axiom1",
+        "sources": [ ".p1", ".e1" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:38:1-49",
+        "segments": [
+          {
+            "faces": [ 3, 17 ],
+            "paper": [ [ 0.375, 0.375 ], [ 0.0, 0.1875 ] ],
+            "table": [ [ 0.375, 0.375 ], [ 0.0, 0.5625 ] ],
+            "assignment": "V"
+          }
+        ]
+      },
+      "2": {
+        "name": "s1",
+        "axiom": "axiom1",
+        "sources": [ ".p1", ".p2" ],
+        "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:34:1-49",
+        "segments": [
+          {
+            "faces": [ 9, 2 ],
+            "paper": [ [ 0.375, 0.375 ], [ 0.625, 0.375 ] ],
+            "table": [ [ 0.375, 0.375 ], [ 0.625, 0.375 ] ],
+            "assignment": "V"
+          }
+        ]
+      }
+    },
+    "faces": {
+      "0": {
+        "vertices": [
+          [ 1.0, 0.0 ], [ 1.0, 0.8125 ], [ 0.625, 0.625 ], [ 0.875, 0.125 ]
+        ],
+        "flap": 1
+      },
+      "1": {
+        "vertices": [ [ 0.9375, 0.0 ], [ 1.0, 0.0 ], [ 0.875, 0.125 ] ],
+        "flap": 1
+      },
+      "2": {
+        "vertices": [ [ 0.625, 0.375 ], [ 0.375, 0.375 ], [ 0.125, 0.125 ] ],
+        "flap": 3
+      },
+      "3": {
+        "vertices": [
+          [ 0.375, 0.375 ],
+          [ 0.0, 0.1875 ],
+          [ 0.0, 0.0625 ],
+          [ 0.125, 0.125 ]
+        ],
+        "flap": 3
+      },
+      "4": {
+        "vertices": [
+          [ 0.625, 0.625 ],
+          [ 1.0, 0.8125 ],
+          [ 1.0, 0.9375 ],
+          [ 0.875, 0.875 ]
+        ],
+        "flap": 5
+      },
+      "5": {
+        "vertices": [ [ 0.625, 0.625 ], [ 0.875, 0.875 ], [ 0.375, 0.625 ] ],
+        "flap": 5
+      },
+      "6": {
+        "vertices": [
+          [ 0.625, 0.375 ], [ 0.125, 0.125 ], [ 0.0, 0.0 ], [ 0.8125, 0.0 ]
+        ],
+        "flap": 7
+      },
+      "7": {
+        "vertices": [ [ 0.125, 0.125 ], [ 0.0, 0.0625 ], [ 0.0, 0.0 ] ],
+        "flap": 7
+      },
+      "8": {
+        "vertices": [ [ 0.625, 0.375 ], [ 0.625, 0.625 ], [ 0.5, 0.5 ] ],
+        "flap": 11
+      },
+      "9": {
+        "vertices": [ [ 0.375, 0.375 ], [ 0.625, 0.375 ], [ 0.5, 0.5 ] ],
+        "flap": 11
+      },
+      "10": {
+        "vertices": [ [ 0.375, 0.625 ], [ 0.5, 0.5 ], [ 0.625, 0.625 ] ],
+        "flap": 11
+      },
+      "11": {
+        "vertices": [ [ 0.375, 0.625 ], [ 0.375, 0.375 ], [ 0.5, 0.5 ] ],
+        "flap": 11
+      },
+      "12": {
+        "vertices": [ [ 0.875, 0.875 ], [ 1.0, 0.9375 ], [ 1.0, 1.0 ] ],
+        "flap": 13
+      },
+      "13": {
+        "vertices": [
+          [ 0.1875, 1.0 ], [ 0.375, 0.625 ], [ 0.875, 0.875 ], [ 1.0, 1.0 ]
+        ],
+        "flap": 13
+      },
+      "14": {
+        "vertices": [ [ 0.625, 0.375 ], [ 0.875, 0.125 ], [ 0.625, 0.625 ] ],
+        "flap": 15
+      },
+      "15": {
+        "vertices": [
+          [ 0.625, 0.375 ],
+          [ 0.8125, 0.0 ],
+          [ 0.9375, 0.0 ],
+          [ 0.875, 0.125 ]
+        ],
+        "flap": 15
+      },
+      "16": {
+        "vertices": [ [ 0.125, 0.875 ], [ 0.0625, 1.0 ], [ 0.0, 1.0 ] ],
+        "flap": 17
+      },
+      "17": {
+        "vertices": [
+          [ 0.0, 0.1875 ], [ 0.375, 0.375 ], [ 0.125, 0.875 ], [ 0.0, 1.0 ]
+        ],
+        "flap": 17
+      },
+      "18": {
+        "vertices": [
+          [ 0.375, 0.625 ],
+          [ 0.1875, 1.0 ],
+          [ 0.0625, 1.0 ],
+          [ 0.125, 0.875 ]
+        ],
+        "flap": 19
+      },
+      "19": {
+        "vertices": [ [ 0.375, 0.375 ], [ 0.375, 0.625 ], [ 0.125, 0.875 ] ],
+        "flap": 19
+      }
+    },
+    "points": {
+      "a": { "face": null, "flap": null },
+      "b": { "face": null, "flap": null },
+      "c": { "face": null, "flap": null },
+      "d": { "face": null, "flap": null },
+      "e1": { "face": null, "flap": null },
+      "e2": { "face": null, "flap": null },
+      "e3": { "face": null, "flap": null },
+      "e4": { "face": null, "flap": null },
+      "f1": { "face": null, "flap": null },
+      "f2": { "face": null, "flap": null },
+      "f3": { "face": null, "flap": null },
+      "f4": { "face": null, "flap": null },
+      "o": { "face": null, "flap": null },
+      "p1": { "face": null, "flap": null },
+      "p2": { "face": null, "flap": null },
+      "p3": { "face": null, "flap": null },
+      "p4": { "face": null, "flap": null }
+    },
+    "edges": {
+      "ab": {
+        "name": "ab",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 1 ],
+            "paper": [ [ 0.9375, 0.0 ], [ 1.0, 0.0 ] ],
+            "table": [ [ 0.3125, 0.0 ], [ 0.35, -0.05 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 6 ],
+            "paper": [ [ 0.0, 0.0 ], [ 0.8125, 0.0 ] ],
+            "table": [ [ -0.05, 0.65 ], [ 0.4375, 0.0 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 15 ],
+            "paper": [ [ 0.8125, 0.0 ], [ 0.9375, 0.0 ] ],
+            "table": [ [ 0.4375, 0.0 ], [ 0.3125, 0.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "da": {
+        "name": "da",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 3 ],
+            "paper": [ [ 0.0, 0.1875 ], [ 0.0, 0.0625 ] ],
+            "table": [ [ 0.0, 0.5625 ], [ 0.0, 0.6875 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 7 ],
+            "paper": [ [ 0.0, 0.0625 ], [ 0.0, 0.0 ] ],
+            "table": [ [ 0.0, 0.6875 ], [ -0.05, 0.65 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 17 ],
+            "paper": [ [ 0.0, 1.0 ], [ 0.0, 0.1875 ] ],
+            "table": [ [ 0.65, 1.05 ], [ 0.0, 0.5625 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "bc": {
+        "name": "bc",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 0 ],
+            "paper": [ [ 1.0, 0.0 ], [ 1.0, 0.8125 ] ],
+            "table": [ [ 0.35, -0.05 ], [ 1.0, 0.4375 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 4 ],
+            "paper": [ [ 1.0, 0.8125 ], [ 1.0, 0.9375 ] ],
+            "table": [ [ 1.0, 0.4375 ], [ 1.0, 0.3125 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 12 ],
+            "paper": [ [ 1.0, 0.9375 ], [ 1.0, 1.0 ] ],
+            "table": [ [ 1.0, 0.3125 ], [ 1.05, 0.35 ] ],
+            "assignment": "B"
+          }
+        ]
+      },
+      "cd": {
+        "name": "cd",
+        "assignment": "B",
+        "segments": [
+          {
+            "faces": [ 13 ],
+            "paper": [ [ 1.0, 1.0 ], [ 0.1875, 1.0 ] ],
+            "table": [ [ 1.05, 0.35 ], [ 0.5625, 1.0 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 16 ],
+            "paper": [ [ 0.0625, 1.0 ], [ 0.0, 1.0 ] ],
+            "table": [ [ 0.6875, 1.0 ], [ 0.65, 1.05 ] ],
+            "assignment": "B"
+          },
+          {
+            "faces": [ 18 ],
+            "paper": [ [ 0.1875, 1.0 ], [ 0.0625, 1.0 ] ],
+            "table": [ [ 0.5625, 1.0 ], [ 0.6875, 1.0 ] ],
+            "assignment": "B"
+          }
+        ]
+      }
+    }
+  },
+  "beloch:vertices_names": [
+    "b", "e3", "p3", null, "f2", "p2", "p1", null, "e1", "f1", "f3", null,
+    "p4", "a", "e2", "o", "c", "e4", null, "f4", "d"
+  ],
+  "beloch:named_points": {
+    "a": {
+      "paper": [ 0.0, 0.0 ],
+      "table": [ -0.05, 0.65 ],
+      "step": 0,
+      "statement": null
+    },
+    "b": {
+      "paper": [ 1.0, 0.0 ],
+      "table": [ 0.35, -0.05 ],
+      "step": 0,
+      "statement": null
+    },
+    "c": {
+      "paper": [ 1.0, 1.0 ],
+      "table": [ 1.05, 0.35 ],
+      "step": 0,
+      "statement": null
+    },
+    "d": {
+      "paper": [ 0.0, 1.0 ],
+      "table": [ 0.65, 1.05 ],
+      "step": 0,
+      "statement": null
+    },
+    "e1": {
+      "paper": [ 0.0, 0.1875 ],
+      "table": [ 0.0, 0.5625 ],
+      "step": 0,
+      "statement": 7
+    },
+    "e2": {
+      "paper": [ 0.8125, 0.0 ],
+      "table": [ 0.4375, 0.0 ],
+      "step": 0,
+      "statement": 9
+    },
+    "e3": {
+      "paper": [ 1.0, 0.8125 ],
+      "table": [ 1.0, 0.4375 ],
+      "step": 0,
+      "statement": 11
+    },
+    "e4": {
+      "paper": [ 0.1875, 1.0 ],
+      "table": [ 0.5625, 1.0 ],
+      "step": 0,
+      "statement": 13
+    },
+    "f1": {
+      "paper": [ 0.0, 0.0625 ],
+      "table": [ 0.0, 0.6875 ],
+      "step": 0,
+      "statement": 8
+    },
+    "f2": {
+      "paper": [ 0.9375, 0.0 ],
+      "table": [ 0.3125, 0.0 ],
+      "step": 0,
+      "statement": 10
+    },
+    "f3": {
+      "paper": [ 1.0, 0.9375 ],
+      "table": [ 1.0, 0.3125 ],
+      "step": 0,
+      "statement": 12
+    },
+    "f4": {
+      "paper": [ 0.0625, 1.0 ],
+      "table": [ 0.6875, 1.0 ],
+      "step": 0,
+      "statement": 14
+    },
+    "o": {
+      "paper": [ 0.5, 0.5 ],
+      "table": [ 0.5, 0.5 ],
+      "step": 0,
+      "statement": 6
+    },
+    "p1": {
+      "paper": [ 0.375, 0.375 ],
+      "table": [ 0.375, 0.375 ],
+      "step": 0,
+      "statement": 2
+    },
+    "p2": {
+      "paper": [ 0.625, 0.375 ],
+      "table": [ 0.625, 0.375 ],
+      "step": 0,
+      "statement": 4
+    },
+    "p3": {
+      "paper": [ 0.625, 0.625 ],
+      "table": [ 0.625, 0.625 ],
+      "step": 0,
+      "statement": 3
+    },
+    "p4": {
+      "paper": [ 0.375, 0.625 ],
+      "table": [ 0.375, 0.625 ],
+      "step": 0,
+      "statement": 5
+    }
+  },
+  "beloch:named_lines": {
+    "ac": { "coeffs": [ -0.3, -1.1, -0.7 ], "step": 0, "statement": 0 },
+    "bd": { "coeffs": [ 1.1, -0.3, 0.4 ], "step": 0, "statement": 1 },
+    "k1": {
+      "coeffs": [ 0.1875, 0.375, 0.2109375 ],
+      "step": 0,
+      "statement": 19
+    },
+    "k2": {
+      "coeffs": [ -0.375, 0.1875, -0.1640625 ],
+      "step": 0,
+      "statement": 21
+    },
+    "k3": {
+      "coeffs": [ -0.1875, -0.375, -0.3515625 ],
+      "step": 0,
+      "statement": 23
+    },
+    "k4": {
+      "coeffs": [ 0.375, -0.1875, 0.0234375 ],
+      "step": 0,
+      "statement": 25
+    },
+    "m1": {
+      "coeffs": [ 0.3125, 0.625, 0.4296875 ],
+      "step": 0,
+      "statement": 20
+    },
+    "m2": {
+      "coeffs": [ -0.625, 0.3125, -0.1953125 ],
+      "step": 0,
+      "statement": 22
+    },
+    "m3": {
+      "coeffs": [ -0.3125, -0.625, -0.5078125 ],
+      "step": 0,
+      "statement": 24
+    },
+    "m4": {
+      "coeffs": [ 0.625, -0.3125, 0.1171875 ],
+      "step": 0,
+      "statement": 26
+    },
+    "s1": { "coeffs": [ 0.0, -0.25, -0.09375 ], "step": 0, "statement": 15 },
+    "s2": { "coeffs": [ 0.25, 0.0, 0.15625 ], "step": 0, "statement": 16 },
+    "s3": { "coeffs": [ 0.0, 0.25, 0.15625 ], "step": 0, "statement": 17 },
+    "s4": { "coeffs": [ -0.25, 0.0, -0.09375 ], "step": 0, "statement": 18 }
+  },
+  "beloch:named_lines_frame": "creasePattern",
+  "beloch:marks": [],
+  "beloch:free": {
+    "p1": {
+      "t": "3/8",
+      "endpoints": [ [ 0.0, 0.0 ], [ 1.0, 1.0 ] ],
+      "source_line": 19
+    },
+    "p3": {
+      "t": "3/8",
+      "endpoints": [ [ 1.0, 1.0 ], [ 0.0, 0.0 ] ],
+      "source_line": 20
+    },
+    "p2": {
+      "t": "3/8",
+      "endpoints": [ [ 1.0, 0.0 ], [ 0.0, 1.0 ] ],
+      "source_line": 21
+    },
+    "p4": {
+      "t": "3/8",
+      "endpoints": [ [ 0.0, 1.0 ], [ 1.0, 0.0 ] ],
+      "source_line": 22
+    },
+    "o": {
+      "t": "1/2",
+      "endpoints": [ [ 0.0, 0.0 ], [ 1.0, 1.0 ] ],
+      "source_line": 23
+    },
+    "e1": {
+      "t": "3/16",
+      "endpoints": [ [ 0.0, 0.0 ], [ 0.0, 1.0 ] ],
+      "source_line": 25
+    },
+    "f1": {
+      "t": "1/16",
+      "endpoints": [ [ 0.0, 0.0 ], [ 0.0, 1.0 ] ],
+      "source_line": 26
+    },
+    "e2": {
+      "t": "3/16",
+      "endpoints": [ [ 1.0, 0.0 ], [ 0.0, 0.0 ] ],
+      "source_line": 27
+    },
+    "f2": {
+      "t": "1/16",
+      "endpoints": [ [ 1.0, 0.0 ], [ 0.0, 0.0 ] ],
+      "source_line": 28
+    },
+    "e3": {
+      "t": "3/16",
+      "endpoints": [ [ 1.0, 1.0 ], [ 1.0, 0.0 ] ],
+      "source_line": 29
+    },
+    "f3": {
+      "t": "1/16",
+      "endpoints": [ [ 1.0, 1.0 ], [ 1.0, 0.0 ] ],
+      "source_line": 30
+    },
+    "e4": {
+      "t": "3/16",
+      "endpoints": [ [ 0.0, 1.0 ], [ 1.0, 1.0 ] ],
+      "source_line": 31
+    },
+    "f4": {
+      "t": "1/16",
+      "endpoints": [ [ 0.0, 1.0 ], [ 1.0, 1.0 ] ],
+      "source_line": 32
+    }
+  },
+  "beloch:statements": [
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.0, 0.0 ],
+        "b": [ 1.0, 1.0 ],
+        "line": [ 1.0, -1.0, 0.0 ],
+        "intent": "V",
+        "crease_id": 0
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 17,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 1.0, 0.0 ],
+        "b": [ 0.0, 1.0 ],
+        "line": [ 1.0, 1.0, 1.0 ],
+        "intent": "V",
+        "crease_id": 1
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 18,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 19,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:19:1-34",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 20,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:20:1-34",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 21,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:21:1-34",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 22,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:22:1-34",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 23,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:23:1-33",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 25,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:25:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 26,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:26:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 27,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:27:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 28,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:28:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 29,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:29:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 30,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:30:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 31,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:31:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 32,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:32:1-35",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.375, 0.375 ],
+        "b": [ 0.625, 0.375 ],
+        "line": [ 0.0, -0.25, -0.09375 ],
+        "intent": "V",
+        "crease_id": 2
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 34,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:34:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.625, 0.375 ],
+        "b": [ 0.625, 0.625 ],
+        "line": [ 0.25, 0.0, 0.15625 ],
+        "intent": "V",
+        "crease_id": 3
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 35,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:35:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.625, 0.625 ],
+        "b": [ 0.375, 0.625 ],
+        "line": [ 0.0, 0.25, 0.15625 ],
+        "intent": "V",
+        "crease_id": 4
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 36,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:36:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.375, 0.625 ],
+        "b": [ 0.375, 0.375 ],
+        "line": [ -0.25, 0.0, -0.09375 ],
+        "intent": "V",
+        "crease_id": 5
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 37,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:37:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.375, 0.375 ],
+        "b": [ 0.0, 0.1875 ],
+        "line": [ -0.1875, 0.375, 0.0703125 ],
+        "intent": "V",
+        "crease_id": 6
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 38,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:38:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.625, 0.375 ],
+        "b": [ 0.0, 0.0625 ],
+        "line": [ -0.3125, 0.625, 0.0390625 ],
+        "intent": "V",
+        "crease_id": 7
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 39,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:39:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.625, 0.375 ],
+        "b": [ 0.8125, 0.0 ],
+        "line": [ -0.375, -0.1875, -0.3046875 ],
+        "intent": "V",
+        "crease_id": 8
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 40,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:40:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.8125, 0.0 ],
+          "line": [ -0.375, -0.1875, -0.3046875 ],
+          "intent": "V",
+          "crease_id": 8
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.625, 0.625 ],
+        "b": [ 0.9375, 0.0 ],
+        "line": [ -0.625, -0.3125, -0.5859375 ],
+        "intent": "V",
+        "crease_id": 9
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 41,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:41:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.8125, 0.0 ],
+          "line": [ -0.375, -0.1875, -0.3046875 ],
+          "intent": "V",
+          "crease_id": 8
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.9375, 0.0 ],
+          "line": [ -0.625, -0.3125, -0.5859375 ],
+          "intent": "V",
+          "crease_id": 9
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.625, 0.625 ],
+        "b": [ 1.0, 0.8125 ],
+        "line": [ 0.1875, -0.375, -0.1171875 ],
+        "intent": "V",
+        "crease_id": 10
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 42,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:42:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.8125, 0.0 ],
+          "line": [ -0.375, -0.1875, -0.3046875 ],
+          "intent": "V",
+          "crease_id": 8
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.9375, 0.0 ],
+          "line": [ -0.625, -0.3125, -0.5859375 ],
+          "intent": "V",
+          "crease_id": 9
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 1.0, 0.8125 ],
+          "line": [ 0.1875, -0.375, -0.1171875 ],
+          "intent": "V",
+          "crease_id": 10
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.375, 0.625 ],
+        "b": [ 1.0, 0.9375 ],
+        "line": [ 0.3125, -0.625, -0.2734375 ],
+        "intent": "V",
+        "crease_id": 11
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 43,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:43:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.8125, 0.0 ],
+          "line": [ -0.375, -0.1875, -0.3046875 ],
+          "intent": "V",
+          "crease_id": 8
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.9375, 0.0 ],
+          "line": [ -0.625, -0.3125, -0.5859375 ],
+          "intent": "V",
+          "crease_id": 9
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 1.0, 0.8125 ],
+          "line": [ 0.1875, -0.375, -0.1171875 ],
+          "intent": "V",
+          "crease_id": 10
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 1.0, 0.9375 ],
+          "line": [ 0.3125, -0.625, -0.2734375 ],
+          "intent": "V",
+          "crease_id": 11
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.375, 0.625 ],
+        "b": [ 0.1875, 1.0 ],
+        "line": [ 0.375, 0.1875, 0.2578125 ],
+        "intent": "V",
+        "crease_id": 12
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 44,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:44:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.8125, 0.0 ],
+          "line": [ -0.375, -0.1875, -0.3046875 ],
+          "intent": "V",
+          "crease_id": 8
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.9375, 0.0 ],
+          "line": [ -0.625, -0.3125, -0.5859375 ],
+          "intent": "V",
+          "crease_id": 9
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 1.0, 0.8125 ],
+          "line": [ 0.1875, -0.375, -0.1171875 ],
+          "intent": "V",
+          "crease_id": 10
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 1.0, 0.9375 ],
+          "line": [ 0.3125, -0.625, -0.2734375 ],
+          "intent": "V",
+          "crease_id": 11
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.1875, 1.0 ],
+          "line": [ 0.375, 0.1875, 0.2578125 ],
+          "intent": "V",
+          "crease_id": 12
+        }
+      ]
+    },
+    {
+      "mark": {
+        "kind": "seg",
+        "a": [ 0.375, 0.375 ],
+        "b": [ 0.0625, 1.0 ],
+        "line": [ 0.625, 0.3125, 0.3515625 ],
+        "intent": "V",
+        "crease_id": 13
+      },
+      "kind": "mark",
+      "parent": null,
+      "source_line": 45,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:45:1-49",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.625, 0.375 ],
+          "line": [ 0.0, -0.25, -0.09375 ],
+          "intent": "V",
+          "crease_id": 2
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.625, 0.625 ],
+          "line": [ 0.25, 0.0, 0.15625 ],
+          "intent": "V",
+          "crease_id": 3
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.375, 0.625 ],
+          "line": [ 0.0, 0.25, 0.15625 ],
+          "intent": "V",
+          "crease_id": 4
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.375, 0.375 ],
+          "line": [ -0.25, 0.0, -0.09375 ],
+          "intent": "V",
+          "crease_id": 5
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0, 0.1875 ],
+          "line": [ -0.1875, 0.375, 0.0703125 ],
+          "intent": "V",
+          "crease_id": 6
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.0, 0.0625 ],
+          "line": [ -0.3125, 0.625, 0.0390625 ],
+          "intent": "V",
+          "crease_id": 7
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.375 ],
+          "b": [ 0.8125, 0.0 ],
+          "line": [ -0.375, -0.1875, -0.3046875 ],
+          "intent": "V",
+          "crease_id": 8
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 0.9375, 0.0 ],
+          "line": [ -0.625, -0.3125, -0.5859375 ],
+          "intent": "V",
+          "crease_id": 9
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.625, 0.625 ],
+          "b": [ 1.0, 0.8125 ],
+          "line": [ 0.1875, -0.375, -0.1171875 ],
+          "intent": "V",
+          "crease_id": 10
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 1.0, 0.9375 ],
+          "line": [ 0.3125, -0.625, -0.2734375 ],
+          "intent": "V",
+          "crease_id": 11
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.625 ],
+          "b": [ 0.1875, 1.0 ],
+          "line": [ 0.375, 0.1875, 0.2578125 ],
+          "intent": "V",
+          "crease_id": 12
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.375, 0.375 ],
+          "b": [ 0.0625, 1.0 ],
+          "line": [ 0.625, 0.3125, 0.3515625 ],
+          "intent": "V",
+          "crease_id": 13
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 47,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:47:1-51:21",
+      "frame_index": 1,
+      "kept_marks": []
+    }
+  ],
+  "beloch:references": [
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:19:15-19",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:20:15-19",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:21:15-19",
+      "crease_id": 1
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:22:15-19",
+      "crease_id": 1
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:23:14-18",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:25:15-19",
+      "edge": "da"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:26:15-19",
+      "edge": "da"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:27:15-19",
+      "edge": "ab"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:28:15-19",
+      "edge": "ab"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:29:15-19",
+      "edge": "bc"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:30:15-19",
+      "edge": "bc"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:31:15-19",
+      "edge": "cd"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:32:15-19",
+      "edge": "cd"
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:47:15-19",
+      "crease_id": 5
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:47:29-33",
+      "crease_id": 2
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:47:43-47",
+      "crease_id": 6
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:47:57-61",
+      "crease_id": 13
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:48:15-19",
+      "crease_id": 2
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:48:29-33",
+      "crease_id": 3
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:48:43-47",
+      "crease_id": 8
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:48:57-61",
+      "crease_id": 7
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:49:15-19",
+      "crease_id": 3
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:49:29-33",
+      "crease_id": 4
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:49:43-47",
+      "crease_id": 10
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:49:57-61",
+      "crease_id": 9
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:50:15-19",
+      "crease_id": 4
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:50:29-33",
+      "crease_id": 5
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:50:43-47",
+      "crease_id": 12
+    },
+    {
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:50:57-61",
+      "crease_id": 11
+    }
+  ],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:1:9-29"
+        }
+      ]
+    }
+  ],
+  "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
+      "faceOrders": [],
+      "beloch:source_line": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.35, -0.05 ],
+        [ 1.0, 0.4375 ],
+        [ 0.625, 0.625 ],
+        [ 0.375, 0.125 ],
+        [ 0.3125, 0.0 ],
+        [ 0.625, 0.375 ],
+        [ 0.375, 0.375 ],
+        [ 0.125, 0.625 ],
+        [ 0.0, 0.5625 ],
+        [ 0.0, 0.6875 ],
+        [ 1.0, 0.3125 ],
+        [ 0.875, 0.375 ],
+        [ 0.375, 0.625 ],
+        [ -0.05, 0.65 ],
+        [ 0.4375, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 1.05, 0.35 ],
+        [ 0.5625, 1.0 ],
+        [ 0.625, 0.875 ],
+        [ 0.6875, 1.0 ],
+        [ 0.65, 1.05 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 3 ],
+        [ 3, 0 ],
+        [ 4, 0 ],
+        [ 3, 4 ],
+        [ 5, 6 ],
+        [ 6, 7 ],
+        [ 7, 5 ],
+        [ 6, 8 ],
+        [ 8, 9 ],
+        [ 9, 7 ],
+        [ 1, 10 ],
+        [ 10, 11 ],
+        [ 11, 2 ],
+        [ 11, 12 ],
+        [ 12, 2 ],
+        [ 7, 13 ],
+        [ 13, 14 ],
+        [ 14, 5 ],
+        [ 9, 13 ],
+        [ 5, 2 ],
+        [ 2, 15 ],
+        [ 15, 5 ],
+        [ 15, 6 ],
+        [ 12, 15 ],
+        [ 12, 6 ],
+        [ 10, 16 ],
+        [ 16, 11 ],
+        [ 17, 12 ],
+        [ 16, 17 ],
+        [ 5, 3 ],
+        [ 14, 4 ],
+        [ 18, 19 ],
+        [ 19, 20 ],
+        [ 20, 18 ],
+        [ 6, 18 ],
+        [ 20, 8 ],
+        [ 17, 19 ],
+        [ 18, 12 ]
+      ],
+      "edges_assignment": [
+        "B", "V", "M", "F", "B", "M", "V", "F", "M", "V", "B", "M", "B", "M",
+        "F", "M", "V", "F", "B", "V", "B", "V", "F", "F", "F", "F", "V", "B",
+        "F", "V", "B", "F", "B", "M", "B", "F", "M", "B", "B", "F"
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, -180.0, 0.0, 0.0, -180.0, 180.0, 0.0, -180.0, 180.0, 0.0,
+        -180.0, 0.0, -180.0, 0.0, -180.0, 180.0, 0.0, 0.0, 180.0, 0.0, 180.0,
+        0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, -180.0,
+        0.0, 0.0, -180.0, 0.0, 0.0, 0.0
+      ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 4 ],
+        [ 0, 14 ],
+        [ 0, 1 ],
+        [ 1 ],
+        [ 1, 15 ],
+        [ 2, 9 ],
+        [ 2, 3 ],
+        [ 2, 6 ],
+        [ 3, 17 ],
+        [ 3 ],
+        [ 3, 7 ],
+        [ 4 ],
+        [ 4, 12 ],
+        [ 4, 5 ],
+        [ 5, 13 ],
+        [ 5, 10 ],
+        [ 6, 7 ],
+        [ 6 ],
+        [ 6, 15 ],
+        [ 7 ],
+        [ 8, 14 ],
+        [ 8, 10 ],
+        [ 8, 9 ],
+        [ 9, 11 ],
+        [ 10, 11 ],
+        [ 11, 19 ],
+        [ 12 ],
+        [ 12, 13 ],
+        [ 13, 18 ],
+        [ 13 ],
+        [ 14, 15 ],
+        [ 15 ],
+        [ 16, 18 ],
+        [ 16 ],
+        [ 16, 17 ],
+        [ 17, 19 ],
+        [ 17 ],
+        [ 18 ],
+        [ 18, 19 ]
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2, 3 ],
+        [ 4, 0, 3 ],
+        [ 5, 6, 7 ],
+        [ 6, 8, 9, 7 ],
+        [ 2, 1, 10, 11 ],
+        [ 2, 11, 12 ],
+        [ 5, 7, 13, 14 ],
+        [ 7, 9, 13 ],
+        [ 5, 2, 15 ],
+        [ 6, 5, 15 ],
+        [ 12, 15, 2 ],
+        [ 12, 6, 15 ],
+        [ 11, 10, 16 ],
+        [ 17, 12, 11, 16 ],
+        [ 5, 3, 2 ],
+        [ 5, 14, 4, 3 ],
+        [ 18, 19, 20 ],
+        [ 8, 6, 18, 20 ],
+        [ 12, 17, 19, 18 ],
+        [ 6, 12, 18 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 0.6, 0.8, -0.8, 0.6, -0.25, 0.75 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.25, 0.75 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.0, 0.75 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.0, 0.75 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.25 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.25 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.05, 0.65 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.05, 0.65 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.35, 0.55 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.35, 0.55 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.25, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.25, 0.0 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.15, 0.45 ],
+        [ 0.6, 0.8, -0.8, 0.6, -0.15, 0.45 ],
+        [ -1.0, 0.0, 0.0, 1.0, 0.75, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 0.75, 0.0 ]
+      ],
+      "faceOrders": [
+        [ 0, 2, -1 ],
+        [ 0, 4, 1 ],
+        [ 0, 5, 1 ],
+        [ 0, 6, 1 ],
+        [ 0, 8, 1 ],
+        [ 0, 9, 1 ],
+        [ 0, 12, -1 ],
+        [ 0, 13, -1 ],
+        [ 0, 14, -1 ],
+        [ 0, 15, -1 ],
+        [ 1, 6, 1 ],
+        [ 1, 15, -1 ],
+        [ 2, 6, -1 ],
+        [ 2, 9, 1 ],
+        [ 2, 11, 1 ],
+        [ 2, 14, 1 ],
+        [ 2, 17, 1 ],
+        [ 2, 19, -1 ],
+        [ 3, 6, -1 ],
+        [ 3, 7, -1 ],
+        [ 3, 17, 1 ],
+        [ 4, 12, -1 ],
+        [ 4, 13, -1 ],
+        [ 5, 8, 1 ],
+        [ 5, 10, 1 ],
+        [ 5, 13, -1 ],
+        [ 5, 14, -1 ],
+        [ 5, 17, -1 ],
+        [ 5, 19, 1 ],
+        [ 6, 9, 1 ],
+        [ 6, 11, 1 ],
+        [ 6, 14, 1 ],
+        [ 6, 15, 1 ],
+        [ 6, 17, 1 ],
+        [ 6, 19, -1 ],
+        [ 7, 17, 1 ],
+        [ 8, 13, -1 ],
+        [ 8, 14, 1 ],
+        [ 9, 14, 1 ],
+        [ 10, 13, -1 ],
+        [ 10, 17, -1 ],
+        [ 10, 19, 1 ],
+        [ 11, 17, -1 ],
+        [ 11, 19, 1 ],
+        [ 13, 14, -1 ],
+        [ 13, 16, -1 ],
+        [ 13, 17, -1 ],
+        [ 13, 18, 1 ],
+        [ 13, 19, 1 ],
+        [ 16, 18, -1 ],
+        [ 17, 18, -1 ],
+        [ 17, 19, -1 ]
+      ],
+      "beloch:source_line": 47,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p3", ".e3" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:42:1-49",
+          "statement": 27,
+          "name": "k3",
+          "crease_id": 10
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p3", ".f2" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:41:1-49",
+          "statement": 27,
+          "name": "m2",
+          "crease_id": 9
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p3", ".f2" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:41:1-49",
+          "statement": 27,
+          "name": "m2",
+          "crease_id": 9
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p1", ".p2" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:34:1-49",
+          "statement": 27,
+          "name": "s1",
+          "crease_id": 2
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p2", ".f1" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:39:1-49",
+          "statement": 27,
+          "name": "m1",
+          "crease_id": 7
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p1", ".e1" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:38:1-49",
+          "statement": 27,
+          "name": "k1",
+          "crease_id": 6
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p2", ".f1" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:39:1-49",
+          "statement": 27,
+          "name": "m1",
+          "crease_id": 7
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p4", ".f3" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:43:1-49",
+          "statement": 27,
+          "name": "m3",
+          "crease_id": 11
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p4", ".f3" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:43:1-49",
+          "statement": 27,
+          "name": "m3",
+          "crease_id": 11
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p3", ".p4" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:36:1-49",
+          "statement": 27,
+          "name": "s3",
+          "crease_id": 4
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p2", ".e2" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:40:1-49",
+          "statement": 27,
+          "name": "k2",
+          "crease_id": 8
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p2", ".p3" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:35:1-49",
+          "statement": 27,
+          "name": "s2",
+          "crease_id": 3
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p4", ".p1" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:37:1-49",
+          "statement": 27,
+          "name": "s4",
+          "crease_id": 5
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:17:1-29",
+          "statement": 0,
+          "name": "ac",
+          "crease_id": 0
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p4", ".e4" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:44:1-49",
+          "statement": 27,
+          "name": "k4",
+          "crease_id": 12
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p1", ".f4" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:45:1-49",
+          "statement": 27,
+          "name": "m4",
+          "crease_id": 13
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p1", ".f4" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:45:1-49",
+          "statement": 27,
+          "name": "m4",
+          "crease_id": 13
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "packages/core/tests/cases/collapse/flatten-square-twist.bel:18:1-29",
+          "statement": 1,
+          "name": "bd",
+          "crease_id": 1
+        }
+      ],
+      "beloch:vertices_names": [
+        "b", "e3", "p3", null, "f2", "p2", "p1", null, "e1", "f1", "f3",
+        null, "p4", "a", "e2", "o", "c", "e4", null, "f4", "d"
+      ]
+    }
+  ]
+}

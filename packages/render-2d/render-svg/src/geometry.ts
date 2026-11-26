@@ -2,8 +2,28 @@
 // @beloch/scene (parseFold + pickStep), not here.
 import type { Assignment, FaceOrder, FoldScene, Frame, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
 
+// The layer relation as pairs [lo, hi], face lo lying below face hi.
+// FOLD's faceOrders sign is relative to g's NORMAL, not global +z:
+// [f,g,+1] means f lies on the side g's normal points to. So f is globally
+// BELOW g iff (s < 0) === gUp, where gUp = g faces up (front side up, i.e.
+// det_sign > 0 ⇔ folded winding CCW). faceUp[g] carries that; when omitted
+// (all faces up) the sign reads as plain global order.
+function stackPairs(faceOrders: FaceOrder[], faceUp?: boolean[]): [number, number][] {
+  const pairs: [number, number][] = [];
+  for (const [f, g, s] of faceOrders || []) {
+    if (s === 0) continue;
+    const gUp = faceUp ? faceUp[g] : true;
+    pairs.push((s < 0) === gUp ? [f, g] : [g, f]);
+  }
+  return pairs;
+}
+
 // Topologically sort faces into a bottom->top order consistent with faceOrders.
-// [f,g,s]: s=+1 => f above g (edge g->f), s=-1 => f below g (edge f->g).
+// Every face appears once. A cycle of the relation, such as the four flaps of
+// a square twist that each lie over the next, has no such order: where every
+// face left waits on another, the lowest-indexed one comes next, and the
+// order puts it below faces that lie under it. A painter that must not draw
+// those faces over it reads the relation itself (facesAbove).
 export function linearExtension(
   faceOrders: FaceOrder[],
   nFaces: number,
@@ -11,26 +31,17 @@ export function linearExtension(
 ): number[] {
   const adj: number[][] = Array.from({ length: nFaces }, () => []);
   const indeg = new Array(nFaces).fill(0);
-  const addEdge = (lo: number, hi: number) => { adj[lo]!.push(hi); indeg[hi]++; }; // lo below hi
-  // FOLD's faceOrders sign is relative to g's NORMAL, not global +z:
-  // [f,g,+1] means f lies on the side g's normal points to. So f is globally
-  // BELOW g iff (s < 0) === gUp, where gUp = g faces up (front side up, i.e.
-  // det_sign > 0 ⇔ folded winding CCW). faceUp[g] carries that; when omitted
-  // (all faces up) the sign reads as plain global order.
-  for (const [f, g, s] of faceOrders || []) {
-    if (s === 0) continue;
-    const gUp = faceUp ? faceUp[g] : true;
-    if ((s < 0) === gUp) addEdge(f, g); // f below g
-    else addEdge(g, f);                 // g below f
-  }
+  for (const [lo, hi] of stackPairs(faceOrders, faceUp)) { adj[lo]!.push(hi); indeg[hi]++; }
   const queue: number[] = [];
   for (let i = 0; i < nFaces; i++) if (indeg[i] === 0) queue.push(i);
   queue.sort((a, b) => a - b); // deterministic tie-break
+  const done = new Array<boolean>(nFaces).fill(false);
   const order: number[] = [];
-  while (queue.length) {
-    const n = queue.shift()!;
+  while (order.length < nFaces) {
+    const n = queue.length ? queue.shift()! : done.indexOf(false);
+    done[n] = true;
     order.push(n);
-    for (const m of adj[n]!) if (--indeg[m] === 0) {
+    for (const m of adj[n]!) if (--indeg[m] === 0 && !done[m]) {
       // insert keeping ascending index among ready nodes (stable, deterministic)
       let k = queue.length;
       while (k > 0 && queue[k - 1]! > m) k--;
@@ -38,6 +49,15 @@ export function linearExtension(
     }
   }
   return order;
+}
+
+// above[f]: the faces that overlap face f and lie above it. faceOrders holds
+// one triple per pair of overlapping faces, so this is the whole relation,
+// cycles included, where linearExtension can only approximate it.
+export function facesAbove(faceOrders: FaceOrder[], nFaces: number, faceUp?: boolean[]): Set<number>[] {
+  const above = Array.from({ length: nFaces }, () => new Set<number>());
+  for (const [lo, hi] of stackPairs(faceOrders, faceUp)) above[lo]!.add(hi);
+  return above;
 }
 
 // "a-b" key (sorted) -> edge index, for mapping a face outline segment to a
@@ -216,40 +236,21 @@ export function paperClippedIntervals(a: Vec2, b: Vec2, F: number[][], V: Vec2[]
 }
 
 // One span per covering face: the sub-intervals of a→b that lie inside a face
-// strictly above (or, for the bottom view, below) `refPos` in the stack order.
-// Overlapping spans are kept apart, so a caller can either merge them
-// (coveredIntervals) or count them (coverageDepth).
-function coveringSpans(
-  a: Vec2,
-  b: Vec2,
-  order: number[],
-  refPos: number,
-  F: number[][],
-  V: Vec2[],
-  below: boolean,
-): [number, number][] {
+// of `cover`, the faces that lie over the segment in the view. Overlapping
+// spans are kept apart, so a caller can either merge them (coveredIntervals)
+// or count them (coverageDepth).
+function coveringSpans(a: Vec2, b: Vec2, cover: number[], F: number[][], V: Vec2[]): [number, number][] {
   const spans: [number, number][] = [];
-  const from = below ? refPos - 1 : refPos + 1;
-  const step = below ? -1 : 1;
-  for (let pos = from; pos >= 0 && pos < order.length; pos += step) {
-    for (const iv of segInsideIntervals(a, b, F[order[pos]!]!.map((i) => V[i]!))) spans.push(iv);
+  for (const f of cover) {
+    for (const iv of segInsideIntervals(a, b, F[f]!.map((i) => V[i]!))) spans.push(iv);
   }
   return spans;
 }
 
-// Sub-intervals of segment a→b hidden by a face strictly above (or, for the
-// bottom view, below) `refPos` in the stack order — the union over all such
-// covering faces.
-export function coveredIntervals(
-  a: Vec2,
-  b: Vec2,
-  order: number[],
-  refPos: number,
-  F: number[][],
-  V: Vec2[],
-  below = false,
-): [number, number][] {
-  const spans = coveringSpans(a, b, order, refPos, F, V, below);
+// Sub-intervals of segment a→b hidden by a face of `cover`: the union over
+// all such covering faces.
+export function coveredIntervals(a: Vec2, b: Vec2, cover: number[], F: number[][], V: Vec2[]): [number, number][] {
+  const spans = coveringSpans(a, b, cover, F, V);
   if (!spans.length) return spans;
   spans.sort((p, q) => p[0] - q[0]);
   const merged: [number, number][] = [spans[0]!.slice() as [number, number]];
@@ -272,16 +273,8 @@ export interface DepthSpan {
 // uses it to say how deeply an edge is buried rather than only that it is.
 // Cost is O(cuts x spans); both are the count of faces above the edge, which
 // is small enough that a sweep structure would only add code.
-export function coverageDepth(
-  a: Vec2,
-  b: Vec2,
-  order: number[],
-  refPos: number,
-  F: number[][],
-  V: Vec2[],
-  below = false,
-): DepthSpan[] {
-  const spans = coveringSpans(a, b, order, refPos, F, V, below);
+export function coverageDepth(a: Vec2, b: Vec2, cover: number[], F: number[][], V: Vec2[]): DepthSpan[] {
+  const spans = coveringSpans(a, b, cover, F, V);
   if (!spans.length) return [];
   const cuts = [...new Set(spans.flat())].sort((p, q) => p - q);
   const out: DepthSpan[] = [];
@@ -299,23 +292,10 @@ export function coverageDepth(
   return out;
 }
 
-// True if point `p` is hidden by a face strictly above (or, for the bottom
-// view, below) `refPos` in the stack order — the point analogue of
+// True if point `p` is hidden by a face of `cover`: the point analogue of
 // coveredIntervals, used to occlude named-vertex dots and labels.
-export function pointCovered(
-  p: Vec2,
-  order: number[],
-  refPos: number,
-  F: number[][],
-  V: Vec2[],
-  below = false,
-): boolean {
-  const from = below ? refPos - 1 : refPos + 1;
-  const step = below ? -1 : 1;
-  for (let pos = from; pos >= 0 && pos < order.length; pos += step) {
-    if (pointInPolygon(p, F[order[pos]!]!.map((i) => V[i]!))) return true;
-  }
-  return false;
+export function pointCovered(p: Vec2, cover: number[], F: number[][], V: Vec2[]): boolean {
+  return cover.some((f) => pointInPolygon(p, F[f]!.map((i) => V[i]!)));
 }
 
 // clip line ax+by=c to bounding box
