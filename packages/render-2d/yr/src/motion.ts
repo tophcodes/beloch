@@ -95,7 +95,7 @@ export function unionCentroid(polys: Vec2[][]): Vec2 {
     }
     for (const piece of pieces) {
       const a = signedArea(piece);
-      if (polys.slice(0, i).some((q) => overlapArea(piece, q) > EPS)) continue;
+      if (Math.abs(a) <= EPS || polys.slice(0, i).some((q) => overlapArea(piece, q) > EPS)) continue;
       // the centroid of a polygon, from its signed area
       let px = 0, py = 0;
       piece.forEach(([x1, y1], k) => {

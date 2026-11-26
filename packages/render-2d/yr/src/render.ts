@@ -21,43 +21,41 @@ import type { FoldMotion, Petal } from "./motion";
 import { panels } from "./panels";
 import type { Panel } from "./panels";
 import { rotationSymbol, turnFraction } from "./rotation";
-import { gapFrame, openFrame } from "./open";
+import { bandFrame, gapFrame } from "./open";
 
 export interface YrOptions {
   theme?: Partial<Theme> | undefined;
-  // the angle, in degrees, every fold stands open by in the drawing (see
-  // openFrame); absent, OPEN; 0 draws the state flat
-  open?: number | undefined;
-  // whether two raw edges that meet are drawn apart (see gapFrame); absent,
-  // they are
-  gap?: boolean | undefined;
+  // whether every state is drawn as it lies, its layers on each other;
+  // absent, each is drawn let go (see bandFrame and gapFrame)
+  flat?: boolean | undefined;
 }
-
-// The angle every fold stands open by unless the caller sets another, in
-// degrees.
-const OPEN = 2;
 
 // The stroke width of the outline, in page units (see panelLineStyle).
 const OUTLINE = 2.2;
 
-// The width of a gap between two raw edges at its open end, and the largest
-// step between two layers, in outline widths: a step narrower than a line
-// would merge two edges into one.
-const GAP = 3.6, STEP = 1.5;
+// How far a covered layer's raw edge shifts down the page, in outline widths:
+// on an edge at 45 degrees the band it shows is this over the square root of
+// two wide.
+const BAND = 5;
 
-// The state of a panel with its meeting raw edges drawn apart and drawn open
-// by `angle` degrees, a unit of height moving a point straight up the page,
-// and the panel's view with every point it places moved with the paper under
-// it. Up the page keeps a model that is symmetric about the vertical
-// symmetric in the drawing.
-function openPanel(scene: FoldScene, base: number, angle: number, gap: boolean, view: PanelView) {
+// The width of the gap between two raw edges that meet, at its open end, in
+// outline widths (see gapFrame).
+const GAP = 4.5;
+
+// How far apart, in page pixels, two pieces of a crease may lie after the
+// paper moves and still be drawn as one line: less than a stroke width.
+const JOIN = 1;
+
+// The state of a panel drawn let go, and the panel's view with every point it
+// places moved with the paper under it.
+function openPanel(scene: FoldScene, base: number, view: PanelView) {
   const scale = view.layout.tx(1) - view.layout.tx(0);
   const flat = scene.steps[base]!.frame;
-  const up: Vec2 = [Math.sin(view.turn), Math.cos(view.turn)];   // the page's up, on the table
-  const apart = gap ? gapFrame(flat, (GAP * OUTLINE) / scale) : { frame: flat, move: (p: Vec2) => p };
-  const opened = openFrame(apart.frame, angle, up, (STEP * OUTLINE) / scale);
-  const frame = opened.frame;
-  const move = (p: Vec2) => opened.move(apart.move(p));
+  const apart = gapFrame(flat, (GAP * OUTLINE) / scale);
+  const d = (BAND * OUTLINE) / scale;
+  const band = bandFrame(apart.frame, [-Math.sin(view.turn) * d, -Math.cos(view.turn) * d]);   // down the page, on the table
+  const frame = band.frame;
+  const move = (p: Vec2) => band.move(apart.move(p));
 
   // the flat view is affine: its inverse from the images of three points
   const o = view.flatPx([0, 0]), ex = view.flatPx([1, 0]), ey = view.flatPx([0, 1]);
@@ -67,35 +65,57 @@ function openPanel(scene: FoldScene, base: number, angle: number, gap: boolean, 
     return [(dx * (ey[1] - o[1]) - dy * (ey[0] - o[0])) / det, ((ex[0] - o[0]) * dy - (ex[1] - o[1]) * dx) / det];
   };
   const movePage = (p: Vec2): Vec2 => view.flatPx(move(unpx(p)));
-  // A crease is a straight line between its two ends: the ends of all its
-  // pieces together move with the paper under them, and every piece lies on
-  // the line between the moved ends. Creases that meet at a point meet there
-  // after the move too.
-  const lines = (segs: [Vec2, Vec2][]): [Vec2, Vec2][] => {
-    const runs = new Map<string, { u: Vec2; ts: number[]; members: number[] }>();
-    segs.forEach(([p, q], i) => {
-      let a = Math.atan2(q[1] - p[1], q[0] - p[0]);
-      if (a < 0) a += Math.PI;
-      if (a >= Math.PI - 1e-6) a -= Math.PI;
-      const u: Vec2 = [Math.cos(a), Math.sin(a)];
-      const key = `${Math.round(a * 1e3)},${Math.round((-u[1] * p[0] + u[0] * p[1]) * 2)}`;
-      const run = runs.get(key) ?? { u, ts: [], members: [] };
-      run.ts.push(u[0] * p[0] + u[1] * p[1], u[0] * q[0] + u[1] * q[1]);
-      run.members.push(i);
-      runs.set(key, run);
+  // A crease moves with the paper it lies on: it is cut where it crosses an
+  // edge of the state, and each piece moves with the topmost face under it.
+  // Pieces that still meet end to end on one line after the move, to within
+  // JOIN, are drawn as one line; where the paper parts, the crease parts with
+  // it and does not run across the gap.
+  const edges = flat.edgesVertices.map(([a, b]): [Vec2, Vec2] => [view.flatPx(flat.vertices[a]!), view.flatPx(flat.vertices[b]!)]);
+  const pieces = ([p, q]: [Vec2, Vec2]): [Vec2, Vec2][] => {
+    const d: Vec2 = [q[0] - p[0], q[1] - p[1]];
+    const cuts = [0, 1];
+    for (const [a, b] of edges) {
+      const e: Vec2 = [b[0] - a[0], b[1] - a[1]];
+      const den = d[0] * e[1] - d[1] * e[0];
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((a[0] - p[0]) * e[1] - (a[1] - p[1]) * e[0]) / den;
+      const u = ((a[0] - p[0]) * d[1] - (a[1] - p[1]) * d[0]) / den;
+      if (t > 1e-6 && t < 1 - 1e-6 && u > -1e-6 && u < 1 + 1e-6) cuts.push(t);
+    }
+    cuts.sort((x, y) => x - y);
+    const at = (t: number): Vec2 => [p[0] + d[0] * t, p[1] + d[1] * t];
+    // an end moves as the face under the piece moves just inside that end
+    const moveEnd = (t: number, inside: number): Vec2 => {
+      const e = at(t), i = at(inside), m = movePage(i);
+      return [e[0] + m[0] - i[0], e[1] + m[1] - i[1]];
+    };
+    return cuts.slice(1).flatMap((t1, k): [Vec2, Vec2][] => {
+      const t0 = cuts[k]!, inside = 1e-4 * (t1 - t0);
+      return t1 - t0 < 1e-6 ? [] : [[moveEnd(t0, t0 + inside), moveEnd(t1, t1 - inside)]];
     });
-    const out = [...segs];
-    for (const { u, ts, members } of runs.values()) {
-      const t0 = Math.min(...ts), t1 = Math.max(...ts);
-      const [p0] = segs[members[0]!]!;
-      const base = u[0] * p0[0] + u[1] * p0[1];
-      const at = (t: number): Vec2 => [p0[0] + u[0] * (t - base), p0[1] + u[1] * (t - base)];
-      const [a, b] = [movePage(at(t0)), movePage(at(t1))];
-      const along = (p: Vec2): Vec2 => {
-        const s = t1 > t0 ? (u[0] * p[0] + u[1] * p[1] - t0) / (t1 - t0) : 0;
-        return [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s];
-      };
-      for (const i of members) out[i] = [along(segs[i]![0]), along(segs[i]![1])];
+  };
+  const dist = (a: Vec2, b: Vec2) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const off = (x: Vec2, a: Vec2, b: Vec2) => {
+    const l = dist(a, b);
+    return l ? Math.abs((x[0] - a[0]) * (b[1] - a[1]) - (x[1] - a[1]) * (b[0] - a[0])) / l : dist(x, a);
+  };
+  // two pieces that meet end to end and run on as one line, the one from a
+  // through the joint to b, or null
+  const join = (s: [Vec2, Vec2], r: [Vec2, Vec2]): [Vec2, Vec2] | null => {
+    for (const [a, x] of [[s[0], s[1]], [s[1], s[0]]] as [Vec2, Vec2][]) {
+      for (const [y, b] of [[r[0], r[1]], [r[1], r[0]]] as [Vec2, Vec2][]) {
+        if (dist(x, y) < JOIN && off(x, a, b) < JOIN && off(y, a, b) < JOIN && dist(a, b) > Math.max(dist(a, x), dist(y, b))) return [a, b];
+      }
+    }
+    return null;
+  };
+  const lines = (segs: [Vec2, Vec2][]): [Vec2, Vec2][] => {
+    const out = segs.flatMap(pieces);
+    for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const both = join(out[i]!, out[j]!);
+        if (both) { out[i] = both; out.splice(j, 1); j = i; }
+      }
     }
     return out;
   };
@@ -176,10 +196,15 @@ function merged(segs: [Vec2, Vec2][]): [Vec2, Vec2][] {
   return out;
 }
 
+// The middle of `segs`, each weighted by its length; null when they have none.
 const mid = (segs: [Vec2, Vec2][]): Vec2 | null => {
-  if (segs.length === 0) return null;
-  const pts = segs.flat();
-  return [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
+  const len = segs.reduce((s, [p, q]) => s + Math.hypot(q[0] - p[0], q[1] - p[1]), 0);
+  if (len === 0) return null;
+  const sum = segs.reduce((s, [p, q]): Vec2 => {
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    return [s[0] + ((p[0] + q[0]) / 2) * l, s[1] + ((p[1] + q[1]) / 2) * l];
+  }, [0, 0]);
+  return [sum[0] / len, sum[1] / len];
 };
 
 // A mark's fold-and-unfold arrow, in page pixels: the paper on the side of
@@ -366,7 +391,8 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
       const segs = merged(toPx(segmentsInFrame(frame, [[w.mark.a, w.mark.b]])));
       for (const s of segs) out.push(valleyLine(s, w.index, ink));
       const faces = frame.facesVertices.map((f) => f.map((i) => view.px(frame.vertices[i]!)));
-      const [tail, tip] = markArrow(faces, segs[0]!);
+      const longest = segs.reduce((m, s) => (Math.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1]) > Math.hypot(m[1][0] - m[0][0], m[1][1] - m[0][1]) ? s : m));
+      const [tail, tip] = markArrow(faces, longest);
       out.push(foldAndUnfoldArrow(tail, tip, mid(segs), ink));
     }
   }
@@ -480,8 +506,7 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
   const halves = panelHalves(scene, list);
   const drawn = list.map((panel, i) => {
     const flat = panelView(scene, panel, halves[i]);
-    const [angle, gap] = [opts.open ?? OPEN, opts.gap ?? true];
-    const opened = angle || gap ? openPanel(scene, panel.base, angle, gap, flat) : { scene, view: flat };
+    const opened = opts.flat ? { scene, view: flat } : openPanel(scene, panel.base, flat);
     const view = opened.view;
     const doc = renderFolded(opened.scene, {
       step: String(panel.base), orient: true, layout: view.layout,

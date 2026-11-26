@@ -1,28 +1,12 @@
-// A flat state drawn as if it had been let go: its folds stand open by a
-// small angle and the layers lift apart, seen from slightly above
-// [lang1991conventions, Part I, "Show multiple layers whenever possible"].
-//
-// Every vertex gets a height. Wherever two faces overlap, the upper one in the
-// layer order lies higher than the lower one at each corner of their overlap,
-// by tan(angle) times that corner's distance from the nearest hinge
-// that wraps around one of the two, and by no more than `step`: no gap opens
-// at a hinge, nor between the layers inside it, and far from a hinge a layer
-// keeps its shape and moves by `step`. A vertex is one point of the paper, so a hinge keeps one
-// height and stays in place. The heights
-// are relaxed toward zero under these conditions: each round pushes the
-// vertices of every violated pair apart, and a share of every height decays,
-// until no condition is violated. The faces bend slightly where rigid paper
-// could not open, and no layer passes through another. The drawing moves
-// every vertex by its height along a direction the caller gives, and every
-// other point, such as a crease or an arrow, with the topmost face under it.
-//
-// Known limitation: the relaxation runs a fixed number of rounds, and a crease
-// or an arrow moves by its two ends, so one that crosses faces of different
-// heights runs straight where the paper under it bends.
+// A flat state drawn as if it had been let go, so that stacked layers show
+// [lang1991conventions, Part I, "Show multiple layers whenever possible";
+// lang2011secrets, Fig. 2.31]: a covered layer shifts down the page beside
+// the raw edge of the layer above it (bandFrame), and two raw edges that meet
+// part (gapFrame).
 import type { Frame, Vec2 } from "@beloch/scene";
-import { linearExtension, pointInPolygonInclusive, sideUp } from "@beloch/render-svg";
+import { linearExtension, sideUp } from "@beloch/render-svg";
 
-const ROUNDS = 400, DECAY = 0.02, EPS = 1e-9;
+const EPS = 1e-9;
 
 // A point of a face as weights over the face's vertices.
 type Weights = [number, number][];
@@ -43,119 +27,98 @@ function weights(face: number[], V: Vec2[], p: Vec2): Weights | null {
   return null;
 }
 
-const segmentDistance = (p: Vec2, a: Vec2, b: Vec2): number => {
-  const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
-  const t = l2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)) : 0;
-  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
-};
-
-// Where the segment from a to b crosses the segment from c to d, if it does.
-function crossing(a: Vec2, b: Vec2, c: Vec2, d: Vec2): Vec2 | null {
-  const r: Vec2 = [b[0] - a[0], b[1] - a[1]], s: Vec2 = [d[0] - c[0], d[1] - c[1]];
-  const den = r[0] * s[1] - r[1] * s[0];
-  if (Math.abs(den) < EPS) return null;
-  const t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / den;
-  const u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / den;
-  return t > EPS && t < 1 - EPS && u > EPS && u < 1 - EPS ? [a[0] + t * r[0], a[1] + t * r[1]] : null;
-}
-
-interface Contact { upper: Weights; lower: Weights; gap: number; }
-
-// `frame` drawn let go, with every fold open by `angle` degrees, no step
-// between two layers larger than `step`, and a unit of height moving a point
-// by `lift` on the table, with `move`, which carries a point of the flat state
-// to where the drawing puts it.
-export function openFrame(
-  frame: Frame, angle: number, lift: Vec2, step = Infinity,
-): { frame: Frame; move: (p: Vec2) => Vec2 } {
+// `frame` with the raw edges of every layer that another layer covers shifted
+// by `shift`, so that the next layer down shows as one band beside the top
+// layer's raw edge, its corners straight below the top layer's corners when
+// `shift` points down the page [lang2011secrets, Fig. 2.31]. A layer no other
+// layer covers stays where it is. A covered layer's corner moves by `shift`
+// where one of its raw edges lies under a raw edge of the highest layer above
+// that stretch; any other corner stays, so a layer tucked under a fold does
+// not show. All covered layers shift alike, so their edges fall on one line
+// and no more than one band shows; an edge that faces against `shift` moves
+// under the layer above it and hides. A vertex that layers share moves with
+// each of them: where they move by different amounts it becomes one vertex
+// per amount. Returns `move`, which carries a point of the flat state with
+// the topmost face under it.
+export function bandFrame(frame: Frame, shift: Vec2): { frame: Frame; move: (p: Vec2) => Vec2 } {
   const V = frame.vertices, F = frame.facesVertices;
   const faceUp = F.map((f) => sideUp(f.map((i) => V[i]!)) === "front");
   const order = linearExtension(frame.faceOrders, F.length, faceUp);
-  const height = new Map(order.map((f, i) => [f, i]));   // 0 is the bottom layer
-  const slope = Math.tan((angle * Math.PI) / 180);
-  // the folded hinges on each face's boundary, with the face across each
-  const key = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
-  const across = new Map<string, number[]>();
-  F.forEach((face, f) => face.forEach((v, k) => {
-    const e = key(v, face[(k + 1) % face.length]!);
-    across.set(e, [...(across.get(e) ?? []), f]);
-  }));
-  const folded = new Set(frame.edgesVertices.flatMap(([a, b], e) => {
-    const k = frame.edgesAssignment[e];
-    return k === "M" || k === "V" ? [key(a, b)] : [];
-  }));
-  interface Hinge { seg: [Vec2, Vec2]; other: number; }
-  const hinges: Hinge[][] = F.map((face, f) => face.flatMap((v, k): Hinge[] => {
-    const w = face[(k + 1) % face.length]!;
-    const other = (across.get(key(v, w)) ?? []).find((g) => g !== f);
-    return folded.has(key(v, w)) && other !== undefined ? [{ seg: [V[v]!, V[w]!], other }] : [];
-  }));
+  const height = new Map(order.map((f, i) => [f, i]));
   const h = (f: number) => height.get(f) ?? 0;
+  const covered = F.map(() => false);
+  for (const [f, g] of frame.faceOrders) covered[h(f) < h(g) ? f : g] = true;
 
-  // A height is linear on each triangle of a face's fan, so the difference of
-  // two faces is linear on each overlap of two of their triangles, and holds
-  // everywhere once it holds at the corners of those overlaps.
-  const fan = (f: number): Vec2[][] =>
-    F[f]!.slice(1, -1).map((_, k) => [V[F[f]![0]!]!, V[F[f]![k + 1]!]!, V[F[f]![k + 2]!]!]);
-  const overlapCorners = (P: Vec2[], Q: Vec2[]): Vec2[] => {
-    const corners: Vec2[] = [
-      ...P.filter((p) => pointInPolygonInclusive(p, Q)),
-      ...Q.filter((q) => pointInPolygonInclusive(q, P)),
-    ];
-    P.forEach((a, i) => Q.forEach((c, j) => {
-      const x = crossing(a, P[(i + 1) % P.length]!, c, Q[(j + 1) % Q.length]!);
-      if (x) corners.push(x);
-    }));
-    return corners;
+  const key = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
+  const edgeIx = new Map(frame.edgesVertices.map(([a, b], e) => [key(a, b), e]));
+  // the boundary edges of every face, with their assignment
+  const sides = F.map((face) => face.map((v, k) => {
+    const w = face[(k + 1) % face.length]!;
+    return { v, w, raw: frame.edgesAssignment[edgeIx.get(key(v, w)) ?? -1] === "B" };
+  }));
+  const along = (a: Vec2, b: Vec2, c: Vec2, d: Vec2) => {
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (l < EPS) return false;
+    const u: Vec2 = [(b[0] - a[0]) / l, (b[1] - a[1]) / l];
+    const off = (p: Vec2) => Math.abs((p[0] - a[0]) * u[1] - (p[1] - a[1]) * u[0]);
+    if (off(c) > 1e-7 || off(d) > 1e-7) return false;
+    const t = (p: Vec2) => (p[0] - a[0]) * u[0] + (p[1] - a[1]) * u[1];
+    return Math.min(l, Math.max(t(c), t(d))) - Math.max(0, Math.min(t(c), t(d))) > 1e-7;
   };
+  // A covered layer's raw edge steps out where the highest layer above it
+  // that has an edge on the same stretch has a raw edge there, so the edge
+  // shows beside that layer's raw edge; under a fold it stays tucked in.
+  const stepsOut = (f: number, v: number, w: number) => {
+    let best = -1, raw = false;
+    sides.forEach((ss, g) => {
+      if (h(g) <= h(f) || h(g) <= best) return;
+      const s = ss.find((x) => along(V[v]!, V[w]!, V[x.v]!, V[x.w]!));
+      if (s) { best = h(g); raw = s.raw; }
+    });
+    return raw;
+  };
+  // each face's step at each of its corners
+  const steps = F.map((face, f): Vec2[] => face.map((v, k) => {
+    if (!covered[f]) return [0, 0];
+    const shows = [face[(k + 1) % face.length]!, face[(k + face.length - 1) % face.length]!].some((w) => {
+      const e = edgeIx.get(key(v, w));
+      return e !== undefined && frame.edgesAssignment[e] === "B" && stepsOut(f, v, w);
+    });
+    return shows ? shift : [0, 0];
+  }));
 
-  // the corners of every overlap, with the gap the upper face keeps there
-  const contacts: Contact[] = [];
-  for (const [f0, g0] of frame.faceOrders) {
-    const [hi, lo] = (height.get(f0) ?? 0) > (height.get(g0) ?? 0) ? [f0, g0] : [g0, f0];
-    const corners = fan(hi).flatMap((P) => fan(lo).flatMap((Q) => overlapCorners(P, Q)));
-    // A hinge closes the gap between the two faces where it wraps around one
-    // of them: a hinge of the upper face to a face at or below the lower one,
-    // or of the lower face to a face at or above the upper one. Two faces no
-    // hinge wraps close toward any hinge of theirs.
-    const wraps = [
-      ...hinges[hi]!.filter(({ other }) => h(other) <= h(lo)),
-      ...hinges[lo]!.filter(({ other }) => h(other) >= h(hi)),
-    ];
-    const pins = (wraps.length ? wraps : [...hinges[hi]!, ...hinges[lo]!]).map(({ seg }) => seg);
-    for (const p of corners) {
-      const upper = weights(F[hi]!, V, p), lower = weights(F[lo]!, V, p);
-      if (!upper || !lower) continue;
-      const d = Math.min(...pins.map(([a, b]) => segmentDistance(p, a, b)));
-      contacts.push({ upper, lower, gap: Math.min(step, slope * (Number.isFinite(d) ? d : 0)) });
-    }
-  }
-
-  // relax: decay every height, then push apart each contact that is violated
-  const z = V.map(() => 0);
-  const at = (w: Weights) => w.reduce((s, [v, t]) => s + t * z[v]!, 0);
-  for (let round = 0; round < ROUNDS; round++) {
-    if (round < ROUNDS / 2) for (let v = 0; v < z.length; v++) z[v]! *= 1 - DECAY;
-    for (const { upper, lower, gap } of contacts) {
-      const c = at(upper) - at(lower) - gap;
-      if (c >= 0) continue;
-      // the step that closes c, spread over the vertices by their weights
-      const norm = upper.reduce((s, [, t]) => s + t * t, 0) + lower.reduce((s, [, t]) => s + t * t, 0);
-      if (norm < EPS) continue;
-      const push = -c / norm;
-      for (const [v, t] of upper) z[v]! += push * t;
-      for (const [v, t] of lower) z[v]! -= push * t;
-    }
-  }
-  // A deep stack would add a step per layer and tilt its top layer out of
-  // shape. Heights above the lowest point are pressed into two steps by a
-  // function that only rises, so a higher point stays higher and no layer
-  // passes through another.
-  const floor = Math.min(0, ...z), ceiling = 2 * step;
-  const press = (h: number) => (Number.isFinite(ceiling) ? ceiling * Math.tanh((h - floor) / ceiling) : h - floor);
-  const shift = (p: Vec2, h: number): Vec2 => [p[0] + press(h) * lift[0], p[1] + press(h) * lift[1]];
-  const moved = V.map((p, v) => shift(p, z[v]!));
-
+  // one vertex per point of the paper and step: the first step at a vertex
+  // keeps its index, every other step gets a new one at the same flat point
+  const flat: Vec2[] = [...V];
+  const moved: Vec2[] = [...V];
+  const names = [...frame.verticesNames];
+  const copies = V.map(() => new Map<string, number>());
+  const faces = F.map((face, f) => face.map((v, k) => {
+    const d = steps[f]![k]!, id = `${d[0].toFixed(9)},${d[1].toFixed(9)}`;
+    const seen = copies[v]!;
+    if (seen.has(id)) return seen.get(id)!;
+    const ix = seen.size === 0 ? v : flat.length;
+    if (ix !== v) { flat.push(V[v]!); moved.push(V[v]!); names.push(null); }
+    moved[ix] = [V[v]![0] + d[0], V[v]![1] + d[1]];
+    seen.set(id, ix);
+    return ix;
+  }));
+  // an edge whose ends a face holds as other vertices gets a copy for that face
+  const edgesVertices = [...frame.edgesVertices], edgesAssignment = [...frame.edgesAssignment];
+  const edgesProvenance = [...frame.edgesProvenance];
+  const edgesFaces = frame.edgesFaces ? frame.edgesFaces.map((fs) => [...fs]) : null;
+  const have = new Set(edgesVertices.map(([a, b]) => key(a, b)));
+  faces.forEach((face, f) => face.forEach((v, k) => {
+    const w = face[(k + 1) % face.length]!;
+    if (have.has(key(v, w))) return;
+    const e = edgeIx.get(key(F[f]![k]!, F[f]![(k + 1) % face.length]!));
+    if (e === undefined) return;
+    have.add(key(v, w));
+    edgesVertices.push([v, w]);
+    edgesAssignment.push(frame.edgesAssignment[e]!);
+    edgesProvenance.push(frame.edgesProvenance[e] ?? null);
+    edgesFaces?.push([f]);
+  }));
   // The center of the bounding box stays where it was, so that a turn about
   // that center places the moved state where it places the flat one.
   const center = (P: Vec2[]): Vec2 => {
@@ -164,23 +127,21 @@ export function openFrame(
   };
   const [c0, c1] = [center(V), center(moved)];
   const back = (p: Vec2): Vec2 => [p[0] + c0[0] - c1[0], p[1] + c0[1] - c1[1]];
-
-  // A point of the table moves with the topmost face that holds it; a point
-  // off the paper moves with the vertex nearest to it.
+  const out: Frame = {
+    ...frame, vertices: moved.map(back), verticesNames: names, facesVertices: faces,
+    edgesVertices, edgesAssignment, edgesProvenance, edgesFaces,
+  };
   const top = [...order].reverse();
   const move = (p: Vec2): Vec2 => {
     for (const f of top) {
-      const w = weights(F[f]!, V, p);
-      if (w) return back(shift(p, w.reduce((s, [v, t]) => s + t * z[v]!, 0)));
+      const w = weights(faces[f]!, flat, p);
+      if (w) return back(w.reduce((s, [v, t]): Vec2 => [s[0] + t * moved[v]![0], s[1] + t * moved[v]![1]], [0, 0]));
     }
-    let near = 0;
-    V.forEach((q, v) => {
-      if (Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.hypot(V[near]![0] - p[0], V[near]![1] - p[1])) near = v;
-    });
-    return back(shift(p, z[near] ?? 0));
+    return back(p);
   };
-  return { frame: { ...frame, vertices: moved.map(back) }, move };
+  return { frame: out, move };
 }
+
 
 // `frame` with every two visible raw edges that meet on one line of the
 // table, from faces on its two sides, drawn apart by a wedge-shaped gap

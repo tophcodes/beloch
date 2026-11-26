@@ -227,7 +227,7 @@ test("a petal fold's lift arrow ends past the paper and short of where the tip l
   const p = petalFold(s, s.writes.at(-1)!)!;
   const tail = view.px(p.tail), landing = view.px(p.head);
   // drawn flat, the view of the panel is the one above
-  const svg = panelSvg(renderYr(s, { open: 0, gap: false }).doc.toString(), list[i]!.number);
+  const svg = panelSvg(renderYr(s, { flat: true }).doc.toString(), list[i]!.number);
   const tip = pathPoints(svg, "valley-arrow").at(-1)!;
   // on the line from the tail to the landing point, short of the landing point
   const along = [landing[0] - tail[0], landing[1] - tail[1]];
@@ -343,7 +343,7 @@ test("an existing crease ends short of the edges it ends on", async () => {
 });
 
 test("an existing crease touches the edge it runs under", async () => {
-  const three = panelSvg(renderYr(await scene("kite"), { open: 0, gap: false }).doc.toString(), "3");
+  const three = panelSvg(renderYr(await scene("kite"), { flat: true }).doc.toString(), "3");
   // drawn flat: the coordinates below are those of the state as it lies
   // the diagonal shows from the top corner down to the edges of the two flaps
   const ends = creaseEnds(three);
