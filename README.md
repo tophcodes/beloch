@@ -112,7 +112,7 @@ reverse (through .hp .ht) (moving .b) as --head
 
 ## Name
 
-Beloch is named after [Margherita Piazzola Beloch][mpb], whose 1936 work
+Beloch is named after [Margherita Piazzolla Beloch][mpb], whose 1936 work
 showed that folding solves general cubic equations. Axiom 7 is the Beloch
 fold.
 
