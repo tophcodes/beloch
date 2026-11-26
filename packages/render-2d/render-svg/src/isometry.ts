@@ -3,7 +3,7 @@
 // occlusion. Orthogonal to `texture` (which decorations get drawn).
 import type { FoldScene, Frame, Vec2 } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";
-import { linearExtension, sideUp } from "./geometry";
+import { facesAbove, linearExtension, sideUp } from "./geometry";
 
 // Which geometry to render: the flat crease-pattern sheet, or a folded step.
 // `turn` rotates the step's drawing counterclockwise by that many radians
@@ -15,6 +15,7 @@ export type Isometry =
 export interface ResolvedFrame {
   frame: Frame;
   order: number[]; // face indices, bottom → top paint order
+  above: Set<number>[]; // per face: the faces that overlap it and lie above it (facesAbove)
   faceUp: boolean[]; // per face: front side up? (front fill vs back fill)
   occlude: boolean; // folded frames occlude; the flat sheet does not
   place: (p: Vec2) => Vec2; // a table point of the step to where `frame` draws it
@@ -58,6 +59,7 @@ export function resolveIsometry(scene: FoldScene, iso: Isometry): ResolvedFrame 
     return {
       frame,
       order: linearExtension(frame.faceOrders, n),
+      above: facesAbove(frame.faceOrders, n),
       faceUp: frame.facesVertices.map(() => true),
       occlude: false,
       place: (p) => p,
@@ -75,5 +77,6 @@ export function resolveIsometry(scene: FoldScene, iso: Isometry): ResolvedFrame 
     (f) => sideUp(f.map((i) => V[i]!)) === "front",
   );
   const order = linearExtension(frame.faceOrders, frame.facesVertices.length, faceUp);
-  return { frame, order, faceUp, occlude: true, place };
+  const above = facesAbove(frame.faceOrders, frame.facesVertices.length, faceUp);
+  return { frame, order, above, faceUp, occlude: true, place };
 }

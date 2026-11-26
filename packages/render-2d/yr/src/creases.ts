@@ -75,7 +75,7 @@ export function existingCreaseSegments(
     const lerp = (t: number): Vec2 => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
     let cursor = 0;
     const visible: [number, number][] = [];
-    for (const [c0, c1] of coveredIntervals(p, q, order, ref, F, V)) {
+    for (const [c0, c1] of coveredIntervals(p, q, order.slice(ref + 1), F, V)) {
       if (c0 - cursor > EPS) visible.push([cursor, c0]);
       cursor = Math.max(cursor, c1);
     }
@@ -86,7 +86,7 @@ export function existingCreaseSegments(
     // does not run on under a higher layer past it.
     const endsOnEdge = (r: Vec2, outward: number): boolean => {
       const beyond: Vec2 = [r[0] + outward * ux * 1e-6, r[1] + outward * uy * 1e-6];
-      if (pointCovered(beyond, order, ref, F, V)) return false;
+      if (pointCovered(beyond, order.slice(ref + 1), F, V)) return false;
       return inkEdges.some((s) => distanceToSegment(r, s) < 1e-7);
     };
     for (const [t0, t1] of visible) {

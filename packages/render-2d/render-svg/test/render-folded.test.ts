@@ -2,7 +2,7 @@ import { test, expect } from "bun:test";
 import { orientationAt, parseFold, SceneError, type Mark } from "@beloch/scene";
 import { renderFolded, WEB_THEME, DEFAULT_THEME } from "@beloch/render-svg";
 import { makeLayout, PAD, SZ } from "../src/layout";
-import { pointInPolygon } from "../src/geometry";
+import { pointInPolygon, sideUp } from "../src/geometry";
 
 const golden = (p: string) =>
   Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
@@ -401,4 +401,98 @@ test("an @orient after the last statement turns the final state", async () => {
   expect(scene.annotations.find((a) => a.key === "orient")!.target).toBeNull();
   expect(orientationAt(scene, 0)).toBe(0);
   expect(orientationAt(scene, 1)).toBeCloseTo(-Math.PI / 2 - Math.atan2(-2, 1), 9);
+});
+
+// The square twist of packages/core/tests/cases/collapse/flatten-square-twist.bel
+// [hull2020, §6.5]: its four flaps lie in a cycle, each over the next, so no
+// bottom-to-top order of whole faces exists, and a drawing that only sorts
+// faces either drops some or paints one over a face that lies above it.
+const twistScene = async () => parseFold(await golden("square-twist.fold"));
+
+// over[f]: the faces that lie over face f as the reader sees the view, read
+// straight from faceOrders (the sign is relative to the second face's normal).
+function overSets(scene: Awaited<ReturnType<typeof twistScene>>, bottom: boolean): Set<number>[] {
+  const frame = scene.steps[scene.steps.length - 1]!.frame;
+  const V = frame.vertices, F = frame.facesVertices;
+  const up = F.map((f) => sideUp(f.map((i) => V[i]!)) === "front");
+  const over = F.map(() => new Set<number>());
+  for (const [f, g, s] of frame.faceOrders) {
+    if (s === 0) continue;
+    const [lo, hi] = (s < 0) === up[g] ? [f, g] : [g, f];
+    if (bottom) over[hi]!.add(lo);
+    else over[lo]!.add(hi);
+  }
+  return over;
+}
+
+for (const view of ["top", "bottom"] as const) {
+  test(`a layer cycle paints every face, each one hidden where a face lies over it (${view})`, async () => {
+    const scene = await twistScene();
+    const faces = scene.steps[scene.steps.length - 1]!.frame.facesVertices.length;
+    const svg = renderFolded(scene, { view }).toString();
+    const painted = [...svg.matchAll(/<polygon [^>]*data-kind="face" data-face-index="(\d+)"[^>]*>/g)]
+      .map((m) => ({ face: Number(m[1]), mask: /mask="url\(#([^)]+)\)"/.exec(m[0])?.[1] }));
+    expect(painted.map((p) => p.face).sort((a, b) => a - b)).toEqual([...Array(faces).keys()]);
+    const cut = new Map<string, Set<number>>(
+      [...svg.matchAll(/<mask id="([^"]+)"[^>]*>(.*?)<\/mask>/g)].map((m) => [
+        m[1]!,
+        new Set([...m[2]!.matchAll(/data-face-index="(\d+)"/g)].map((n) => Number(n[1]))),
+      ]),
+    );
+    const over = overSets(scene, view === "bottom");
+    const at = new Map(painted.map((p, i) => [p.face, i]));
+    for (const p of painted) {
+      for (const g of over[p.face]!) {
+        // g lies over p: either g is painted later, or p leaves g's area out
+        const later = at.get(g)! > at.get(p.face)!;
+        const masked = p.mask !== undefined && cut.get(p.mask)!.has(g);
+        expect({ face: p.face, over: g, hidden: later || masked })
+          .toEqual({ face: p.face, over: g, hidden: true });
+      }
+    }
+  });
+}
+
+// Whether p lies on an edge of poly.
+const onBoundary = (p: [number, number], poly: [number, number][]): boolean =>
+  poly.some((a, i) => {
+    const b = poly[(i + 1) % poly.length]!;
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)));
+    return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy) < 1e-9;
+  });
+
+// A drawn crease line shows where no face lies over the faces it borders.
+test("a layer cycle hides the creases under each flap", async () => {
+  const scene = await twistScene();
+  const frame = scene.steps[scene.steps.length - 1]!.frame;
+  const V = frame.vertices, F = frame.facesVertices;
+  const polys = F.map((f) => f.map((i) => V[i]!));
+  const over = overSets(scene, false);
+  const layout = makeLayout([scene.cp.vertices, ...scene.steps.map((s) => s.frame.vertices)].flat());
+  const world = (px: number, py: number): [number, number] => [
+    layout.minX + ((px - PAD) / SZ) * layout.span,
+    layout.minY + (1 - (py - PAD) / SZ) * layout.span,
+  ];
+  const svg = renderFolded(scene, { hidden: "hide" }).toString();
+  const lines = [...svg.matchAll(/<line [^>]*data-kind="crease"[^>]*x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"/g)];
+  expect(lines.length).toBeGreaterThan(0);
+  for (const m of lines) {
+    const [x1, y1, x2, y2] = [1, 2, 3, 4].map((k) => Number(m[k]));
+    const mid = world((x1! + x2!) / 2, (y1! + y2!) / 2);
+    const own = polys.flatMap((p, f) => (onBoundary(mid, p) ? [f] : []));
+    const inside = polys.flatMap((p, f) => (pointInPolygon(mid, p) && !own.includes(f) ? [f] : []));
+    const buried = inside.filter((c) => own.every((b) => over[b]!.has(c)));
+    expect({ line: m[0].slice(0, 60), buried }).toEqual({ line: m[0].slice(0, 60), buried: [] });
+  }
+});
+
+// A crease that lies flat in the state drawn, such as a construction line the
+// program marked to place a point, is drawn unless hideFlat leaves it out.
+test("hideFlat leaves out the creases that lie flat", async () => {
+  const scene = parseFold(await golden("square-twist.fold"));
+  const flat = (svg: string) => (svg.match(/class="crease-F"/g) ?? []).length;
+  expect(flat(renderFolded(scene).toString())).toBeGreaterThan(0);
+  expect(flat(renderFolded(scene, { hideFlat: true }).toString())).toBe(0);
+  expect(flat(renderFolded(scene, { view: "bottom", hideFlat: true }).toString())).toBe(0);
 });

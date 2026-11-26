@@ -14,6 +14,7 @@ import { turnFrame } from "./isometry";
 export interface FoldedOptions extends RenderOptions {
   view?: "top" | "bottom" | undefined; // default "top"
   hidden?: "dashed" | "hide" | "depth" | undefined; // default "hide"
+  hideFlat?: boolean | undefined; // see SceneOptions.hideFlat
   step?: string | undefined;   // frame index (numeric string); undefined/out-of-range → final state
   markOverlay?: MarkOverlay | undefined; // project these marks onto the step's faces (newest highlighted)
   quiet?: boolean | undefined;        // see SceneOptions.quiet
@@ -54,6 +55,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     },
     view: opts.view,
     hidden: opts.hidden,
+    hideFlat: opts.hideFlat,
     title: opts.title,
     labels: opts.labels,
     annotate: opts.annotate,
