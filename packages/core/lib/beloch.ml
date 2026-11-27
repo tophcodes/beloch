@@ -77,6 +77,7 @@ module State = State
 module Eval = Eval
 module Fold_emit = Fold_emit
 module Collapse = Collapse
+module Axis_fan = Axis_fan
 module Reverse = Reverse
 module Flatten = Flatten
 module Poly = Poly
