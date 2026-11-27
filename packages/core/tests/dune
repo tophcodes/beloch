@@ -87,11 +87,6 @@
  (modules test_session)
  (libraries beloch alcotest yojson zarith str))
 
-(executable
- (name spike_flatten)
- (modules spike_flatten)
- (libraries beloch zarith))
-
 (test
  (name test_annotation)
  (modules test_annotation)
