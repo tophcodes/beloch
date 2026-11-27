@@ -43,8 +43,6 @@ let add_term (p : t) (m : mono) (c : Q.t) : t =
     go p
 
 let add (p : t) (q : t) : t = List.fold_left (fun acc (m, c) -> add_term acc m c) p q
-let neg (p : t) : t = List.map (fun (m, c) -> (m, Q.neg c)) p
-let sub (p : t) (q : t) : t = add p (neg q)
 
 let mul (p : t) (q : t) : t =
   List.fold_left

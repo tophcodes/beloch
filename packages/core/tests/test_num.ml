@@ -275,11 +275,14 @@ let test_poly_isolate_close_roots () =
 
 (* ---- [Mpoly] ---- *)
 
+(* [p - q] in [nvars] variables *)
+let msub nvars p q = Mpoly.add p (Mpoly.mul (Mpoly.const nvars Q.minus_one) q)
+
 let test_mpoly_resultant_constant_free () =
   let nvars = 2 in
   let x = Mpoly.var nvars 0 and y = Mpoly.var nvars 1 in
-  let a = Mpoly.sub x y in
-  let b = Mpoly.sub (Mpoly.mul y y) (Mpoly.const nvars (Q.of_int 2)) in
+  let a = msub nvars x y in
+  let b = msub nvars (Mpoly.mul y y) (Mpoly.const nvars (Q.of_int 2)) in
   let r = Mpoly.resultant a b 1 in
   let p = Mpoly.to_poly_in r 0 in
   Alcotest.(check int) "deg 2" 2 (Poly.degree p);
@@ -289,9 +292,9 @@ let test_mpoly_resultant_constant_free () =
 let test_mpoly_two_var_elim () =
   let nvars = 3 in
   let x = Mpoly.var nvars 0 and y = Mpoly.var nvars 1 and w = Mpoly.var nvars 2 in
-  let p = Mpoly.sub (Mpoly.sub x y) w in
-  let my = Mpoly.sub (Mpoly.mul y y) (Mpoly.const nvars (Q.of_int 2)) in
-  let mw = Mpoly.sub (Mpoly.mul w w) (Mpoly.const nvars (Q.of_int 3)) in
+  let p = msub nvars (msub nvars x y) w in
+  let my = msub nvars (Mpoly.mul y y) (Mpoly.const nvars (Q.of_int 2)) in
+  let mw = msub nvars (Mpoly.mul w w) (Mpoly.const nvars (Q.of_int 3)) in
   let r1 = Mpoly.resultant p my 1 in
   let r2 = Mpoly.resultant r1 mw 2 in
   let poly = Mpoly.to_poly_in r2 0 in
