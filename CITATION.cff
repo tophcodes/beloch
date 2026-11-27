@@ -13,8 +13,8 @@ authors:
     given-names: "Christopher"
     email: "christopher@muehl.dev"
     orcid: "https://orcid.org/0009-0005-4692-078X"
-version: "0.4.0"
-date-released: "2026-09-25"
+version: "0.5.0"
+date-released: "2026-11-27"
 license: MIT
 doi: "10.5281/zenodo.22884252"
 repository-code: "https://github.com/tophcodes/beloch"
