@@ -1,0 +1,21 @@
+@author "Claude (Anthropic)"
+
+; The petal fold of flatten-petal-two-fans.bel without a staying item. A
+; flatten names the part that stays (spec multifold, "A flatten names the
+; part that stays"), so the statement fails before any state is solved.
+
+paper square
+
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+
+.o = --h * --v
+mark (through .c .o) as --mid
+.sr = --ab * --h
+.sl = --da * --v
+
+flatten (fan (--h & .sr) (map .sr onto --mid through .a valley))
+        (fan (--v & .sl) (map .sl onto --mid through .a valley))
+
+; expect error "flatten needs (staying .p)"

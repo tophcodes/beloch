@@ -28,6 +28,14 @@ let e_staying_none = "no sector of the fan holds every staying point"
 let e_staying_several = "the staying points lie in more than one sector"
 let e_staying_off_anchor = "the staying sector holds no material of the anchor"
 
+(* A flatten names the part that stays (spec multifold,
+   "A flatten names the part that stays"). A default stayer, the part that
+   holds the lowest face under the vertex and among those the largest, could
+   be added later; the design of the change drop-outline-ranking under
+   openspec/changes/ weighs it. *)
+let e_staying_missing verb = verb ^ " needs (staying .p)"
+let hint_staying_missing = "name a point in the part that stays"
+
 (* The end of the error of a fan whose moving part holds a layer under the
    vertex that no hinge of the fan folds (spec multifold,
    "A fan moves every part the stayer does not hold"); the message names the

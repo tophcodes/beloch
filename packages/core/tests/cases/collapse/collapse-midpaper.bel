@@ -16,6 +16,6 @@ mark (map --v onto --bc) as --q ; vertical crease at x = 3/4
 ; --h segment reaches the boundary — the flatten sees the full "+" vertex
 ; and the stated all-valley assignment violates Maekawa, as before).
 flatten (--h & #[.q .tm] valley) (--h & --da valley)
-  (--v & --cd valley) (--v & --ab valley)
+  (--v & --cd valley) (--v & --ab valley) (staying .a)
 
 ; expect error "Maekawa"

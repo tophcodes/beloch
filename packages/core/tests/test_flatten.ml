@@ -26,7 +26,7 @@ let vertex_src =
    mark (map .a onto .d) as --h\n\
    mark (map .a onto .b) as --v\n\
    flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-   mountain) (--v & #[.a] mountain) as --r\n"
+   mountain) (--v & #[.a] mountain) (staying .c) as --r\n"
 
 let test_flatten_bind_parses_and_evals () =
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" vertex_src) in
@@ -74,7 +74,7 @@ let test_flatten_unbound_still_parses () =
           mark (map .a onto .d) as --h\n\
           mark (map .a onto .b) as --v\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-          mountain) (--v & #[.a] mountain)\n")
+          mountain) (--v & #[.a] mountain) (staying .c)\n")
   in
   Alcotest.(check int) "unbound flatten still leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
@@ -550,7 +550,7 @@ let swivel_src over =
    .p = free on --fb from .f at 1/10\n\
    .w = free on --ag from .a at 9/10\n\
    flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
-   (--bd & .b mountain) (--bd & .d)\n\
+   (--bd & .b mountain) (--bd & .d) (staying .c)\n\
    flatten (--h & --da) (--s & --da mountain) (--t & --da valley) (--ac & .a \
    valley) (staying .q)"
   ^ over ^ "\n"
@@ -598,7 +598,7 @@ let swivel_base_src items =
    .e = free on --da from .d at 1/4\n\
    .f = free on --da from .a at 1/4\n\
    flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
-   (--bd & .b mountain) (--bd & .d)\n\
+   (--bd & .b mountain) (--bd & .d) (staying .c)\n\
    flatten (--h & --da) (--s & --da mountain) (--t & --da valley) (--ac & .a \
    valley) (staying .q)"
   ^ items ^ "\n"

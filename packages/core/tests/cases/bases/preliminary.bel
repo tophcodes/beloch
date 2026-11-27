@@ -22,7 +22,7 @@ mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
 
 flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab)
-  (--bd & .b mountain) (--bd & .d)
+  (--bd & .b mountain) (--bd & .d) (staying .c)
 
 ; assert steps = 1
 ; assert faces = 6

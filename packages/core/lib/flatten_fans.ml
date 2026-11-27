@@ -650,8 +650,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      parts stay, and the rest is the tip *)
   let part = Fan_paper.parts st ~cut:ray_hinge in
   (* the staying part: the one part that holds every staying point, on its
-     faces or their edges, or the part of largest area on the paper where
-     the statement names none *)
+     faces or their edges *)
   let staying_parts =
     match staying_opt with
     | Some pos -> (
@@ -669,12 +668,9 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | _ ->
             Error.fail ?hint:(Collapse.hint_of Collapse.e_staying_several) span
               Collapse.e_staying_several)
-    | None -> (
-        match Fan_paper.largest st part with
-        | Some k -> [ k ]
-        | None ->
-            Error.fail ~hint:"add (staying .p) with .p in the part that stays" span
-              "two parts of the paper share the largest area, so neither holds still")
+    | None ->
+        Error.fail ~hint:Collapse.hint_staying_missing span
+          (Collapse.e_staying_missing "flatten")
   in
   (* the layer of an `up to` that holds each face, as an index into [inst],
      or -1 *)

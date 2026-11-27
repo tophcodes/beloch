@@ -6,6 +6,6 @@ mark (map .a onto .d) as --h   ; horizontal midline, y = 1/2
 mark (map .a onto .b) as --v   ; vertical midline, x = 1/2
 
 flatten (--h & --bc) (--h & --bc mountain)
-  (--v & --cd) (--v & --ab mountain)
+  (--v & --cd) (--v & --ab mountain) (staying .a)
 
 ; expect error "duplicate ray"

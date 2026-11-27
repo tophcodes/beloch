@@ -397,7 +397,7 @@ mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
 .f = free on --da from .a at 1/4
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 ```
 
 ```{.bel .frag prelude=squash-base}
@@ -486,15 +486,14 @@ puts its emergent ray beside is an error (`` no state has its emergent
 ray beside <point> ``, hint `` name a point in a wedge the emergent ray
 can split ``).
 
-**The stayer.** Without `staying`, the stayer is the wedge of less than a
-half-turn between the folded rays of the first two ray items, so the
-order of those two is part of the fold; the other items stand in any
-order. Two leading rays on one line leave no such wedge
-(`` collinear leading creases don't pick a stayer ``, hint `` add
-(staying .p) ``). With `staying`, the stayer is the one part of the paper
-whose closure holds every named point, and the order of the rays says
-nothing (`` no sector of the fan holds every staying point ``; `` the staying points lie in more than one sector ``, hint
-`` add a point inside the sector that stays ``).
+**The stayer.** Every flatten names its stayer with `staying` (spec
+`multifold`, "A flatten names the part that stays"); without it the
+statement fails before any state is solved (`` flatten needs (staying .p)
+``, hint `` name a point in the part that stays ``). The stayer is the one
+part of the paper whose closure holds every named point, and the items
+stand in any order (`` no sector of the fan holds every staying point ``;
+`` the staying points lie in more than one sector ``, hint `` add a point
+inside the sector that stays ``).
 
 **Resolution.** The vertex of a flatten of ray items is the paper point
 where the bundles of its rays meet
@@ -582,7 +581,7 @@ mark (through .a .c) as --d1
 mark (through .b .d) as --d2
 flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
 
-; expect error "collinear leading creases"
+; expect error "flatten needs (staying .p)"
 ```
 
 **Fans.** A flatten folds several vertices in one move when its rays
@@ -621,10 +620,10 @@ vertices in both fans. A crease one fan names and the other does not is
 an error (`` a crease between two vertices is a ray of both fans ``). A
 part of the paper moves when no path on the paper joins it to the part
 that stays without crossing a ray; a path crosses creases and never runs
-through a single point. Without `staying`, the part of largest area on the
-paper stays. `staying` fixes where the result lies on the table; where the
-faces lie relative to each other does not depend on it. A statement whose moving part would drag along a
-layer that no ray reaches fails, and the error names that layer. Each ray
+through a single point. `staying` names the part that stays, as for one
+fan, and fixes where the result lies on the table; where the faces lie
+relative to each other does not depend on it. A statement whose moving
+part would drag along a layer that no ray reaches fails, and the error names that layer. Each ray
 is scored on the layers its pieces cross.
 
 More than one state the fans fold to is an error
@@ -759,7 +758,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 :::
 
 ::: {.figure #fig-lang-flip caption="`flip` takes no item at all. It turns the sheet over, so the fold that follows is placed on what was the back, and `--g` comes out mountain where the same fold on an unflipped sheet would read valley." views="cp folded" highlight="--g"}

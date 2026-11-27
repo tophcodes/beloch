@@ -1,14 +1,10 @@
 @author "Claude (Anthropic)"
 
-; (staying <flap>) overrides the leading-element convention. Same incenter
-; rabbit ear as flatten-rabbit-ear-toward-a.bel, but the leading pair is
-; SWAPPED to (--eb .b)(--ea .a) — an order whose <180 arc is a small folding
-; sector, not the stayer, so the bare convention folds the ear past the sheet
-; (see flatten-order-load-bearing.bel). Naming the stationary strip material
-; with (staying .d) restores the correct stayer regardless of element order;
-; (emergent beside .a) then picks the a-side mirror, as in the
-; flatten-rabbit-ear-toward-a.bel case. `.t = --ear * --ab` errors unless the a-side ear was
-; picked (the c-side ear line is parallel to --ab).
+; The order of the items carries no meaning. Same incenter rabbit ear as
+; flatten-rabbit-ear-toward-a.bel with the first two items swapped:
+; (staying .d) names the part that stays, and (emergent beside .a) picks the
+; a-side mirror as there. `.t = --ear * --ab` errors unless the a-side ear
+; was picked (the c-side ear line is parallel to --ab).
 
 paper square
 

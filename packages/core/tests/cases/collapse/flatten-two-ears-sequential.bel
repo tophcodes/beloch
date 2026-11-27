@@ -2,10 +2,8 @@
 
 ; Fish base as TWO sequential rabbit ears: triangle abd flattened at its
 ; incenter, then triangle cbd at its own — two independent single-vertex
-; statements on opposite sides of the b-d line. Bare convention form (design
-; 2026-07-17 §Segment inference): the leading pair (--l1)(--l2) fixes the
-; stayer arc and the stayer filter picks --ray's surviving segment on its own,
-; so the &-selectors drop.
+; statements on opposite sides of the b-d line. Each names the part that
+; stays, and the lines --l1, --l2, --l3 and --l4 stand without `&`.
 ;
 ; STATUS (2026-07-18): CLOSES. The per-ray crease-adjacent orientation
 ; representative (lib/collapse.ml mk_sector_geoms) lets the second ear read parity

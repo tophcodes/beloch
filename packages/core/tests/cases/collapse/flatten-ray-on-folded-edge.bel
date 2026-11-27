@@ -7,8 +7,7 @@
 ; along --y through the stack. The fan stands at .p, and `up to #[.d]` folds
 ; both layers under it as one stack (spec multifold, "A fan with up to folds
 ; every layer down to a flap"); each ray names its halves in both layers: --m
-; and --da touch both, and `\ --m`, `\ --da` keep the other halves. Without
-; staying, the part of largest area holds still.
+; and --da touch both, and `\ --m`, `\ --da` keep the other halves.
 
 paper square
 fold (map --ab onto --cd) (moving .a) as --m
@@ -19,7 +18,7 @@ mark (perp --x through .p) (on #[.a]) as --y
 mark (--x) (on #[.d]) into --x
 mark (--y) (on #[.d]) into --y
 flatten (fan at .p (--x & --m valley) (--y \ --da) (--x \ --m valley) (--y & --da mountain)
-             (up to #[.d]))
+             (up to #[.d])) (staying .b)
 
 ; assert faces = 8
 ; assert .a = (1/4, 3/4)

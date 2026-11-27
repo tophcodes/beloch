@@ -345,7 +345,7 @@ let test_flatten_count_two () =
               "paper square\n\
                mark (through .a .c) as --d1\n\
                mark (through .b .d) as --d2\n\
-               flatten (--d1 & .a) (--d2 & .b)\n")))
+               flatten (--d1 & .a) (--d2 & .b) (staying .c)\n")))
 
 let test_flatten_not_material () =
   expect_error "collapse folds along existing creases" (fun () ->
@@ -368,7 +368,7 @@ let test_flatten_all_layers_ok () =
           mark (map .a onto .d) as --h\n\
           mark (map .a onto .b) as --v\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-          mountain) (--v & #[.a] mountain)\n")
+          mountain) (--v & #[.a] mountain) (staying .c)\n")
   in
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
@@ -1410,7 +1410,7 @@ let test_mark_named_line_on_table () =
        mark (through .b .d) as --bd\n\
        mark (map --ab onto --cd) as --h\n\
        mark (map --da onto --bc) as --v\n\
-       flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)\n\
+       flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)\n\
        .m = free on --bd from .b at 1/4\n\
        mark (perp --bd through .m) (on #[.a]) as --s\n"
   in
@@ -1555,7 +1555,7 @@ let test_new_flatten_no_at () =
       "mark (map .a onto .d) as --h\n\
        mark (map .a onto .b) as --v\n\
        flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-       mountain) (--v & #[.a] mountain)\n"
+       mountain) (--v & #[.a] mountain) (staying .c)\n"
   in
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
@@ -1919,7 +1919,7 @@ let test_output_into_flatten_even () =
             mark (map .a onto .d) as --h\n\
             mark (map .a onto .b) as --v\n\
             flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-            mountain) (--v & #[.a] mountain) into --h\n"))
+            mountain) (--v & #[.a] mountain) (staying .c) into --h\n"))
 
 (* ---- sorts: a name with -- holds a crease (spec names, "A name with two
    dashes holds a crease or a paper edge") ---- *)

@@ -166,27 +166,6 @@ let parts (g : Fold_state.t) ~(cut : int -> bool) : int array =
   done;
   part
 
-(* The part of largest area on the paper. [None] when two parts share the
-   largest area. *)
-let largest (g : Fold_state.t) (part : int array) : int option =
-  let faces = Fold_state.faces g in
-  let n = Array.fold_left max (-1) part + 1 in
-  let area = Array.make n Num.zero in
-  Array.iteri
-    (fun i f ->
-      let a = Geom.signed_area f in
-      area.(part.(i)) <- Num.add area.(part.(i)) (if Num.sign a < 0 then Num.neg a else a))
-    faces;
-  let best = ref [] in
-  Array.iteri
-    (fun k a ->
-      match !best with
-      | b :: _ when Num.compare a area.(b) < 0 -> ()
-      | b :: _ when Num.compare a area.(b) = 0 -> best := k :: !best
-      | _ -> best := [ k ])
-    area;
-  match !best with [ k ] -> Some k | _ -> None
-
 (* The name of a point of the program on the paper polygon [poly], the
    first in alphabetical order, if one lies there. *)
 let named_on (ctx : Ctx.ctx) (poly : Geom.point array) : string option =
