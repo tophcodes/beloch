@@ -23,7 +23,7 @@ let test_arithmetic () =
     (Qqbar.cmp_re (Qqbar.of_q Q.one) s2);
   Alcotest.(check int) "sign sqrt2 = 1" 1 (Qqbar.sign_re s2);
   Alcotest.(check bool) "inv: 1/sqrt2 = sqrt2/2" true
-    (Qqbar.equal (Qqbar.inv s2) (Qqbar.div s2 two));
+    (Qqbar.equal (Qqbar.inv s2) (Qqbar.mul s2 (Qqbar.of_q (Q.of_ints 1 2))));
   Alcotest.(check bool) "inv zero raises" true
     (try ignore (Qqbar.inv (Qqbar.of_q Q.zero)); false
      with Invalid_argument _ -> true);
