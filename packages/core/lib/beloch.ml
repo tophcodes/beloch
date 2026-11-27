@@ -76,6 +76,7 @@ module Parse = Parse
 module State = State
 module Eval = Eval
 module Fold_emit = Fold_emit
+module Fan = Fan
 module Collapse = Collapse
 module Axis_fan = Axis_fan
 module Reverse = Reverse

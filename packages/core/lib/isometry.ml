@@ -66,3 +66,11 @@ let reflect_across_line (l : Geom.line) : t =
     tx = Num.mul f (Num.mul l.Geom.c l.Geom.a);
     ty = Num.mul f (Num.mul l.Geom.c l.Geom.b);
   }
+
+(* [i] fixes three points not on one line, so it is the identity *)
+let is_identity (i : t) : bool =
+  let z = Num.zero and o = Num.one in
+  let probes =
+    [ { Geom.x = z; y = z }; { Geom.x = o; y = z }; { Geom.x = z; y = o } ]
+  in
+  List.for_all (fun p -> Geom.point_equal (apply_point i p) p) probes

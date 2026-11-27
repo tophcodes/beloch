@@ -114,19 +114,19 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
         let a = tip.(h.Fold_state.fa) and b = tip.(h.Fold_state.fb) in
         let cid = h.Fold_state.crease_id in
         if a && b && (cid = spine_cid || cid = cid_a || cid = cid_b) then
-          Collapse.Fold
-        else if a <> b && on_target i then Collapse.Try
-        else Collapse.Keep)
+          Fan.Fold
+        else if a <> b && on_target i then Fan.Try
+        else Fan.Keep)
       hinges
   in
-  if not (Array.exists (fun r -> r = Collapse.Try) role) then
+  if not (Array.exists (fun r -> r = Fan.Try) role) then
     Error.fail span
       (Printf.sprintf "the flap has no material beyond %s; nothing holds the squash"
          target_str);
   let names =
     Array.mapi
       (fun i (h : Fold_state.hinge) ->
-        if role.(i) <> Collapse.Fold then None
+        if role.(i) <> Fan.Fold then None
         else if h.Fold_state.crease_id = cid_a then Some 0
         else if h.Fold_state.crease_id = cid_b then Some 1
         else None)
@@ -146,21 +146,23 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
          (c.Geom.x, c.Geom.y))
     < 0
   in
+  let root =
+    match List.find_opt (fun i -> not tip.(i)) (List.init nf Fun.id) with
+    | Some i -> i
+    | None -> -1
+  in
   let sgs =
-    Collapse.geoms_of st
-      ~sec:(Array.map (fun t -> if t then 1 else 0) tip)
-      ~tip ~names ~role ~nelem:2
+    Fan.make st ~root ~tip ~names ~role ~nelem:2
       ~side:(fun _ a b ->
         match (clockwise a, clockwise b) with
         | true, false -> Some (a, b)
         | false, true -> Some (b, a)
         | _ -> None)
-      ~faces ~nf
   in
   let states =
     match sgs with
-    | Error _ -> []
-    | Ok sgs ->
+    | None -> []
+    | Some sgs ->
         List.concat_map
           (fun sg ->
             match Collapse.pipeline_solve sg ~valley:[| true; true |] ~over:[] with
@@ -173,7 +175,7 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
       Fold_state.hinge_table_segment st
         (Option.get
            (List.find_opt
-              (fun i -> role.(i) = Collapse.Try)
+              (fun i -> role.(i) = Fan.Try)
               (List.init (Array.length hinges) Fun.id)))
     in
     if Geom.point_equal ta o then tb else ta

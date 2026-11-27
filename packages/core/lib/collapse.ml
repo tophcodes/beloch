@@ -117,13 +117,6 @@ let effective_valley (valley : bool) (sec_transform : Isometry.t)
     (face_iso : Isometry.t) : bool =
   valley <> (Isometry.det_sign (Isometry.compose sec_transform face_iso) < 0)
 
-let is_identity (i : Isometry.t) : bool =
-  let z = Num.zero and o = Num.one in
-  let probes =
-    [ { Geom.x = z; y = z }; { Geom.x = o; y = z }; { Geom.x = z; y = o } ]
-  in
-  List.for_all (fun p -> Geom.point_equal (Isometry.apply_point i p) p) probes
-
 (* closure: the full-loop reflection product over all n creases must be the
    identity: this is exactly Kawasaki at O. Any cyclic rotation of the product
    is conjugate, so the starting ray does not matter; fold in ray order. *)
@@ -135,7 +128,7 @@ let closure_ok (o : Geom.point) (rays : (Geom.point * 'a) array) : bool =
           (Isometry.reflect_across_line (Geom.line_through o far)))
       Isometry.identity rays
   in
-  is_identity prod
+  Isometry.is_identity prod
 
 (* --- boundary predicates ---------------------------------------------------- *)
 
@@ -481,31 +474,6 @@ let maekawa_ok (valley : bool list) : bool =
   let nm = List.length (List.filter (fun v -> not v) valley) in
   abs ((n - nm) - nm) = 2
 
-(* One way the fan folds with one stayer sector, without the letters: per
-   face its sector, the piece it moves with and whether the fan turns it
-   over, the hinges that carry the letters of the elements, and the faces
-   and hinges after the fold placed on the table. A mountain and a valley
-   half-turn land every face in the same place, so none of this depends on
-   the letters. [collapse_all_patterns] builds it once per vertex, sector
-   and hinge choice and reuses it across every pattern. *)
-type sector_geom = {
-  sg_nf : int;
-  sg_sec : int array;  (* per face its sector, -1 across a ray *)
-  sg_piece : int array;
-      (* per face the piece it moves with: the faces of one piece share one
-         motion, and two of them that overlap keep their side *)
-  sg_flips : bool array;  (* per face, whether its motion turns it over *)
-  sg_letters : (int * int * int * bool) list;
-      (* per hinge that carries an element's letter: the element, the face
-         on the clockwise side of its ray, the face across, and whether the
-         face on the clockwise side ends face down *)
-  sg_before : Fold_state.t;  (* the state the fan folds *)
-  sg_marks : Fold_state.mark array;
-  sg_geometry : (Fold_state.geometry, Fold_state.violation) result Lazy.t;
-      (* the faces and new hinges placed from the root face where it lies
-         before the fold; every layer order of the fan is searched on it *)
-}
-
 (* The tip of the fan (spec multifold,
    "A fan with an anchor moves the tip of its anchor") on rays rotated so that
    sector 0 is the stayer: the candidates are the faces outside the stayer's
@@ -535,190 +503,18 @@ let tip_of (g : Fold_state.t) ~(sec : int array) ~(anchor : bool array) :
   done;
   tip
 
-(* How a hinge takes part in the fan (spec multifold,
-   "The fan tries each hinge no item fixes both ways"). [Keep]: off the fan's
-   rays or away from the tip, it keeps its angle. [Fold]: a flat hinge an
-   element names folds. [Try]: a folded hinge an element names keeps or opens,
-   and a hinge on a ray that no element names keeps or changes; the write tries
-   both. *)
-type role = Keep | Fold | Try
-
-(* The ways a fan folds once its sectors, its tip and the roles of its
-   hinges are fixed, one per choice for the [Try] hinges whose motions
-   close. [sec] gives per face its sector, 0 for the stayer and -1 for a
-   face that stays across a ray; [n] counts the sectors. [names] gives per
-   hinge the element that names it, and [side k a b] orders the faces [a]
-   and [b] of a hinge element [k] names as (the face on the clockwise side
-   of its ray, the face across), or is [None] when it cannot tell. The
-   motion of a face is the product of the reflections across the changing
-   hinges on a path to it from a face that stays [hull2020, Def. 6.5]; a
-   choice whose paths disagree does not close [hull2020, Thm. 6.6]. The
-   choices are enumerated whole, so the work doubles with every [Try]
-   hinge; a fan in the corpus has a handful at most. A search that
-   propagates each choice along the paths would prune the rest. *)
-let geoms_of (g : Fold_state.t) ~(sec : int array)
-    ~(tip : bool array) ~(names : int option array) ~(role : role array)
-    ~(nelem : int) ~(side : int -> int -> int -> (int * int) option)
-    ~(faces : Geom.point array array) ~(nf : int) :
-    (sector_geom list, string) result =
-  let old_hinges = Fold_state.hinges g in
-  let nh = Array.length old_hinges in
-  let touches_tip (h : Fold_state.hinge) =
-    tip.(h.Fold_state.fa) || tip.(h.Fold_state.fb)
-  in
-  let tries = List.filter (fun i -> role.(i) = Try) (List.init nh Fun.id) in
-  let hinge_line i =
-    let ta, tb = Fold_state.hinge_table_segment g i in
-    Geom.line_through ta tb
-  in
-  let adj = Array.make nf [] in
-  Array.iteri
-    (fun i (h : Fold_state.hinge) ->
-      adj.(h.Fold_state.fa) <- i :: adj.(h.Fold_state.fa);
-      adj.(h.Fold_state.fb) <- i :: adj.(h.Fold_state.fb))
-    old_hinges;
-  let same_iso a b = is_identity (Isometry.compose (Isometry.inverse a) b) in
-  (* the motion of every face under one choice, or None when two paths to a
-     face disagree; the faces outside the tip stay *)
-  let motions_of (change : bool array) : Isometry.t array option =
-    let m = Array.make nf None in
-    let queue = Queue.create () in
-    Array.iteri
-      (fun i t ->
-        if not t then begin
-          m.(i) <- Some Isometry.identity;
-          Queue.add i queue
-        end)
-      tip;
-    let ok = ref true in
-    while !ok && not (Queue.is_empty queue) do
-      let a = Queue.pop queue in
-      let ma = Option.get m.(a) in
-      List.iter
-        (fun hi ->
-          if !ok then begin
-            let h = old_hinges.(hi) in
-            let b = if h.Fold_state.fa = a then h.Fold_state.fb else h.Fold_state.fa in
-            let mb =
-              if change.(hi) then
-                Isometry.compose ma (Isometry.reflect_across_line (hinge_line hi))
-              else ma
-            in
-            match m.(b) with
-            | None ->
-                m.(b) <- Some mb;
-                Queue.add b queue
-            | Some x -> if not (same_iso x mb) then ok := false
-          end)
-        adj.(a)
-    done;
-    if !ok && Array.for_all Option.is_some m then Some (Array.map Option.get m)
-    else None
-  in
-  let build (change : bool array) (motion : Isometry.t array) :
-      sector_geom =
-    (* the pieces: the faces that share one motion *)
-    let reps = ref [] in
-    let piece =
-      Array.init nf (fun i ->
-          match List.find_opt (fun (m, _) -> same_iso m motion.(i)) !reps with
-          | Some (_, id) -> id
-          | None ->
-              let id = List.length !reps in
-              reps := (motion.(i), id) :: !reps;
-              id)
-    in
-    let opened i =
-      change.(i) && Num.sign old_hinges.(i).Fold_state.angle <> 0
-    in
-    (* The letter of an element holds at each hinge it names whose face on
-       the clockwise side of the ray lies above no such face of another
-       hinge it names; the other hinges it names take whatever letter the
-       layer order gives them. A hinge that opens has no letter, and a hinge
-       whose faces move as one piece does not fold. *)
-    let letters =
-      List.concat_map
-        (fun k ->
-          let named = ref [] in
-          Array.iteri
-            (fun i (h : Fold_state.hinge) ->
-              if names.(i) = Some k && touches_tip h && not (opened i) then
-                match side k h.Fold_state.fa h.Fold_state.fb with
-                | Some s -> named := s :: !named
-                | None -> ())
-            old_hinges;
-          let named = List.rev !named in
-          List.filter_map
-            (fun (fl, fo) ->
-              if
-                List.exists (fun (fl', _) -> Fold_state.above g fl fl') named
-                || piece.(fl) = piece.(fo)
-              then None
-              else
-                let down =
-                  Isometry.det_sign
-                    (Isometry.compose motion.(fl) (Fold_state.face_iso2 g fl))
-                  < 0
-                in
-                Some (k, fl, fo, down))
-            named)
-        (List.init nelem Fun.id)
-    in
-    let root =
-      let found = ref (-1) in
-      for i = 0 to nf - 1 do
-        if !found < 0 && sec.(i) = 0 && not tip.(i) then found := i
-      done;
-      if !found < 0 then
-        invalid_arg
-          "Collapse.mk_sector_geoms: stayer sector 0 holds no face \
-           (unreachable, every sector holds a face)";
-      !found
-    in
-    let new_hinges =
-      Array.mapi
-        (fun i (h : Fold_state.hinge) ->
-          if change.(i) then
-            { h with
-              Fold_state.angle =
-                (if Num.sign h.Fold_state.angle = 0 then Num.one else Num.zero)
-            }
-          else h)
-        old_hinges
-    in
-    { sg_nf = nf; sg_sec = sec; sg_piece = piece;
-      sg_flips = Array.map (fun m -> Isometry.det_sign m < 0) motion;
-      sg_letters = letters; sg_before = g; sg_marks = Fold_state.marks g;
-      sg_geometry =
-        lazy
-          (Fold_state.geometry ~base:(Fold_state.face_iso g root) ~faces
-             ~hinges:new_hinges ~root ()) }
-  in
-  let geoms =
-    List.filter_map
-      (fun mask ->
-        let change = Array.map (fun r -> r = Fold) role in
-        List.iteri
-          (fun bit i -> if mask land (1 lsl bit) <> 0 then change.(i) <- true)
-          tries;
-        match motions_of change with
-        | Some motion
-          when Array.exists2
-                 (fun t m -> t && not (is_identity m))
-                 tip motion ->
-            Some (build change motion)
-        | _ -> None)
-      (List.init (1 lsl List.length tries) Fun.id)
-  in
-  if geoms = [] then Error e_kawasaki else Ok geoms
-
 (* The ways the fan folds on rays rotated so that sector 0 is the stayer
-   ([geoms_of]). An element names every hinge of its crease on its ray, in
-   every layer. *)
+   ([Fan.make]), placed from the first face of the stayer outside the tip.
+   An element names every hinge of its crease on its ray, in every layer.
+   A hinge off the fan's rays or away from the tip keeps its angle, a flat
+   hinge an element names folds, and the fan tries both ways a folded hinge
+   an element names, which keeps or opens, and a hinge on a ray that no
+   element names, which keeps or changes (spec multifold, "The fan tries
+   each hinge no item fixes both ways"). *)
 let mk_sector_geoms ?tip_rule (g : Fold_state.t) ~(o : Geom.point)
     ~(rays : (Geom.point * elem) array) ~(es : elem array)
     ~(faces : Geom.point array array) ~(nf : int) ~(anchor : bool array) :
-    (sector_geom list, string) result =
+    (Fan.t list, string) result =
   let n = Array.length rays in
   let sec =
     Array.init nf (fun i ->
@@ -794,61 +590,50 @@ let mk_sector_geoms ?tip_rule (g : Fold_state.t) ~(o : Geom.point)
   let role =
     Array.init nh (fun i ->
         let h = old_hinges.(i) in
-        if on_ray.(i) = None || not (touches_tip h) || not (at_vertex i) then Keep
+        if on_ray.(i) = None || not (touches_tip h) || not (at_vertex i) then
+          Fan.Keep
         else
           match names.(i) with
-          | Some _ when Num.sign h.Fold_state.angle = 0 -> Fold
-          | _ -> Try)
+          | Some _ when Num.sign h.Fold_state.angle = 0 -> Fan.Fold
+          | _ -> Fan.Try)
   in
-  geoms_of g ~sec ~tip ~names ~role ~nelem:(Array.length es)
-    ~side:(fun k a b ->
-      let l = (elem_ray.(k) - 1 + n) mod n in
-      if sec.(a) = l then Some (a, b)
-      else if sec.(b) = l then Some (b, a)
-      else None)
-    ~faces ~nf
+  let root =
+    let found = ref (-1) in
+    for i = 0 to nf - 1 do
+      if !found < 0 && sec.(i) = 0 && not tip.(i) then found := i
+    done;
+    !found
+  in
+  match
+    Fan.make g ~root ~tip ~names ~role ~nelem:(Array.length es)
+      ~side:(fun k a b ->
+        let l = (elem_ray.(k) - 1 + n) mod n in
+        if sec.(a) = l then Some (a, b)
+        else if sec.(b) = l then Some (b, a)
+        else None)
+  with
+  | Some fans -> Ok fans
+  | None -> Error e_kawasaki
 
-(* The states of one [sector_geom] for the letter of each element: every
-   layer order of its geometry that keeps the side of two faces of one piece,
-   gives each element its letter at the hinges [sg_letters] names, satisfies
-   the non-crossing conditions ([Fold_state.orders]) and puts the upper face
-   of each pair of [over] above its lower face. The two faces must overlap:
+(* The states of one way the fan folds for the letter of each element
+   ([Fan.stackings] with [Fan.Letters]) that put the upper face of each pair
+   of [over] above its lower face. The two faces must overlap:
    a pair that lies apart holds in no state. Only the named faces are
    compared, so a flap can lie between two layers of one piece (spec
    multifold, "An over item orders the faces of its two points"). *)
-let pipeline_solve (sg : sector_geom) ~(valley : bool array)
+let pipeline_solve (fan : Fan.t) ~(valley : bool array)
     ~(over : (int * int) list) : (Fold_state.t list, string) result =
-  let g = sg.sg_before in
-  (* a valley puts the face across the ray above the face on its clockwise
-     side, as seen from that side's final face *)
-  let fixed =
-    List.map
-      (fun (k, fl, fo, down) -> if valley.(k) <> down then (fo, fl) else (fl, fo))
-      sg.sg_letters
-  in
-  let before i j =
-    match Fold_state.rel g i j with
-    | Fold_state.Above -> 1
-    | Fold_state.Below -> -1
-    | Fold_state.Apart -> 0
-  in
-  match Lazy.force sg.sg_geometry with
-  | Error _ -> Error e_selfint
-  | Ok geo -> (
-      match
-        Fold_state.unit_orders ~marks:sg.sg_marks geo ~unit_of:sg.sg_piece ~before
-          ~turned:sg.sg_flips ~across:(fun _ _ -> None) ~fixed
-      with
-      | Error _ | Ok [] -> Error e_selfint
-      | Ok states -> (
-          let over_ok st =
-            List.for_all
-              (fun (up, lo) -> Fold_state.rel st up lo = Fold_state.Above)
-              over
-          in
-          match List.filter over_ok states with
-          | [] -> Error e_contra
-          | l -> Ok l))
+  match Fan.stackings fan (Fan.Letters valley) with
+  | Error _ | Ok [] -> Error e_selfint
+  | Ok states -> (
+      let over_ok st =
+        List.for_all
+          (fun (up, lo) -> Fold_state.rel st up lo = Fold_state.Above)
+          over
+      in
+      match List.filter over_ok states with
+      | [] -> Error e_contra
+      | l -> Ok l)
 
 (* pool the per-sector runs: every state of every run ([Ok] pool); an empty
    pool surfaces [e_contra] > [e_unaligned] > [e_anchor_stays] >

@@ -1,13 +1,14 @@
-(** The fan at the point at infinity of an axis (spec multifold, "A fold is
-    the fan at the point at infinity of its axis"): one line, the two
-    half-planes as its sectors, every layer the axis crosses under the
-    vertex. `fold`, `unfold` and `reverse` fold through it. *)
+(** The fan ({!Fan}) at the point at infinity of an axis (spec multifold,
+    "A fold is the fan at the point at infinity of its axis"): one line, the
+    two half-planes as its sectors, every layer the axis crosses under the
+    vertex. This module hands {!Fan.make} the cut state and the roles of its
+    hinges, and {!Fan.stackings} the blocks of an opening. `fold`, `unfold`
+    and `reverse` fold through it. *)
 
 type t
 (** The folded state of the fan before any layer order: the tip cut along
     the axis, each piece moved by the changing hinges on its paper path
-    (spec multifold, "A fan moves each piece by the changing hinges on its
-    paper path"). *)
+    ({!Fan.make}). *)
 
 val make :
   cid:int ->
@@ -26,8 +27,8 @@ val fold_opening :
   t ->
   blocks:(bool array * Fold_state.placement) list ->
   (Fold_state.t list, Fold_state.violation) result
-(** The stackings of the fan with [blocks] placed
-    ({!Fold_state.fold_opening}). *)
+(** The stackings of the fan with [blocks] placed ({!Fan.stackings} with
+    {!Fan.Opening}). *)
 
 val fold_blocks_all :
   ?crease_id:int ->
