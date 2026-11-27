@@ -64,8 +64,11 @@ let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
     done;
     !acc
   in
-  (* Each candidate carries its emergent LINE *and* the actual emergent RAY
-     endpoint (the axis end that lands in its own gap). The ray direction is
+  (* Each candidate carries its emergent LINE *and* a point on its emergent
+     RAY: O plus the axis eigenvector, signed so that the point lands in the
+     candidate's own gap. The point gives the ray's direction only: the
+     eigenvector's length is arbitrary, so the point may lie short of where
+     the ray leaves the paper or beyond it. The ray direction is
      geometrically fixed (chosen by [in_gap], a CCW test) unlike the
      eigenvector's sign, which is arbitrary. *)
   let raw = ref [] in
