@@ -99,9 +99,9 @@ Four functions build the layer order of a state:
   corner faces lie in a cycle.
 - `Fold_state.orders` searches the pairs. The caller gives the side of the
   pairs it knows and the pairs it fixes, and gets every state whose other
-  pairs satisfy the conditions below. `flatten`, `squash` and `reverse`
-  find their layer orders with it (Fan, below), and so does a fold that
-  places a block `Over` or `Under` faces.
+  pairs satisfy the conditions below. Every write that folds finds its
+  layer order with it: `flatten`, `squash` and `reverse` (Fan, below) and
+  `fold`.
 
 ::: {.include api="Fold_state.with_rank"}
 :::
@@ -134,10 +134,12 @@ region, and no condition relates them
 A fold computes the pairs of the new state (`Fold_state.fold_blocks`). Two
 staying faces keep their side, and two faces of one moved block exchange
 sides. A block placed `Top` lies above every staying face it lands on, and
-a block placed `Bottom` below them. A block placed `Over` or `Under` faces
-lies directly on each of them; the three conditions (spec `layer-order`,
-"Three conditions decide the side of a layer the moved paper lands on") fix
-the pairs they decide, and `Fold_state.orders` decides the rest. A face
+a block placed `Bottom` below them; these sides fix every pair, and
+`Fold_state.orders` checks the one state they give. A block placed `Over` or
+`Under` faces lies directly on each of them; the three conditions (spec
+`layer-order`, "Three conditions decide the side of a layer the moved paper
+lands on") fix the pairs they decide, and `Fold_state.orders` decides the
+rest. A face
 that `subdivide` cuts
 passes its sides on to its pieces.
 

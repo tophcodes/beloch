@@ -737,6 +737,17 @@ let orders ?(marks = [||]) (geo : geometry) ~(kept : int -> int -> bool option)
           if start_ok then go 0;
           Ok (List.rev !found))
 
+(* [orders], and where it finds no state, the violation of the state
+   [witness ()] gives, one the search rejects. *)
+let orders_or_violation ?(marks = [||]) (geo : geometry) ~kept ~fixed
+    ~(witness : unit -> int -> int -> bool) : (t list, violation) result =
+  match orders ~marks geo ~kept ~fixed with
+  | Ok [] -> (
+      match build ~marks ~cycles:true geo ~side:(witness ()) with
+      | exception V v -> Error v
+      | _ -> Error Layer_cycle)
+  | r -> r
+
 (* [?base]/[?marks] are LEADING optional arguments with only labeled
    required arguments after them; OCaml can only erase omitted optional
    arguments when a positional argument follows, so [make] takes a trailing
@@ -1731,28 +1742,23 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
           done;
           let kept i j = if moved.(i) = moved.(j) then Some (kept_above i j) else None in
           let fixed = List.map (fun ((s, m), up) -> if up then (s, m) else (m, s)) decided in
-          let found = orders ~marks:g.marks geo ~kept ~fixed in
+          (* where no state folds flat, the violation of the combination
+             with every open class turned one way, the first the search
+             tries *)
+          let witness () =
+            let stat_above = Hashtbl.create ((2 * List.length pairs) + 1) in
+            List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr v) decided;
+            List.iter
+              (List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr (not v)))
+              free;
+            fun i j ->
+              if moved.(i) = moved.(j) then kept_above i j
+              else if moved.(j) then Hashtbl.find stat_above (i, j)
+              else not (Hashtbl.find stat_above (j, i))
+          in
+          let found = orders_or_violation ~marks:g.marks geo ~kept ~fixed ~witness in
           exchange ();
-          match found with
-          | Error v -> Error v
-          | Ok (_ :: _ as gs) -> Ok gs
-          | Ok [] -> (
-              (* the violation of the combination with every open class
-                 turned one way, the first the search tries *)
-              let stat_above = Hashtbl.create ((2 * List.length pairs) + 1) in
-              List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr v) decided;
-              List.iter
-                (List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr (not v)))
-                free;
-              let side i j =
-                if moved.(i) = moved.(j) then kept_above i j
-                else if moved.(j) then Hashtbl.find stat_above (i, j)
-                else not (Hashtbl.find stat_above (j, i))
-              in
-              match build ~marks:g.marks ~cycles:true geo ~side with
-              | exception V v -> Error v
-              | _ -> Error Layer_cycle)
-)
+          found)
 
 (* The faces of [g] cut by the TABLE-space [axis] for a fold of [nb] blocks.
    A parent in no block ([block_of_parent] gives -1) stays whole; a block
@@ -1999,7 +2005,10 @@ let fold_blocks_gen ?crease_id ~(shared : shared) ~(blocks : (bool array * place
   | Ok geo when not placed -> (
       seed_overlaps g geo ~parent ~moved ~uncut;
       let side = level_side g ~parent ~unit_of ~turned:moved ~places in
-      try Ok [ build ~marks:g.marks ~cycles:false geo ~side ] with V v -> Error v)
+      (* the levels fix every side, so the search checks the one state *)
+      orders_or_violation ~marks:g.marks geo
+        ~kept:(fun i j -> Some (side i j))
+        ~fixed:[] ~witness:(fun () -> side))
   | Ok geo ->
       seed_overlaps g geo ~parent ~moved ~uncut;
       placed_stackings ~shared ~g ~geo ~parent ~moved ~block_of:unit_of ~turned:moved
