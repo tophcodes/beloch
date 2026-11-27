@@ -368,7 +368,7 @@ let test_flatten_even () =
     fold_traced
       (collapse
          "(--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
-          (--bd & .b mountain) (--bd & .d)")
+          (--bd & .b mountain) (--bd & .d) (staying .c)")
   in
   Alcotest.(check bool) "the program succeeds" false failed;
   let e = only_write json in
@@ -393,7 +393,7 @@ let test_flatten_ambiguous () =
     fold_traced
       (collapse
          "(--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) \
-          (--bd & .d) (.q over .r)")
+          (--bd & .d) (.q over .r) (staying .c)")
   in
   Alcotest.(check bool) "the program fails" true failed;
   let cs = candidates (only_write json) in
@@ -414,7 +414,7 @@ let test_flatten_suggestions () =
        .q = free on --ab from .a at 1/4\n.r = free on --ab from .b at 1/4\n\
        .f = free on --da from .a at 1/4\n\
        flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) \
-       (--bd & .b mountain) (--bd & .d)\n\
+       (--bd & .b mountain) (--bd & .d) (staying .c)\n\
        flatten (--h & --da) (--s & --da mountain) (--t & --da valley) \
        (--ac & .a valley) (staying .q)\n"
   in

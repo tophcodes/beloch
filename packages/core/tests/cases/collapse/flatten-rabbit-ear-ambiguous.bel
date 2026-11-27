@@ -14,6 +14,6 @@ mark (map --bc onto --diag) as --ec
 ; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
 ; sector the ear folds onto, and the emergent ray can lie on either side of
 ; --eb.
-flatten (--ea) (--ec) (--eb)
+flatten (--ea) (--ec) (--eb) (staying .a)
 
 ; expect error "ambiguous"

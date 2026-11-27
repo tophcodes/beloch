@@ -15,7 +15,7 @@ mark (map --da onto --bc) as --v
 .z = free on --cd from .c at 1/4
 .e = free on --da from .d at 1/4
 .f = free on --da from .a at 1/4
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .a)
 squash (--h onto --ac)
 
 ; expect error "squash is ambiguous: 2 flaps"

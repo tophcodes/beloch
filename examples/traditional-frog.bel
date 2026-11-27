@@ -45,7 +45,7 @@ def petal(--s --e .l .r .m .o) {
   mark (through .vl .m) (on #[.m]) as --ml
   mark (through .vr .m) (on #[.m]) as --mr
   flatten (fan at .vl (--s & .wl) (--kl & .l) (--ml valley))
-          (fan at .vr (--s & .wr) (--kr & .r) (--mr))
+          (fan at .vr (--s & .wr) (--kr & .r) (--mr)) (staying .o)
 }
 
 ; step 13 on one face of the frog base: its two bottom edges, from the
@@ -129,7 +129,7 @@ mark (through .b .d) as --bd                     ; step 3: the other diagonal
 ; step 5: collapse into the preliminary base. All four corners meet at the
 ; open end, the paper center .o is the closed point, and the letters on
 ; three of its creases pick the state with the quarter of --ab in front.
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)   ; step 5
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)   ; step 5
 
 .o = --h * --v
 .ml = --v * --cd                                 ; the side corners

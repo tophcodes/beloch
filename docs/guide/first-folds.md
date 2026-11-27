@@ -258,7 +258,7 @@ mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
 flatten (--h & --bc) (--v & --cd valley) (--h & --da valley)
-  (--v & --ab) (--bd & .b mountain) (--bd & .d)
+  (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 :::
 
 The four `mark` lines score the creases. The items of `flatten` then name

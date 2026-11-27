@@ -12,6 +12,6 @@ mark (through .b .d) as --bd
 mark (perp --bd through .w) as --k
 .e = --k * --da
 .z = free on (--k & .e) from .e at 1/4
-flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .w)
+flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .w) (staying .a)
 
 ; expect error "crease ends inside the sheet"

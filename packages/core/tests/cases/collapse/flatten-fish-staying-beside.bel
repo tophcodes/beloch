@@ -1,0 +1,16 @@
+@author "Claude (Anthropic)"
+
+; flatten-fish-staying-ambiguous.bel with (emergent beside .b): of the two
+; mirror images, the one whose emergent ray runs from the vertex to --ab.
+; The two images carry the same letters, so this file pins that the
+; statement folds; which image it folds is visible in its trace.
+
+paper square
+
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
+flatten (--l1 valley) (--l2) (--ray mountain) (staying .c) (emergent beside .b) as --e
+
+; assert --e is valley

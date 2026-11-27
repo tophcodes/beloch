@@ -117,6 +117,13 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(staying : Collapse.stayer option) ?staying_paper
     ~(emergent : (Geom.point * string) option)
     (span : Error.span) : (int * Geom.line) option =
+  let staying =
+    match staying with
+    | Some s -> s
+    | None ->
+        Error.fail ~hint:Collapse.hint_staying_missing span
+          (Collapse.e_staying_missing verb)
+  in
   let elem_of (fcid, fea, feb, valley) =
     { Collapse.cid = fcid; ea = fea; eb = feb; valley }
   in
@@ -149,7 +156,6 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           [] cands)
       elem_cands_at_o
   in
-  let far_of_combo_elem (_, a, b, _) = far_at_o a b in
   (* combinations: one chosen segment per element (product; <= 2 per
      element in practice, so the corpus tops out at 2 combinations). *)
   let rec product = function
@@ -269,41 +275,6 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       (match into with
       | Some (cid, _) -> cid
       | None -> Fold_state.fresh_crease_id ())
-  in
-  (* the stayer for a bare combination: the <π arc between the first two
-     ELEMENTS' chosen folded rays (leading-element convention). *)
-  let arc_stayer combo =
-    match combo with
-    | e1 :: e2 :: _ ->
-        Collapse.Arc (far_of_combo_elem e1, far_of_combo_elem e2)
-    | _ -> Collapse.Arc (o, o)
-  in
-  (* KERNEL LIMITATION cover (Task-2 reviewer finding): the kernel's
-     [admissible_sectors] cannot tell "the emergent splits the leading
-     arc" (legitimate, 2 mirror worlds) from "another GIVEN element's ray
-     sits strictly inside the arc" (dead: stayed material cannot carry a
-     folding crease, spec §Semantics). The latter kill is ours, done here
-     over the GIVEN rays before the kernel runs. Gated on a genuine
-     segment choice (>1 combination): with a single combination the input
-     has no alternative and the pre-2026-07-17 convention behavior stands.
-     Absent under [staying]: the convention carries no meaning then. *)
-  let leading_arc_ok combo =
-    match (staying, combo) with
-    | Some _, _ -> true
-    | None, e1 :: e2 :: rest ->
-        let f1 = far_of_combo_elem e1 and f2 = far_of_combo_elem e2 in
-        let oc = (o.Geom.x, o.Geom.y) in
-        let c =
-          Collapse.cross oc (f1.Geom.x, f1.Geom.y) (f2.Geom.x, f2.Geom.y)
-        in
-        if Num.sign c = 0 then true (* collinear -> kernel: [e_stayer_collinear] *)
-        else
-          let a, b = if Num.sign c > 0 then (f1, f2) else (f2, f1) in
-          not
-            (List.exists
-               (fun e -> Collapse.in_ccw_arc o a b (far_of_combo_elem e))
-               rest)
-    | None, _ -> true
   in
   (* run one combination: pool every (state, emergent-binding, letters of
      the given rays) that
@@ -473,30 +444,9 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let combo_runs =
     List.map
       (fun combo ->
-        let stayer =
-          match staying with
-          | Some s -> s
-          | None -> arc_stayer combo
-        in
-        if List.length combos > 1 && not (leading_arc_ok combo) then
-          (combo, [], [])
-        else
-          let r, e, _ = run_combo combo stayer in
-          (combo, r, e))
+        let r, e, _ = run_combo combo staying in
+        (combo, r, e))
       combos
-  in
-  (* the outline ranks the states of the statement, those of every
-     combination together, before any other stage sees them (spec multifold,
-     "The outline ranks the states of every fan") *)
-  let combo_runs =
-    let ranked =
-      Collapse.rank_by_outline pre_st
-        ~state:(fun (st, _, _, _) -> st)
-        (List.concat_map (fun (_, r, _) -> r) combo_runs)
-    in
-    List.map
-      (fun (combo, r, e) -> (combo, List.filter (fun x -> List.memq x ranked) r, e))
-      combo_runs
   in
   (* `(emergent beside .p)`: the states whose emergent ray lies in a wedge of
      the given rays whose closure holds .p, a condition on the set
@@ -610,8 +560,8 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         match
           (* the tip and stayer diagnoses outrank the generic "derived
              crease does not close": a layer of the tip without the rays,
-             an anchor with nothing to move, a collinear leading pair, and
-             a dead [staying] flap each name a specific fixable cause. *)
+             an anchor with nothing to move, and a dead [staying] flap each
+             name a specific fixable cause. *)
           match List.find_opt Collapse.is_layer_error pool with
           | Some m -> Some m
           | None ->
@@ -619,7 +569,6 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
             (fun m ->
               m = Collapse.e_unaligned
               || m = Collapse.e_anchor_stays
-              || m = Collapse.e_stayer_collinear
               || m = Collapse.e_stayer_dead
               || m = Collapse.e_staying_none
               || m = Collapse.e_staying_several
@@ -644,7 +593,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   | many
     when (* the fan fixes its stayer before any selection stage runs
             (spec multifold,
-            "The stayer fixes where the result lies on the table"): states
+            "Every item of a flatten is a condition on its states"): states
             with different stayers leave the statement ambiguous *)
          let stayer_of (st, _, (rays, emergent), _) =
            match

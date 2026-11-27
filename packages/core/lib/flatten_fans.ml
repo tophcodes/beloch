@@ -650,8 +650,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      parts stay, and the rest is the tip *)
   let part = Fan_paper.parts st ~cut:ray_hinge in
   (* the staying part: the one part that holds every staying point, on its
-     faces or their edges, or the part of largest area on the paper where
-     the statement names none *)
+     faces or their edges *)
   let staying_parts =
     match staying_opt with
     | Some pos -> (
@@ -669,12 +668,9 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | _ ->
             Error.fail ?hint:(Collapse.hint_of Collapse.e_staying_several) span
               Collapse.e_staying_several)
-    | None -> (
-        match Fan_paper.largest st part with
-        | Some k -> [ k ]
-        | None ->
-            Error.fail ~hint:"add (staying .p) with .p in the part that stays" span
-              "two parts of the paper share the largest area, so neither holds still")
+    | None ->
+        Error.fail ~hint:Collapse.hint_staying_missing span
+          (Collapse.e_staying_missing "flatten")
   in
   (* the layer of an `up to` that holds each face, as an index into [inst],
      or -1 *)
@@ -812,9 +808,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
       overs
   in
-  (* every realization of every pattern; the outline of the state before
-     the flatten ranks them below (spec multifold,
-     "The outline ranks the states of every fan") *)
+  (* every realization of every pattern *)
   let results =
     List.map
       (fun pat ->
@@ -890,7 +884,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          (fun pat res -> match res with Ok sts -> List.map (fun s -> (s, pat)) sts | Error _ -> [])
          patterns results)
   in
-  let states = Collapse.rank_by_outline st ~state:Fun.id all in
+  let states = all in
   let errors = List.filter_map (function Error e -> Some e | Ok _ -> None) results in
   let segs =
     Array.to_list (Array.map (fun (r : ray) -> (verts.(r.fan), r.far)) rays)

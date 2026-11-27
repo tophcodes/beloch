@@ -27,9 +27,10 @@ val solve :
 (** The fan at [o] on resolved operands: one candidate list per element,
     the pieces each element names, the `over` constraints as face pairs,
     the anchor flap as paper polygons ([None]: the topmost flap under [o]),
-    the stayer ([None]: the wedge between the first two elements), the
-    staying points on the paper, and the emergent item: a table point and
-    its name. The fan folds at the one paper point over [o] that a piece of
+    the stayer ([None]: the statement fails, since a flatten names the
+    part that stays; spec multifold, "A flatten names the part that
+    stays"), the staying points on the paper, and the emergent item: a
+    table point and its name. The fan folds at the one paper point over [o] that a piece of
     every element passes through; where several are, the anchor picks the
     one on it, and without an anchor the fan fails (spec multifold,
     "A fan folds at a point of the paper").

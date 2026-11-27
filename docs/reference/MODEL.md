@@ -151,7 +151,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 .m = free on --bd from .b at 1/4
 mark (perp --bd through .m) (on #[.a]) as --s
 .e = --s * --h
@@ -200,7 +200,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 :::
 
 ::: {.example #ex-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
@@ -1529,9 +1529,7 @@ hinge of the fan. A path runs across hinges of any angle and never through
 a single point. The *stayer* is one part. The program names it by points
 $p_1, \ldots, p_j$: the stayer is the part whose closure holds every $p_i$,
 and the candidate fan has candidate states only when exactly one part does.
-Where the program names no point, the stayer is the part of largest area
-on the paper for vertices given in fans, and for one vertex given by its
-rays the part between the first two rays that spans less than a half-turn
+A write that names no point is undefined
 ([[reference/beloch-writes#flatten-and-flip]]). The *tip* $T$ is every part
 but the stayer. The value scores the rays on the faces they cross and
 leaves the other faces whole. The write is
@@ -1565,10 +1563,7 @@ a reverse fold does ([#def-reverse]). Such a hinge *stays* when it keeps
 its angle and its letter, *turns* when it keeps its angle and takes the
 other letter, and *opens* when it changes, as the spine of a squash does.
 
-Of all candidate states of all candidate fans, those whose faces lie on
-the table inside the convex hull of the state before the write are kept
-where there are any, and all of them where there are none
-(spec `multifold`, "The outline ranks the states of every fan"). The constraints
+The candidate states of all candidate fans form one set. The constraints
 are conditions on that set: the letters,
 the `over` pairs, and for an odd $k$ a point $p$: the wedge of the table
 between two consecutive given rays that holds $f(p)$, edges included, holds
@@ -1677,7 +1672,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 :::
 
 ::: {.figure #fig-flatten-op caption="The terms of the collapse in [#fig-flatten]: the vertex at the center, the six rays, and the stayer, the quarter between the rays on `--h` and `--v` that holds the diagonal to `.c`. Every other sector moves by the reflections across the rays between it and the stayer; on the right the state after the collapse." views="op" at="collapse"}
@@ -1687,7 +1682,7 @@ mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
 @label collapse
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 :::
 
 ::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. Without a letter the program fails as ambiguous." views="candidates" at="vertex"}
@@ -1695,8 +1690,9 @@ paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
+.e = --h * --bc
 @label vertex
-flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b)
+flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b) (staying .c .e)
 :::
 
 ::: {.figure #fig-flatten-letters caption="The same vertex with the rays to `--bc` and to `.c` as valleys: one state has both letters, and it remains." views="candidates" at="vertex"}
@@ -1704,8 +1700,9 @@ paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
+.e = --h * --bc
 @label vertex
-flatten (--h & --bc valley) (--ac & .c valley) (--h & --da) (--bd & .b)
+flatten (--h & --bc valley) (--ac & .c valley) (--h & --da) (--bd & .b) (staying .c .e)
 :::
 
 ::: {.definition #def-squash name="squash" uses="def-write def-flatten def-flap def-letter" defines="term-vertex"}
@@ -1756,7 +1753,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .c)
 squash (--h & --da onto --ac) as --s
 :::
 

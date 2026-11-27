@@ -22,7 +22,7 @@ mark (through .f .b) as --fb
 mark (through .a .g) as --ag
 .p = free on --fb from .f at 1/10
 .w = free on --ag from .a at 9/10
-flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d) (staying .a)
 flatten (--h & --da) (--s & --da mountain) (--t & --da valley) (--ac & .a valley) (staying .q) (.p over .z)
 
 ; expect error "contradictory `over`"

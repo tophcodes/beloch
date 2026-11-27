@@ -41,10 +41,7 @@ boundary is more than one loop has a hole and is refused.
 Three operations read the sheet and nothing else of its shape. Clipping a line
 to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
-the outline. A fan keeps the states whose faces lie on the table inside
-the convex hull of every table polygon of the state before it, where there
-are any, and every state where there are none (spec `multifold`, "The outline
-ranks the states of every fan").
+the outline.
 
 ## State
 
@@ -327,10 +324,8 @@ its rays at once (`Fold_state.subdivide_segments`), into the cells its
 edges and the rays enclose, since no single ray cuts such a face from
 edge to edge. The hinges of the rays on their bundles split the paper
 into parts. The staying part is the one part that holds every staying
-point, on a face or its edge; without `staying` it is the part of largest
-area on the paper, and two parts of equal largest area fail with `two
-parts of the paper share the largest area, so neither holds still`. The
-other parts are the tip, and the layer check of one fan applies. On the
+point, on a face or its edge; without `staying` the statement fails with
+`flatten needs (staying .p)` before any state is solved. The other parts are the tip, and the layer check of one fan applies. On the
 petal fold this folds the kite creases in the front layer and in the
 layer behind it, which the side edge joins to it, and the crease between
 the vertices in the front layer: the state that two reverse folds and a
@@ -338,11 +333,8 @@ valley fold reach.
 
 `Collapse.geoms_of` takes the regions as its sectors and finds the motions
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
-parity only where the layers of its bundles surround its vertex. Of the states, those
-inside the convex hull of the state before the flatten are kept where
-there are any (`Collapse.rank_by_outline`, spec `multifold`, "The outline ranks
-the states of every fan"); more than one
-state left is an error. One ceiling remains: a statement derives a crease between
+parity only where the layers of its bundles surround its vertex. More than
+one state left is an error. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
 
@@ -424,7 +416,7 @@ added; the order the evaluator runs them in follows the tables.
 | 9 | a ray's far end lies inside a face of its flap, off its raw edges and folded edges; a flat crease there does not end the ray (it would leave a vertex of degree 1 inside the flap) | `crease ends inside the sheet` | |
 | 10 | two elements of one crease resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
 | 11 | Kawasaki fails: where the anchor surrounds O on the paper, the reflection composition around O does not close (exact) [@hull2020](#ref-hull2020) ch. 5; elsewhere no combination of the hinges the fan may change closes its paper paths, which surfaces as check 13 | `vertex not flat-foldable (angles)` | |
-| 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
+| 12 | the statement has no `staying` item (spec `multifold`, "A flatten names the part that stays") | `` flatten needs (staying .p) `` | `name a point in the part that stays` |
 | 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed, the paper-path closure of check 11 included | `no realization keeps the staying flap still` | |
 | 14 | two different segment combinations ([[reference/beloch-writes#flatten-and-flip]]) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
 
@@ -444,10 +436,7 @@ variant. With an odd count their own messages never reach the program: when
 no candidate survives, the evaluator reports
 `` the derived crease does not close the vertex `` for all of them, unless a
 more specific failure stands in the pool (Pipeline, step 4). Check 12
-belongs to the same M/V-independent family (the leading pair's collinearity
-is a fact about the given rays alone) and runs once per candidate, after
-checks 7–11 and before any Maekawa pattern is tried. Check 13 fails a
-candidate whose leading pair admits no stayer sector, and it is also the
+runs once per statement, before any candidate is tried. Check 13 is the
 fallback the evaluator reports once every candidate and every Maekawa
 pattern has been tried and none produced a live realization (\|S\| = 0,
 under Pipeline). Check 14 runs once every segment combination has been
@@ -476,10 +465,10 @@ fan contributes any.
 | 20 | the candidate states left for the selection hold different sectors still | `flatten is ambiguous: its candidates hold different sectors still` | `add (staying .p) with .p in the sector that stays` |
 
 The evaluator runs the checks in this order. Checks 1–3 run per element, in
-source order, and check 4 once the elements are resolved. Each segment
+source order, and check 4 once the elements are resolved. Check 12 runs before
+the segment combinations. Each segment
 combination runs check 8 (odd count only), and each candidate fan of it
-checks 7, 9, 10 and 11, then the stayer: check 12 or 13 under the
-leading-pair convention, checks 17, 19 and 18 under `staying`. Per admissible
+checks 7, 9, 10 and 11, then the stayer: checks 17, 19 and 18. Per admissible
 stayer sector follow check 16, check 6 and, where the anchor does not
 surround O, the paper-path closure of check 11; then per Maekawa pattern
 the pattern's parity, where the anchor surrounds O, and the stacking. Check 14 runs once every combination has been tried, and check 20
@@ -497,15 +486,9 @@ reflections has `det = −1` and so is *itself* a reflection; its axis is a
 line through O, and inserting it as one more ray makes the full `k + 1`-ray
 composition close.
 
-**Admissible stayer sectors.** Every candidate ray set is tried against each
-fan sector that lies inside the stayer region ([[reference/model#def-flatten|def-flatten]]):
-normally exactly one, unless the emergent ray itself falls inside the
-leading pair's arc and splits it in two; then both halves are admissible,
-and each is a different physical fold (a mirror world), not a
-duplicate to dedup away. A collinear leading pair (both candidate arcs
-exactly 180°) admits no sector at all without `staying` (check 12). With
-`staying`, the admissible sector is the one sector whose closed wedge holds
-the table images of its points (checks 17 to 19). The
+**Admissible stayer sectors.** Every candidate ray set is tried against the
+one fan sector whose closed wedge holds the table images of the staying
+points ([[reference/model#def-flatten|def-flatten]], checks 17 to 19). The
 evaluator rotates the ray labeling so the sector under test becomes sector 0
 before the fan construction runs, which is what anchors `T_0 = identity` on
 the stayer (Sectors, below).
@@ -520,22 +503,7 @@ the stayer (Sectors, below).
    Even → no candidate; the given rays are the whole ray set.
 2. **Enumerate.** Each **segment combination** ([[reference/beloch-writes#flatten-and-flip]]: one
    chosen segment per element, when a crease carries more than one at O) is
-   tried independently. One guard runs before pattern search: *only when
-   the statement has more than one combination to choose from*, another
-   element's given ray landing strictly inside the stayer arc kills that
-   combination: stayed material cannot carry a
-   folding crease. This gate is what makes bare through-crease operands
-   resolve without `&` ([[reference/beloch-writes#flatten-and-flip]]): at the fish vertex, the
-   combination that folds `--ray`'s far segment has that ray inside the
-   leading pair's arc and dies here; only the near segment remains. A
-   single-combination statement has no alternative to fall back on, so a
-   mis-ordered leading pair there is *not* caught this way; it runs the
-   full pipeline and folds the states its stayer admits, past the outline
-   of the sheet where none stays inside (spec `multifold`, "The outline ranks
-   the states of every fan"). In
-   `packages/core/tests/cases/collapse/flatten-order-load-bearing.bel` two
-   combinations fold such states, and the statement fails with check 14.
-   For each surviving combination, at each admissible stayer sector
+   tried independently. For each surviving combination, at each admissible stayer sector
    (above), the tip is found first: the parts of the paper the fan's hinges
    separate from the staying sector's faces (Fan, above). A face
    of the tip that lies in no sector fails the sector with check 6, and an
@@ -559,10 +527,6 @@ the stayer (Sectors, below).
    place and stack every face identically count once). If literally nothing
    survives across every combination and every admissible sector, that is
    check 13, `` no realization keeps the staying flap still ``.
-   The outline then ranks the realizations of all combinations together
-   (`Collapse.rank_by_outline`): those inside the convex hull of the state
-   before the flatten where there are any, else all of them
-   (spec `multifold`, "The outline ranks the states of every fan").
 3. **Segment-choice ambiguity** (check 14). If **more than one** segment
    combination independently produced a non-empty realization pool, the
    statement stops here: `` <name> is ambiguous at the vertex; select a
@@ -579,16 +543,14 @@ the stayer (Sectors, below).
      lies in a wedge of the given rays, sorted counter-clockwise around O,
      that holds the table point of `.p` or has it on a bounding ray
      (spec `multifold`, "emergent beside names the wedge of the emergent ray").
-     It runs after the outline, and leaving no realization
-     where there were some is `` no state has its emergent ray beside
+     Leaving no realization where there were some is `` no state has its emergent ray beside
      <point> ``.
    - \|S\| = 0 → infeasible, checked in priority order: whichever of
      `` collapse through unaligned layers ``, `` the anchor flap has no
-     material outside the staying sector ``, `` collinear leading creases
-     don't pick a stayer ``, `` no realization
+     material outside the staying sector ``, `` no realization
      keeps the staying flap still `` or the message of check 17, 18 or 19
      appears first in the failure pool
-     (checks 6, 16, 12, 13, 17–19); else, odd count, `` the derived crease does not
+     (checks 6, 16, 13, 17–19); else, odd count, `` the derived crease does not
      close the vertex ``; else (even count) the pool's own dominant
      failure: the first that isn't `` assignment forces self-intersection
      ``, falling back to that, or to `` Maekawa violated by the stated

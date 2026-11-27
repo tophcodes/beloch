@@ -180,41 +180,18 @@ A `flatten` SHALL take ray items or fan items and SHALL fail when it holds both.
 - **WHEN** the same fan runs with `(staying .b .s0)`
 - **THEN** it fails with `no sector of the fan holds every staying point`
 
-### Requirement: Without staying a default part stays
-Without `staying`, a statement of fan items SHALL hold the part of largest area on the paper still, and SHALL fail when two parts share the largest area. A statement of ray items SHALL hold the wedge of less than a half-turn between the folded rays of its first two items, and SHALL fail when those two rays are collinear.
-
-#### Scenario: The petal fold without staying
-- **WHEN** the petal fold runs without `(staying .o)`
-- **THEN** the rest of the square, the part of largest area, stays, and the state equals the one with `(staying .o)`
-
-#### Scenario: Collinear leading rays
-- **WHEN** `flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)` runs
-- **THEN** it fails with `collinear leading creases don't pick a stayer`, hint `add (staying .p)`
-
-### Requirement: The stayer fixes where the result lies on the table
-The stayer SHALL fix where the result lies on the table and which state the outline ranks first; where the faces lie relative to each other SHALL not depend on it. Candidate states that hold different parts still SHALL leave the statement ambiguous.
-
-#### Scenario: Candidates with different stayers
-- **WHEN** an odd fan closes in states that hold different sectors still and no `staying` item names one
-- **THEN** the statement fails with `flatten is ambiguous: its candidates hold different sectors still`, hint `add (staying .p) with .p in the sector that stays`
-
 ### Requirement: Every item of a flatten is a condition on its states
 The result of a `flatten` SHALL be the set of its legal flat states, narrowed by its items; every item SHALL be a condition on that set and never a ranking. One state left SHALL be the value; more than one SHALL fail with `flatten is ambiguous: <n> realizations`, whose hint names items that would leave one. An item that rules nothing out SHALL be no error.
 
 #### Scenario: A rabbit ear without conditions
-- **WHEN** `flatten (--ea) (--ec) (--eb)` runs on the square with the three angle bisectors of the triangle `.a .b .c` marked
+- **WHEN** `flatten (--ea) (--ec) (--eb) (staying .d)` runs on the square with the three angle bisectors of the triangle `.a .b .c` marked
 - **THEN** it fails with `flatten is ambiguous`
 
-### Requirement: The outline ranks the states of every fan
-Of all candidate states of all candidate fans of a `flatten` or a `squash`, those whose faces lie on the table inside the convex hull of the state before the write SHALL be kept where there are any, and all of them where there are none. This ranking SHALL run before the conditions of the items.
-
-#### Scenario: A squash beyond its triangle
-- **WHEN** `fold (map .a onto .c) as --bd`, `fold (map .b onto .d) as --ac`, `squash (--bd & --bc onto --ac)` run
-- **THEN** the squash folds although half of the opened square lies beyond the triangle's edge on `--ac`
-
-#### Scenario: The petal fold
-- **WHEN** the petal fold lifts the front flap past the outline of the preliminary base
-- **THEN** no state lies inside, every state stays, and the statement folds
+#### Scenario: The fish-base vertex names what stays
+- **GIVEN** the square with `--l1` and `--l2` marked through `.b` and `.d` and the fish-base vertex on `--ray`, the diagonal through `.a` and `.c`
+- **WHEN** `flatten (--l1 valley) (--l2) (--ray mountain) (staying .c)` runs
+- **THEN** it fails with `flatten is ambiguous: 2 realizations`, the two mirror images that take the halves of the lines toward `.b`, `.d` and `.a`
+- **AND** with `(emergent beside .b)` added it folds the one whose emergent ray runs toward `--ab`
 
 ### Requirement: emergent beside names the wedge of the emergent ray
 `(emergent beside .p)` SHALL keep the states whose emergent ray lies in a wedge between consecutive given rays that holds the table point of `.p`, the two bounding rays included. The item SHALL fail on an even fan, on a flatten of several fans, and when no state puts its emergent ray beside `.p`. It SHALL stand at most once.
@@ -253,3 +230,21 @@ A `flatten` SHALL refuse a `toward` item; the side of an emergent ray is named w
 #### Scenario: Two faces that lie apart
 - **WHEN** an `over` item names two points whose faces overlap in no state
 - **THEN** the statement fails with `` contradictory `over` ``
+
+### Requirement: A flatten names the part that stays
+Every `flatten`, of ray items or of fan items, SHALL hold a `staying` item. A `flatten` without one SHALL fail with `flatten needs (staying .p)`, hint `name a point in the part that stays`, before any state is solved.
+
+#### Scenario: The petal fold without staying
+- **WHEN** the petal fold runs without `(staying .o)`
+- **THEN** it fails with `flatten needs (staying .p)`
+
+#### Scenario: Collinear leading rays
+- **WHEN** `flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)` runs on the open square
+- **THEN** it fails with `flatten needs (staying .p)`
+
+### Requirement: The stayer places the result on the table
+The stayer SHALL fix where the result lies on the table; where the faces lie relative to each other SHALL not depend on it.
+
+#### Scenario: The rabbit ear keeps its half in place
+- **WHEN** `flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent beside .a) as --ear` runs on the open square
+- **THEN** `.a`, `.c` and `.d` keep their places on the table, and the ear lies on the triangle they span

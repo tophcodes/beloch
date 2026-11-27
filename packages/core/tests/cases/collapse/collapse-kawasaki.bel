@@ -6,6 +6,6 @@ mark (map .b onto .d) as --ac  ; diagonal a–c
 mark (map .a onto .b) as --v   ; vertical midline x = 1/2
 
 flatten (--ac & .a) (--ac & .c)
-  (--v & --cd) (--v & --ab)
+  (--v & --cd) (--v & --ab) (staying .a)
 
 ; expect error "flat-foldable"
