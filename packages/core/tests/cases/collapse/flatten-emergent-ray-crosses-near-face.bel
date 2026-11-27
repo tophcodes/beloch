@@ -1,0 +1,25 @@
+@author "Claude (Anthropic)"
+
+; Three marked lines meet at .o = (1/3, 2/3), and --w, the line x = 1/2,
+; passes close to .o. The emergent ray in the wedge that holds .c leaves its
+; face at --w, about 1/6 from .o, and runs on to the edge x = 1: it is scored
+; through every face it crosses, however short the direction vector its
+; reflection gives. The program is the site's logo mark
+; (packages/www/public/brand/mark.bel).
+
+paper square
+
+mark (map .c onto .d) as --w
+.mcd = --w * --cd
+.mab = --w * --ab
+
+mark (through .a .mcd) as --l1
+mark (through .d .b) as --l2
+.o = --l1 * --l2
+
+mark (through .o .mab) as --l3
+
+flatten (--l1 & .a valley) (--l2 & .b valley) (--l3 \ .mab) (staying .c) (emergent beside .c) as --ear
+
+; assert .o = (1/3, 2/3)
+; assert --ear is mountain

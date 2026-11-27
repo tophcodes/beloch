@@ -337,7 +337,35 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
        | [] -> local_err := Flatten.e_infeasible :: !local_err
        | cands ->
            List.iter
-             (fun (line, ray_pt, _) ->
+             (fun (line, ray_dir, _) ->
+               (* the end of the emergent ray: the farther of [ray_dir] and
+                  the farthest point along it where [line] leaves a face on
+                  the table, so that the cut reaches every face of the
+                  bundle the ray crosses *)
+               let ray_pt =
+                 let along (q : Geom.point) =
+                   Num.add
+                     (Num.mul (Num.sub q.Geom.x o.Geom.x)
+                        (Num.sub ray_dir.Geom.x o.Geom.x))
+                     (Num.mul (Num.sub q.Geom.y o.Geom.y)
+                        (Num.sub ray_dir.Geom.y o.Geom.y))
+                 in
+                 List.init (Array.length pre) Fun.id
+                 |> List.fold_left
+                      (fun best i ->
+                        match
+                          Geom.clip_line_to_convex line
+                            (Fold_state.table_polygon_ccw pre_st i)
+                        with
+                        | None -> best
+                        | Some (a, b) ->
+                            List.fold_left
+                              (fun best q ->
+                                if Num.compare (along q) (along best) > 0 then q
+                                else best)
+                              best [ a; b ])
+                      ray_dir
+               in
                (* score this candidate ray with the given rays on a local
                   copy of the pre-flatten state, then scan every crease ray
                   now sitting at O on the candidate's side of the
