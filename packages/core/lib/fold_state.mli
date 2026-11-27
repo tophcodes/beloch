@@ -189,6 +189,25 @@ val orders :
     of this; [Error] is a violation the geometry holds.
     @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
 
+val unit_orders :
+  ?marks:mark array ->
+  ?witness:(unit -> int -> int -> bool) ->
+  geometry ->
+  unit_of:int array ->
+  before:(int -> int -> int) ->
+  turned:bool array ->
+  across:(int -> int -> bool option) ->
+  fixed:(int * int) list ->
+  (t list, violation) result
+(** The layer search of a fan over the units a verb gives (spec
+    layer-order, "A verb gives the units of its fan's layer search"):
+    {!orders}, where two overlapping faces [i] and [j] of one unit
+    ([unit_of]) keep the side [before i j] gives them (+1 above, -1 below,
+    0 apart), exchanged where [turned.(i)] says the face turns over, and
+    [across i j] gives the side of two faces of different units, [None]
+    where the search decides it. With [witness], a search that finds no
+    state fails with the violation of the state [witness ()] orders. *)
+
 val faces : t -> face array
 val hinges : t -> hinge array
 val root : t -> int
@@ -338,7 +357,9 @@ val subdivide_fan :
   rays:(int * Geom.line * Geom.point) list ->
   prov:State.provenance option ->
   t
-(** Score the rays of a fan from the TABLE point [o]: each ray is
+(** Score the rays of a fan from the TABLE point [o], the cut every fan
+    makes ({!reverse_fan} makes it from the point at infinity of an axis,
+    where a ray runs along its whole line): each ray is
     (crease id, its table line, the table point on it where it ends), and
     is scored into its own crease. A face that holds [o] in its interior is cut
     into the wedges between consecutive rays at once, when every wedge is
@@ -447,9 +468,10 @@ val reverse_fan :
   prov:State.provenance option ->
   (reverse_fan, violation) result
 (** The fan of a reverse fold of the material [tip] (a mask over PARENT
-    faces) across the TABLE-space [axis]: each face of the tip that the axis
-    crosses is cut, with a flat hinge of crease [cid] between its piece on
-    [-move_side] and its piece on [move_side]. *)
+    faces) across the TABLE-space [axis]: the cut of {!subdivide_fan} from
+    the point at infinity of the axis, whose two rays are the two halves of
+    the axis, cuts each face of the tip that the axis crosses, with a flat
+    hinge of crease [cid] between its two pieces. *)
 
 val reverse_scored : reverse_fan -> t
 (** The cut state the fan folds. *)
@@ -480,10 +502,9 @@ val fold_opening :
     {!reverse_scored}) says the fan turns it over, and the block listed
     first lies below the other. The faces of a state come in this order: the
     blocks placed [Bottom], the stationary faces, the other blocks, each in
-    the order of {!reverse_scored}. The hinges come along the axis first,
-    then the carried hinges by the hinge they carry and their faces. FOLD
-    output enumerates faces and hinges by index, so both orders are
-    observable output. *)
+    the order of {!reverse_scored}. The hinges come in the order of
+    {!reverse_scored}. FOLD output enumerates faces and hinges by index, so
+    both orders are observable output. *)
 
 val reverse_attempts :
   cid:int ->

@@ -748,11 +748,11 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     Array.init nh (fun i ->
         let h = hinges.(i) in
         let on_any = List.exists (in_bundle i) (List.init nr Fun.id) in
-        if (not on_any) || not (touches_tip h) then Collapse.Keep
+        if (not on_any) || not (touches_tip h) then Fan.Keep
         else
           match names.(i) with
-          | Some _ when Num.sign h.Fold_state.angle = 0 -> Collapse.Fold
-          | _ -> Collapse.Try)
+          | Some _ when Num.sign h.Fold_state.angle = 0 -> Fan.Fold
+          | _ -> Fan.Try)
   in
   (* the face on the clockwise side of ray [k] at its vertex *)
   let side k a b =
@@ -770,9 +770,15 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     else if w.(b) = !idx then Some (a, b)
     else None
   in
+  let root =
+    match List.find_opt (fun i -> sec.(i) = 0 && not tip.(i)) (List.init nf Fun.id) with
+    | Some i -> i
+    | None -> -1
+  in
   let sgs =
-    Collapse.geoms_of st ~sec ~tip ~names ~role ~nelem:nr
-      ~side ~faces ~nf
+    match Fan.make st ~root ~tip ~names ~role ~nelem:nr ~side with
+    | Some fans -> Ok fans
+    | None -> Error Collapse.e_kawasaki
   in
   (* the letters: free where the program left them, held to Maekawa's
      parity at a vertex the anchor surrounds *)

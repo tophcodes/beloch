@@ -1,7 +1,7 @@
 (** A reverse fold through the fan (spec layer-order,
     "A reverse fold gives three units per opening"): the fan cuts the tip
     along the axis and moves each piece by the creases on its paper path
-    ([Collapse.geoms_of]; spec multifold,
+    ([Fan.make]; spec multifold,
     "A fan moves each piece by the changing hinges on its paper path"), and
     each opening of the tip (spec reverse-fold,
     "A reverse fold opens its tip at one opening") is a stacking of that one

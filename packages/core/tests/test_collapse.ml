@@ -587,17 +587,16 @@ let test_square_twist () =
   let g = Fold_state.flat ~hinges faces in
   let nf = Array.length faces in
   let sgs =
-    Collapse.geoms_of g ~sec:(Array.init nf Fun.id)
+    Fan.make g ~root:0
       ~tip:(Array.init nf (fun i -> i > 0))
       ~names:(Array.init 12 Option.some)
-      ~role:(Array.make 12 Collapse.Fold) ~nelem:12
+      ~role:(Array.make 12 Fan.Fold) ~nelem:12
       ~side:(fun _ a b -> Some (a, b))
-      ~faces ~nf
   in
   let valley = Array.init 12 (fun k -> k < 4 || k >= 8) in
   match sgs with
-  | Error e -> Alcotest.failf "the twist does not close: %s" e
-  | Ok [ sg ] -> (
+  | None -> Alcotest.fail "the twist does not close"
+  | Some [ sg ] -> (
       match Collapse.pipeline_solve sg ~valley ~over:[] with
       | Error e -> Alcotest.failf "the twist does not fold flat: %s" e
       | Ok states ->
@@ -616,7 +615,7 @@ let test_square_twist () =
                 true
                 (Fold_state.mv st k = if v then Fold_state.V else Fold_state.M))
             valley)
-  | Ok l -> Alcotest.failf "%d ways to fold, expected one" (List.length l)
+  | Some l -> Alcotest.failf "%d ways to fold, expected one" (List.length l)
 
 let () =
   Alcotest.run "collapse"

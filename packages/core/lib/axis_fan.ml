@@ -1,53 +1,41 @@
 (** The fan at the point at infinity of an axis (spec multifold, "A fold is
     the fan at the point at infinity of its axis"): it cuts the tip along the
-    axis and moves each piece by the changing hinges on its paper path
-    ([Collapse.geoms_of]; spec multifold, "A fan moves each piece by the
-    changing hinges on its paper path"). `fold`, `unfold` and `reverse` fold
-    through it. *)
+    axis and hands the cut state to [Fan.make], which moves each piece by the
+    changing hinges on its paper path, and the blocks of each opening to
+    [Fan.stackings]. `fold`, `unfold` and `reverse` fold through it. *)
 
-type t = {
-  fan : Fold_state.reverse_fan;
-  geo : Fold_state.geometry;
-  turned : bool array;
-}
+type t = { cut : Fold_state.reverse_fan; fan : Fan.t }
 
 let make ~(cid : int) (g : Fold_state.t) ~(axis : Geom.line) ~(move_side : int)
     ~(tip : bool array) ~(prov : State.provenance option) :
     (t, Fold_state.violation) result =
   match Fold_state.reverse_fan ~cid g ~axis ~move_side ~tip ~prov with
   | Error v -> Error v
-  | Ok fan -> (
-      let scored = Fold_state.reverse_scored fan in
-      let faces = Fold_state.faces scored in
-      let nf = Array.length faces in
-      let root = Fold_state.reverse_root fan in
+  | Ok cut -> (
+      let scored = Fold_state.reverse_scored cut in
       (* the cut hinges fold, a hinge already on the axis between the tip
          and a face that stays changes, and every other hinge keeps its
          angle *)
       let role =
         Array.map
-          (fun changes -> if changes then Collapse.Fold else Collapse.Keep)
-          (Fold_state.reverse_changes fan)
+          (fun changes -> if changes then Fan.Fold else Fan.Keep)
+          (Fold_state.reverse_changes cut)
       in
       match
-        Collapse.geoms_of scored
-          ~sec:(Array.init nf (fun i -> if i = root then 0 else 1))
-          ~tip:(Fold_state.reverse_moved fan)
+        Fan.make scored ~root:(Fold_state.reverse_root cut)
+          ~tip:(Fold_state.reverse_moved cut)
           ~names:(Array.make (Array.length role) None)
           ~role ~nelem:0
           ~side:(fun _ _ _ -> None)
-          ~faces ~nf
       with
-      | Ok (sg :: _) ->
-          Result.map
-            (fun geo -> { fan; geo; turned = sg.Collapse.sg_flips })
-            (Lazy.force sg.Collapse.sg_geometry)
+      | Some (fan :: _) ->
+          Result.map (fun _ -> { cut; fan }) (Fan.geometry fan)
       (* a reflection across one line closes every path, so the motion of
          the tip always exists *)
-      | Ok [] | Error _ -> Error (Fold_state.Hinge_not_closed 0))
+      | Some [] | None -> Error (Fold_state.Hinge_not_closed 0))
 
 let fold_opening (f : t) ~(blocks : (bool array * Fold_state.placement) list) =
-  Fold_state.fold_opening f.fan f.geo ~turned:f.turned ~blocks
+  Fan.stackings f.fan (Fan.Opening (f.cut, blocks))
 
 let fold_blocks_all ?crease_id ~(blocks : (bool array * Fold_state.placement) list)
     (g : Fold_state.t) ~(axis : Geom.line) ~(move_side : int)

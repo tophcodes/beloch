@@ -748,6 +748,26 @@ let orders_or_violation ?(marks = [||]) (geo : geometry) ~kept ~fixed
       | _ -> Error Layer_cycle)
   | r -> r
 
+(* The layer search of a fan over the units a verb gives (spec layer-order,
+   "A verb gives the units of its fan's layer search"): [orders], or
+   [orders_or_violation] with a [witness], where two overlapping faces of
+   one unit keep the side [before] gives them (+1 above, -1 below, 0 apart),
+   exchanged where [turned] says the face turns over, and [across] gives the
+   side of two faces of different units, [None] where the search decides
+   it. *)
+let unit_orders ?(marks = [||]) ?witness (geo : geometry) ~(unit_of : int array)
+    ~(before : int -> int -> int) ~(turned : bool array)
+    ~(across : int -> int -> bool option) ~(fixed : (int * int) list) :
+    (t list, violation) result =
+  let kept i j =
+    if unit_of.(i) = unit_of.(j) then
+      match before i j with 0 -> None | s -> Some (s > 0 <> turned.(i))
+    else across i j
+  in
+  match witness with
+  | None -> orders ~marks geo ~kept ~fixed
+  | Some witness -> orders_or_violation ~marks geo ~kept ~fixed ~witness
+
 (* [?base]/[?marks] are LEADING optional arguments with only labeled
    required arguments after them; OCaml can only erase omitted optional
    arguments when a positional argument follows, so [make] takes a trailing
@@ -1139,91 +1159,111 @@ let split_faces ?hinge_prov (g : t) ~(prov : State.provenance option)
       ~root' ~parent,
     parent )
 
-let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
+(* The cut of a fan: score its rays from the vertex [o], a point of the table,
+   or None for the point at infinity of the rays' line (spec multifold,
+   "A fold is the fan at the point at infinity of its axis"), where a ray runs
+   along its whole line and its end point is not read. Returns the cut state
+   and the parent of each of its faces. *)
+let fan_cut ?(only = fun _ -> true) (g : t) ~(o : Geom.point option)
     ~(rays : (int * Geom.line * Geom.point) list)
-    ~(prov : State.provenance option) : t =
-  let dir (p : Geom.point) =
+    ~(prov : State.provenance option) : t * int array =
+  let dir (o : Geom.point) (p : Geom.point) =
     (Num.sub p.Geom.x o.Geom.x, Num.sub p.Geom.y o.Geom.y)
   in
-  let cross (ax, ay) (bx, by) = Num.sub (Num.mul ax by) (Num.mul ay bx) in
   let dot (ax, ay) (bx, by) = Num.add (Num.mul ax bx) (Num.mul ay by) in
-  let offset (dx, dy) =
-    { Geom.x = Num.add o.Geom.x dx; y = Num.add o.Geom.y dy }
-  in
   let table_of g fi =
     Array.map (Isometry.apply_point (face_iso2 g fi)) g.faces.(fi)
   in
   (* 1. a face that holds O in its interior is cut into the wedges between
      consecutive rays at once: one half-line alone does not divide it into
-     convex pieces. The rays then run from O on every face. *)
-  let sorted =
-    List.sort (fun (_, _, p) (_, _, q) -> Geom.ccw_compare ~center:o p q) rays
-    |> Array.of_list
-  in
-  let k = Array.length sorted in
-  let wedges_convex =
-    k >= 2
-    && Array.for_all Fun.id
-         (Array.init k (fun j ->
-              let _, _, p = sorted.(j) and _, _, q = sorted.((j + 1) mod k) in
-              let c = Num.sign (cross (dir p) (dir q)) in
-              c > 0 || (c = 0 && Num.sign (dot (dir p) (dir q)) < 0)))
-  in
-  let cut_wedges fi =
-    let table = table_of g fi and ccw = table_polygon_ccw g fi in
-    let n = Array.length ccw in
-    if not (wedges_convex && only fi && Geom.in_convex_polygon ccw o
-            && Array.for_all
-                 (fun i ->
-                   not (Geom.on_segment (ccw.(i), ccw.((i + 1) mod n)) o))
-                 (Array.init n Fun.id))
-    then None
-    else
-      let inv = Isometry.inverse (face_iso2 g fi) in
-      let back = Isometry.apply_point inv in
-      let wedge j =
-        let _, lj, p = sorted.(j) and _, lk, q = sorted.((j + 1) mod k) in
-        let dx, dy = dir p and ex, ey = dir q in
-        let left = offset (Num.neg dy, dx)
-        and right = offset (ey, Num.neg ex) in
-        let poly =
-          Geom.clip_convex_halfplane lj (Geom.side_of_line lj left) table
-          |> Geom.clip_convex_halfplane lk (Geom.side_of_line lk right)
-        in
-        Array.map back poly
-      in
-      let exit_of j =
-        let _, l, p = sorted.(j) in
-        match Geom.clip_line_to_convex l ccw with
-        | Some (a, b) -> if Num.sign (dot (dir a) (dir p)) > 0 then a else b
-        | None -> p
-      in
-      let children = List.init k wedge in
-      if List.exists (fun c -> Array.length c < 3) children then None
+     convex pieces. The rays then run from O on every face. No face holds
+     the point at infinity. *)
+  let g, parent =
+    match o with
+    | None -> (g, Array.init (Array.length g.faces) Fun.id)
+    | Some o ->
+    let dir = dir o in
+    let cross (ax, ay) (bx, by) = Num.sub (Num.mul ax by) (Num.mul ay bx) in
+    let offset (dx, dy) =
+      { Geom.x = Num.add o.Geom.x dx; y = Num.add o.Geom.y dy }
+    in
+    let sorted =
+      List.sort (fun (_, _, p) (_, _, q) -> Geom.ccw_compare ~center:o p q) rays
+      |> Array.of_list
+    in
+    let k = Array.length sorted in
+    let wedges_convex =
+      k >= 2
+      && Array.for_all Fun.id
+           (Array.init k (fun j ->
+                let _, _, p = sorted.(j) and _, _, q = sorted.((j + 1) mod k) in
+                let c = Num.sign (cross (dir p) (dir q)) in
+                c > 0 || (c = 0 && Num.sign (dot (dir p) (dir q)) < 0)))
+    in
+    let cut_wedges fi =
+      let table = table_of g fi and ccw = table_polygon_ccw g fi in
+      let n = Array.length ccw in
+      if not (wedges_convex && only fi && Geom.in_convex_polygon ccw o
+              && Array.for_all
+                   (fun i ->
+                     not (Geom.on_segment (ccw.(i), ccw.((i + 1) mod n)) o))
+                   (Array.init n Fun.id))
+      then None
       else
-        Some
-          ( children,
-            List.init k (fun j ->
-                let cid, _, _ = sorted.(j) in
-                ((j - 1 + k) mod k, j, (back o, back (exit_of j)), cid)) )
+        let inv = Isometry.inverse (face_iso2 g fi) in
+        let back = Isometry.apply_point inv in
+        let wedge j =
+          let _, lj, p = sorted.(j) and _, lk, q = sorted.((j + 1) mod k) in
+          let dx, dy = dir p and ex, ey = dir q in
+          let left = offset (Num.neg dy, dx)
+          and right = offset (ey, Num.neg ex) in
+          let poly =
+            Geom.clip_convex_halfplane lj (Geom.side_of_line lj left) table
+            |> Geom.clip_convex_halfplane lk (Geom.side_of_line lk right)
+          in
+          Array.map back poly
+        in
+        let exit_of j =
+          let _, l, p = sorted.(j) in
+          match Geom.clip_line_to_convex l ccw with
+          | Some (a, b) -> if Num.sign (dot (dir a) (dir p)) > 0 then a else b
+          | None -> p
+        in
+        let children = List.init k wedge in
+        if List.exists (fun c -> Array.length c < 3) children then None
+        else
+          Some
+            ( children,
+              List.init k (fun j ->
+                  let cid, _, _ = sorted.(j) in
+                  ((j - 1 + k) mod k, j, (back o, back (exit_of j)), cid)) )
+    in
+    split_faces g ~prov ~cut_of:cut_wedges
   in
-  let g, parent = split_faces g ~prov ~cut_of:cut_wedges in
   let only = Array.map only parent in
-  (* 2. every other face a ray crosses between O and its point is cut along
-     it, as [subdivide] cuts it: plus child first *)
-  let g, _ =
+  (* a ray from a point of the table runs from O to its end point, a ray
+     from the point at infinity along its whole line *)
+  let reaches (_, _, p) (a, b) =
+    match o with
+    | None -> true
+    | Some o ->
+        let dir = dir o in
+        Num.sign (dot (dir a) (dir p)) >= 0
+        && Num.sign (dot (dir b) (dir p)) >= 0
+        && Num.compare (dot (dir a) (dir p)) (dot (dir p) (dir p)) <= 0
+        && Num.compare (dot (dir b) (dir p)) (dot (dir p) (dir p)) <= 0
+  in
+  (* 2. every other face a ray crosses is cut along it, as [subdivide] cuts
+     it: plus child first *)
+  let g, parent, _ =
     List.fold_left
-      (fun (g, only) (cid, axis, p) ->
+      (fun (g, parent, only) ((cid, axis, _) as ray) ->
         let cut_of fi =
           if not only.(fi) then None
           else
             let table = table_of g fi in
             match Geom.clip_line_to_convex axis (table_polygon_ccw g fi) with
-            | Some (a, b)
-              when Num.sign (dot (dir a) (dir p)) >= 0
-                   && Num.sign (dot (dir b) (dir p)) >= 0
-                   && Num.compare (dot (dir a) (dir p)) (dot (dir p) (dir p)) <= 0
-                   && Num.compare (dot (dir b) (dir p)) (dot (dir p) (dir p)) <= 0 -> (
+            | Some chord when reaches ray chord -> (
                 let part s =
                   let sub = Geom.clip_convex_halfplane axis s table in
                   if Array.length sub >= 3 then Some sub else None
@@ -1236,11 +1276,14 @@ let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
                 | _ -> None)
             | _ -> None
         in
-        let g', parent = split_faces g ~prov ~cut_of in
-        (g', Array.map (fun p -> only.(p)) parent))
-      (g, only) rays
+        let g', p = split_faces g ~prov ~cut_of in
+        (g', Array.map (fun k -> parent.(k)) p, Array.map (fun k -> only.(k)) p))
+      (g, parent, only) rays
   in
-  g
+  (g, parent)
+
+let subdivide_fan ?only (g : t) ~(o : Geom.point) ~rays ~prov : t =
+  fst (fan_cut ?only g ~o:(Some o) ~rays ~prov)
 
 (* Cut faces along several table segments at once. [segments i] gives the
    segments that score face [i], each with its crease id; a face it gives
@@ -1740,7 +1783,6 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
               ignore (overlap i j)
             done
           done;
-          let kept i j = if moved.(i) = moved.(j) then Some (kept_above i j) else None in
           let fixed = List.map (fun ((s, m), up) -> if up then (s, m) else (m, s)) decided in
           (* where no state folds flat, the violation of the combination
              with every open class turned one way, the first the search
@@ -1756,125 +1798,17 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
               else if moved.(j) then Hashtbl.find stat_above (i, j)
               else not (Hashtbl.find stat_above (j, i))
           in
-          let found = orders_or_violation ~marks:g.marks geo ~kept ~fixed ~witness in
+          (* two moved faces of different blocks lie as their blocks do *)
+          let across i j =
+            if moved.(i) && moved.(j) then Some (block_of.(i) > block_of.(j)) else None
+          in
+          let found =
+            unit_orders ~marks:g.marks ~witness geo ~unit_of:block_of
+              ~before:(fun i j -> side g parent.(i) parent.(j))
+              ~turned ~across ~fixed
+          in
           exchange ();
           found)
-
-(* The faces of [g] cut by the TABLE-space [axis] for a fold of [nb] blocks.
-   A parent in no block ([block_of_parent] gives -1) stays whole; a block
-   parent gives its piece on [-move_side] to the stationary faces and its
-   piece on [move_side] to its block. Returns the stationary faces with
-   their parents, in the order of the parents; per block its pieces with
-   their parents, in the reverse order of the parents; per parent the axis
-   cuts, the chord, in the reverse order of the parents; and per parent
-   whether it stays whole. FOLD emit enumerates faces by index, so these
-   orders are observable output. *)
-let cut_blocks (g : t) ~(axis : Geom.line) ~(move_side : int) ~(nb : int)
-    ~(block_of_parent : int -> int) =
-  let stay = ref [] in (* ([paper_poly], parent) *)
-  let movs = Array.make (max nb 1) [] in (* per block, ([paper_poly], parent) *)
-  let chords = ref [] in (* (parent, a, b) for each face cut *)
-  let uncut = Array.make (Array.length g.faces) false in
-  Array.iteri
-    (fun fi f ->
-      let b = block_of_parent fi in
-      if b < 0 then begin
-        stay := (f, fi) :: !stay;
-        uncut.(fi) <- true
-      end
-      else begin
-        let iso2 = face_iso2 g fi in
-        let table = Array.map (Isometry.apply_point iso2) f in
-        let inv = Isometry.inverse iso2 in
-        let part k =
-          let sub = Geom.clip_convex_halfplane axis k table in
-          if Array.length sub >= 3 then
-            Some (Array.map (Isometry.apply_point inv) sub)
-          else None
-        in
-        let s = part (-move_side) and m = part move_side in
-        (match (s, m) with
-        | Some _, Some _ -> (
-            match axis_chord_in_face g fi axis with
-            | Some (a, b) -> chords := (fi, a, b) :: !chords
-            | None -> ())
-        | _ -> ());
-        if s = None || m = None then uncut.(fi) <- true;
-        (match s with Some poly -> stay := (poly, fi) :: !stay | None -> ());
-        match m with
-        | Some poly -> movs.(b) <- (poly, fi) :: movs.(b)
-        | None -> ()
-      end)
-    g.faces;
-  (List.rev !stay, movs, !chords, uncut)
-
-(* The hinges of a fold of blocks before the fold turns any of them: per
-   chord of [cut_blocks] a flat hinge along the axis between the stationary
-   and the moved child, then the hinges of [g] re-attached to the children
-   of their faces (D7). Each comes with the index of the hinge of [g] it
-   carries, -1 for a hinge along the axis, and whether the fold changes it:
-   every hinge along the axis, and a carried hinge that lies on the axis
-   with exactly one moving side (D8). *)
-let block_hinges (g : t) ~(axis : Geom.line) ~(cid : int)
-    ~(prov : State.provenance option) ~(faces' : face array)
-    ~(parent : int array) ~(moved : bool array)
-    ~(chords : (int * Geom.point * Geom.point) list) : (hinge * int * bool) list =
-  let children_of p =
-    let acc = ref [] in
-    Array.iteri (fun k pp -> if pp = p then acc := k :: !acc) parent;
-    List.rev !acc
-  in
-  let along =
-    List.rev_map
-      (fun (fi, a, b) ->
-        let sc = ref (-1) and mc = ref (-1) in
-        Array.iteri (fun k pp -> if pp = fi then if moved.(k) then mc := k else sc := k) parent;
-        ( { fa = !sc; fb = !mc; line = Geom.line_through a b; angle = Num.zero;
-            crease_id = cid; prov },
-          -1,
-          true ))
-      chords
-  in
-  let moved_parent = Array.make (Array.length g.faces) false in
-  Array.iteri (fun k pp -> if moved.(k) then moved_parent.(pp) <- true) parent;
-  let carried =
-    List.concat
-      (List.mapi
-         (fun hi (h : hinge) ->
-           let ta, tb = hinge_table_segment g hi in
-           let changes =
-             Geom.side_of_line axis ta = 0 && Geom.side_of_line axis tb = 0
-             && moved_parent.(h.fa) <> moved_parent.(h.fb)
-           in
-           List.concat_map
-             (fun cp ->
-               List.filter_map
-                 (fun cq ->
-                   let h' = { h with fa = cp; fb = cq } in
-                   match hinge_shared_segment faces' h' with
-                   | Some _ -> Some (h', hi, changes)
-                   | None -> None)
-                 (children_of h.fb))
-             (children_of h.fa))
-         (Array.to_list g.hinges))
-  in
-  along @ carried
-
-(* Two uncut children that both moved or both stayed overlap iff their
-   parents did. *)
-let seed_overlaps (g : t) (geo : geometry) ~(parent : int array)
-    ~(moved : bool array) ~(uncut : bool array) : unit =
-  match geo.g_placed with
-  | Error _ -> ()
-  | Ok p ->
-      let n = Array.length parent in
-      for i = 0 to n - 1 do
-        if uncut.(parent.(i)) then
-          for j = i + 1 to n - 1 do
-            if uncut.(parent.(j)) && moved.(i) = moved.(j) then
-              p.p_overlap.(i).(j) <- Some (side g parent.(i) parent.(j) <> 0)
-          done
-      done
 
 (* The side of two faces of a fold whose blocks all lie outside the stack:
    the blocks and the stationary faces (unit -1) from the bottom up, a block
@@ -1958,77 +1892,68 @@ let block_root (g : t) ~(parent : int array) ~(moved : bool array) : int option 
 (* A reverse fold as a fan (spec layer-order,
    "A reverse fold gives three units per opening"). [rf_scored] is
    [rf_before] with every face of the tip cut along the axis by a flat hinge,
-   its faces in the order [cut_blocks] gives one block, the tip: the stationary
-   faces, then the pieces beyond the axis. The fan changes the hinges
-   [rf_change] marks, and every piece beyond the axis moves by the reflection
-   across it whatever the opening, so every opening is a stacking of one folded
-   state. [rf_origin] holds per hinge the hinge of [rf_before] it carries, -1
-   for a hinge along the axis. *)
+   by [fan_cut] from the point at infinity of the axis, and [rf_parent] gives
+   the face of [rf_before] each of its faces is cut from. The fan changes the
+   hinges [rf_change] marks, and every piece beyond the axis moves by the
+   reflection across it whatever the opening, so every opening is a stacking
+   of one folded state. *)
 type reverse_fan = {
   rf_before : t;
   rf_scored : t;
   rf_parent : int array;
   rf_moved : bool array;
-  rf_uncut : bool array;
-  rf_origin : int array;
   rf_change : bool array;
   rf_root : int;
-  rf_scored_geo : geometry;
   rf_shared : shared;
 }
 
 let reverse_fan ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(tip : bool array) ~(prov : State.provenance option) :
     (reverse_fan, violation) result =
-  let stationary, movs, chords, uncut =
-    cut_blocks g ~axis ~move_side ~nb:1
-      ~block_of_parent:(fun fi -> if tip.(fi) then 0 else -1)
+  (* the two rays of the fan are the two halves of the axis, and together
+     they score the whole axis; [fan_cut] reads no end point of a ray from
+     the point at infinity *)
+  let unread = { Geom.x = Num.zero; y = Num.zero } in
+  let scored, parent =
+    fan_cut g ~o:None ~rays:[ (cid, axis, unread) ] ~only:(fun i -> tip.(i)) ~prov
   in
-  let arr = Array.of_list (stationary @ movs.(0)) in
-  let faces' = Array.map fst arr and parent = Array.map snd arr in
-  let n = Array.length arr and n_stay = List.length stationary in
-  let moved = Array.init n (fun k -> k >= n_stay) in
-  let hs = block_hinges g ~axis ~cid ~prov ~faces' ~parent ~moved ~chords in
-  let hinges' = Array.of_list (List.map (fun (h, _, _) -> h) hs) in
+  (* a piece of the tip beyond the axis moves *)
+  let moved =
+    Array.mapi
+      (fun k p ->
+        tip.(p)
+        && Array.exists (fun q -> Geom.side_of_line axis q = move_side) scored.tps.(k))
+      parent
+  in
+  (* a hinge on the axis with exactly one side beyond it changes: the cut
+     hinges, and a hinge already on the axis between the tip and a face that
+     stays *)
+  let change =
+    Array.mapi
+      (fun i (h : hinge) ->
+        let ta, tb = hinge_table_segment scored i in
+        Geom.side_of_line axis ta = 0 && Geom.side_of_line axis tb = 0
+        && moved.(h.fa) <> moved.(h.fb))
+      scored.hinges
+  in
   match block_root g ~parent ~moved with
   | None -> Error (Disconnected 0) (* no face stays: the tip holds every face *)
-  | Some root -> (
-      match geometry ~base:g.isos.(parent.(root)) ~faces:faces' ~hinges:hinges' ~root () with
-      | Error v -> Error v
-      | Ok geo -> (
-          (* before the fold nothing has moved *)
-          seed_overlaps g geo ~parent ~moved:(Array.make n false) ~uncut;
-          (* Cutting a face of a valid state along a flat hinge breaks no
-             condition on hinges: a face between the two faces of a hinge,
-             or crossing it, has a parent that is so, and a flat hinge on
-             the line of a folded one cuts a parent that crosses that
-             folded hinge. *)
-          match
-            build ~marks:g.marks ~tacos:false ~cycles:false geo ~side:(fun i j ->
-                side g parent.(i) parent.(j) > 0)
-          with
-          | exception V v -> Error v
-          | scored ->
-              Ok
-                { rf_before = g; rf_scored = scored; rf_parent = parent;
-                  rf_moved = moved; rf_uncut = uncut;
-                  rf_origin = Array.of_list (List.map (fun (_, o, _) -> o) hs);
-                  rf_change = Array.of_list (List.map (fun (_, _, c) -> c) hs);
-                  rf_root = root; rf_scored_geo = geo; rf_shared = new_shared () }))
+  | Some root ->
+      Ok
+        { rf_before = g; rf_scored = scored; rf_parent = parent; rf_moved = moved;
+          rf_change = change; rf_root = root; rf_shared = new_shared () }
 
 let reverse_scored (rf : reverse_fan) : t = rf.rf_scored
 let reverse_moved (rf : reverse_fan) : bool array = Array.copy rf.rf_moved
 let reverse_changes (rf : reverse_fan) : bool array = Array.copy rf.rf_change
 let reverse_root (rf : reverse_fan) : int = rf.rf_root
 
-(* [geo] with face [face_order.(k)] as face [k] and hinge [hinge_order.(k)]
-   as hinge [k], the answers it has computed carried along. *)
-let permute_geometry (geo : geometry) ~(face_order : int array)
-    ~(hinge_order : int array) : geometry =
+(* [geo] with face [face_order.(k)] as face [k], the answers it has computed
+   carried along. The tables over hinges alone are shared with [geo]. *)
+let permute_geometry (geo : geometry) ~(face_order : int array) : geometry =
   let pos = Array.make (Array.length face_order) 0 in
   Array.iteri (fun k f -> pos.(f) <- k) face_order;
   let pf a = Array.map (fun f -> a.(f)) face_order in
-  let ph a = Array.map (fun h -> a.(h)) hinge_order in
   let pair (t : bool option array array) =
     Array.map
       (fun a -> Array.map (fun b -> t.(min a b).(max a b)) face_order)
@@ -2036,31 +1961,21 @@ let permute_geometry (geo : geometry) ~(face_order : int array)
   in
   {
     g_faces = pf geo.g_faces;
-    g_hinges =
-      Array.map
-        (fun h ->
-          let x = geo.g_hinges.(h) in
-          { x with fa = pos.(x.fa); fb = pos.(x.fb) })
-        hinge_order;
+    g_hinges = Array.map (fun x -> { x with fa = pos.(x.fa); fb = pos.(x.fb) }) geo.g_hinges;
     g_root = pos.(geo.g_root);
     g_base = geo.g_base;
     g_placed =
       Result.map
         (fun p ->
-          { p_isos = pf p.p_isos; p_segs = ph p.p_segs; p_tps = pf p.p_tps;
-            p_ccw_tps = pf p.p_ccw_tps; p_tsegs = ph p.p_tsegs;
-            p_folded = ph p.p_folded;
-            p_crosses =
-              Array.map (fun h -> Array.map (fun f -> p.p_crosses.(h).(f)) face_order) hinge_order;
-            p_overlaps =
-              Array.map (fun h -> Array.map (fun h' -> p.p_overlaps.(h).(h')) hinge_order) hinge_order;
+          { p with
+            p_isos = pf p.p_isos; p_tps = pf p.p_tps; p_ccw_tps = pf p.p_ccw_tps;
+            p_crosses = Array.map pf p.p_crosses;
             p_overlap = pair p.p_overlap })
         geo.g_placed;
   }
 
 (* The answers [geo'], [geo] permuted, computed that [geo] has not. *)
-let keep_answers (geo : geometry) (geo' : geometry) ~(face_order : int array)
-    ~(hinge_order : int array) : unit =
+let keep_answers (geo : geometry) (geo' : geometry) ~(face_order : int array) : unit =
   match (geo.g_placed, geo'.g_placed) with
   | Ok p, Ok p' ->
       let fill (t : bool option array array) i j v =
@@ -2075,21 +1990,18 @@ let keep_answers (geo : geometry) (geo' : geometry) ~(face_order : int array)
             face_order)
         face_order;
       Array.iteri
-        (fun k h ->
-          Array.iteri (fun l f -> fill p.p_crosses h f p'.p_crosses.(k).(l)) face_order;
-          Array.iteri (fun l h' -> fill p.p_overlaps h h' p'.p_overlaps.(k).(l)) hinge_order)
-        hinge_order
+        (fun h row -> Array.iteri (fun l f -> fill p.p_crosses h f row.(l)) face_order)
+        p'.p_crosses
   | _ -> ()
 
 (* The stackings of one opening of a reverse fold, its two [blocks] placed
    as [fold_blocks] places them, on [geo], the folded state of [rf]. The
    units of the layer search are the stationary faces and each block; a
    face keeps its side against a face of its own unit, exchanged where
-   [turned] says the fan turns it over. The states have their faces and
-   hinges in the order [fold_blocks] gives them: the blocks placed
-   [Bottom], the stationary faces, the other blocks, each in the order of
-   [rf_scored]; the hinges along the axis, then the carried hinges by the
-   hinge they carry and their faces. *)
+   [turned] says the fan turns it over. The states have their faces in the
+   order [fold_blocks] gives them: the blocks placed [Bottom], the
+   stationary faces, the other blocks, each in the order of [rf_scored];
+   and their hinges in the order of [rf_scored]. *)
 let fold_opening (rf : reverse_fan) (geo : geometry) ~(turned : bool array)
     ~(blocks : (bool array * placement) list) : (t list, violation) result =
   let g = rf.rf_before in
@@ -2103,48 +2015,41 @@ let fold_opening (rf : reverse_fan) (geo : geometry) ~(turned : bool array)
   let face_order =
     Array.of_list (List.stable_sort (fun a b -> compare (rank a) (rank b)) (List.init n Fun.id))
   in
-  let pos = Array.make n 0 in
-  Array.iteri (fun k f -> pos.(f) <- k) face_order;
-  let hs = geo.g_hinges in
-  let along, carried =
-    List.partition (fun h -> rf.rf_origin.(h) < 0) (List.init (Array.length hs) Fun.id)
-  in
-  let key h = (rf.rf_origin.(h), pos.(hs.(h).fa), pos.(hs.(h).fb)) in
-  let hinge_order =
-    Array.of_list (along @ List.stable_sort (fun a b -> compare (key a) (key b)) carried)
-  in
   (* two faces that both moved or both stayed lie as they did in the cut
-     state, so they overlap as they did there *)
-  (match (rf.rf_scored_geo.g_placed, geo.g_placed) with
-  | Ok ps, Ok p ->
+     state, so they overlap where its order relates them *)
+  (match geo.g_placed with
+  | Ok p ->
       for i = 0 to n - 1 do
         for j = i + 1 to n - 1 do
           if rf.rf_moved.(i) = rf.rf_moved.(j) && p.p_overlap.(i).(j) = None then
-            p.p_overlap.(i).(j) <- ps.p_overlap.(i).(j)
+            p.p_overlap.(i).(j) <- Some (side rf.rf_scored i j <> 0)
         done
       done
-  | _ -> ());
-  let geo' = permute_geometry geo ~face_order ~hinge_order in
+  | Error _ -> ());
+  let geo' = permute_geometry geo ~face_order in
   let parent = Array.map (fun f -> rf.rf_parent.(f)) face_order in
   let moved = Array.map (fun f -> rf.rf_moved.(f)) face_order in
   let unit_of = Array.map block_of face_order in
   let turned = Array.map (fun f -> turned.(f)) face_order in
-  seed_overlaps g geo' ~parent ~moved ~uncut:rf.rf_uncut;
   let found =
     if placed_only places then
       placed_stackings ~shared:rf.rf_shared ~g ~geo:geo' ~parent ~moved ~block_of:unit_of
         ~turned ~anchors:(block_anchors ~parent ~moved places)
     else
-      let side = level_side g ~parent ~unit_of ~turned ~places in
-      match orders ~marks:g.marks geo' ~kept:(fun i j -> Some (side i j)) ~fixed:[] with
+      let level = level_side g ~parent ~unit_of ~turned ~places in
+      match
+        unit_orders ~marks:g.marks geo' ~unit_of
+          ~before:(fun i j -> side g parent.(i) parent.(j))
+          ~turned ~across:(fun i j -> Some (level i j)) ~fixed:[]
+      with
       | Error v -> Error v
       | Ok (_ :: _ as gs) -> Ok gs
       | Ok [] -> (
-          match build ~marks:g.marks ~cycles:false geo' ~side with
+          match build ~marks:g.marks ~cycles:false geo' ~side:level with
           | exception V v -> Error v
           | _ -> Error Layer_cycle)
   in
-  keep_answers geo geo' ~face_order ~hinge_order;
+  keep_answers geo geo' ~face_order;
   found
 
 type reverse_failure =
