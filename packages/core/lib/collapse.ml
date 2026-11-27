@@ -826,18 +826,19 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
       (fun (k, fl, fo, down) -> if valley.(k) <> down then (fo, fl) else (fl, fo))
       sg.sg_letters
   in
-  let kept i j =
-    if sg.sg_piece.(i) <> sg.sg_piece.(j) then None
-    else
-      match Fold_state.rel g i j with
-      | Fold_state.Apart -> None
-      | Fold_state.Above -> Some (not sg.sg_flips.(i))
-      | Fold_state.Below -> Some sg.sg_flips.(i)
+  let before i j =
+    match Fold_state.rel g i j with
+    | Fold_state.Above -> 1
+    | Fold_state.Below -> -1
+    | Fold_state.Apart -> 0
   in
   match Lazy.force sg.sg_geometry with
   | Error _ -> Error e_selfint
   | Ok geo -> (
-      match Fold_state.orders ~marks:sg.sg_marks geo ~kept ~fixed with
+      match
+        Fold_state.unit_orders ~marks:sg.sg_marks geo ~unit_of:sg.sg_piece ~before
+          ~turned:sg.sg_flips ~across:(fun _ _ -> None) ~fixed
+      with
       | Error _ | Ok [] -> Error e_selfint
       | Ok states -> (
           let over_ok st =

@@ -748,6 +748,26 @@ let orders_or_violation ?(marks = [||]) (geo : geometry) ~kept ~fixed
       | _ -> Error Layer_cycle)
   | r -> r
 
+(* The layer search of a fan over the units a verb gives (spec layer-order,
+   "A verb gives the units of its fan's layer search"): [orders], or
+   [orders_or_violation] with a [witness], where two overlapping faces of
+   one unit keep the side [before] gives them (+1 above, -1 below, 0 apart),
+   exchanged where [turned] says the face turns over, and [across] gives the
+   side of two faces of different units, [None] where the search decides
+   it. *)
+let unit_orders ?(marks = [||]) ?witness (geo : geometry) ~(unit_of : int array)
+    ~(before : int -> int -> int) ~(turned : bool array)
+    ~(across : int -> int -> bool option) ~(fixed : (int * int) list) :
+    (t list, violation) result =
+  let kept i j =
+    if unit_of.(i) = unit_of.(j) then
+      match before i j with 0 -> None | s -> Some (s > 0 <> turned.(i))
+    else across i j
+  in
+  match witness with
+  | None -> orders ~marks geo ~kept ~fixed
+  | Some witness -> orders_or_violation ~marks geo ~kept ~fixed ~witness
+
 (* [?base]/[?marks] are LEADING optional arguments with only labeled
    required arguments after them; OCaml can only erase omitted optional
    arguments when a positional argument follows, so [make] takes a trailing
@@ -1740,7 +1760,6 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
               ignore (overlap i j)
             done
           done;
-          let kept i j = if moved.(i) = moved.(j) then Some (kept_above i j) else None in
           let fixed = List.map (fun ((s, m), up) -> if up then (s, m) else (m, s)) decided in
           (* where no state folds flat, the violation of the combination
              with every open class turned one way, the first the search
@@ -1756,7 +1775,15 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
               else if moved.(j) then Hashtbl.find stat_above (i, j)
               else not (Hashtbl.find stat_above (j, i))
           in
-          let found = orders_or_violation ~marks:g.marks geo ~kept ~fixed ~witness in
+          (* two moved faces of different blocks lie as their blocks do *)
+          let across i j =
+            if moved.(i) && moved.(j) then Some (block_of.(i) > block_of.(j)) else None
+          in
+          let found =
+            unit_orders ~marks:g.marks ~witness geo ~unit_of:block_of
+              ~before:(fun i j -> side g parent.(i) parent.(j))
+              ~turned ~across ~fixed
+          in
           exchange ();
           found)
 
@@ -2135,12 +2162,16 @@ let fold_opening (rf : reverse_fan) (geo : geometry) ~(turned : bool array)
       placed_stackings ~shared:rf.rf_shared ~g ~geo:geo' ~parent ~moved ~block_of:unit_of
         ~turned ~anchors:(block_anchors ~parent ~moved places)
     else
-      let side = level_side g ~parent ~unit_of ~turned ~places in
-      match orders ~marks:g.marks geo' ~kept:(fun i j -> Some (side i j)) ~fixed:[] with
+      let level = level_side g ~parent ~unit_of ~turned ~places in
+      match
+        unit_orders ~marks:g.marks geo' ~unit_of
+          ~before:(fun i j -> side g parent.(i) parent.(j))
+          ~turned ~across:(fun i j -> Some (level i j)) ~fixed:[]
+      with
       | Error v -> Error v
       | Ok (_ :: _ as gs) -> Ok gs
       | Ok [] -> (
-          match build ~marks:g.marks ~cycles:false geo' ~side with
+          match build ~marks:g.marks ~cycles:false geo' ~side:level with
           | exception V v -> Error v
           | _ -> Error Layer_cycle)
   in

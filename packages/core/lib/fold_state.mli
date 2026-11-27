@@ -189,6 +189,25 @@ val orders :
     of this; [Error] is a violation the geometry holds.
     @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
 
+val unit_orders :
+  ?marks:mark array ->
+  ?witness:(unit -> int -> int -> bool) ->
+  geometry ->
+  unit_of:int array ->
+  before:(int -> int -> int) ->
+  turned:bool array ->
+  across:(int -> int -> bool option) ->
+  fixed:(int * int) list ->
+  (t list, violation) result
+(** The layer search of a fan over the units a verb gives (spec
+    layer-order, "A verb gives the units of its fan's layer search"):
+    {!orders}, where two overlapping faces [i] and [j] of one unit
+    ([unit_of]) keep the side [before i j] gives them (+1 above, -1 below,
+    0 apart), exchanged where [turned.(i)] says the face turns over, and
+    [across i j] gives the side of two faces of different units, [None]
+    where the search decides it. With [witness], a search that finds no
+    state fails with the violation of the state [witness ()] orders. *)
+
 val faces : t -> face array
 val hinges : t -> hinge array
 val root : t -> int
