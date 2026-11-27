@@ -593,7 +593,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   | many
     when (* the fan fixes its stayer before any selection stage runs
             (spec multifold,
-            "The stayer fixes where the result lies on the table"): states
+            "Every item of a flatten is a condition on its states"): states
             with different stayers leave the statement ambiguous *)
          let stayer_of (st, _, (rays, emergent), _) =
            match
