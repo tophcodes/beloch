@@ -104,19 +104,6 @@ let sort_ccw (o : Geom.point) (es : elem list) : (Geom.point * elem) list =
   |> List.map (fun e -> (far_of o e, e))
   |> List.sort (fun (a, _) (b, _) -> Geom.ccw_compare ~center:o a b)
 
-(* Effective valley of a crease whose LEFT (stayer) sector is placed by
-   [sec_transform] over a stayer face already carrying [face_iso]. Mirrors
-   [Fold_state.fold]'s CP-frame intent convention: a stored/effective valley is
-   the user's valley [XORed] with the parity of the stayer face's *final*
-   orientation: [sec_transform ∘ face_iso]. Folding in [face_iso] (not just
-   the sector transform) is what makes a prior `flip` invert M/V relative to
-   the original front (spec §4.7): every pre-collapse face is
-   orientation-reversed, so every effective valley flips. Shared by the
-   hinge-constraint and intent sites. *)
-let effective_valley (valley : bool) (sec_transform : Isometry.t)
-    (face_iso : Isometry.t) : bool =
-  valley <> (Isometry.det_sign (Isometry.compose sec_transform face_iso) < 0)
-
 (* closure: the full-loop reflection product over all n creases must be the
    identity: this is exactly Kawasaki at O. Any cyclic rotation of the product
    is conjugate, so the starting ray does not matter; fold in ray order. *)
@@ -638,8 +625,7 @@ let pipeline_solve (fan : Fan.t) ~(valley : bool array)
 (* pool the per-sector runs: every state of every run ([Ok] pool); an empty
    pool surfaces [e_contra] > [e_unaligned] > [e_anchor_stays] >
    [e_stayer_dead], below the layer error of a [tip_rule].
-   Shared by the single-valley [collapse_runs] and the pattern-sharing
-   path. *)
+   Shared by every pattern of [collapse_all_patterns]. *)
 let pool_of_runs
     (results : [ `Err of string | `Run of Fold_state.t list ] list) :
     (Fold_state.t list, string) result =
@@ -690,31 +676,6 @@ let runs_of_sector sgs ~(valley : bool array) ~(over : (int * int) list) =
           | Ok states -> `Run states)
         sgs
 
-(* run the pipeline once per admissible stayer sector (rotating that sector to
-   0) and each way the fan folds there, pooling every anchored realization.
-   Runs are not deduplicated against each other, since two
-   admissible sectors are two different stayers and so two physically
-   different folds; the layer orders of one run differ in the side of at
-   least one pair. *)
-let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
-    ~(over : (int * int) list) ~(stayer : stayer) :
-    (Fold_state.t list, string) result =
-  match fan_setup ?anchor g es ~stayer with
-  | Error e -> Error e
-  | Ok (o, rays, sur, faces, nf, anchor, sectors) ->
-      if sur && not (maekawa_ok (List.map (fun e -> e.valley) es)) then
-        Error e_maekawa
-      else
-        let es = Array.of_list es in
-        let valley = Array.map (fun e -> e.valley) es in
-        pool_of_runs
-          (List.concat_map
-             (fun s0 ->
-               runs_of_sector ~valley ~over
-                 (mk_sector_geoms g ~o ~rays:(rotate_rays rays s0) ~es
-                    ~faces ~nf ~anchor))
-             sectors)
-
 (* The many-pattern entry: solve a whole batch of patterns over ONE fixed
    vertex geometry, sharing the sector geometry (placements, overlap set)
    across every pattern instead of rebuilding it per pattern. [es] carries
@@ -752,16 +713,21 @@ let collapse_all_patterns ?anchor ?sectors:only ?tip_rule (g : Fold_state.t)
               (List.concat_map (runs_of_sector ~valley ~over) sgs))
         patterns
 
+let collapse_all ?anchor (g : Fold_state.t) (es : elem list)
+    ~(over : (int * int) list) ~(stayer : stayer) :
+    (Fold_state.t list, string) result =
+  match
+    collapse_all_patterns ?anchor g es ~over ~stayer
+      ~patterns:[ List.map (fun e -> e.valley) es ]
+  with
+  | [ r ] -> r
+  | _ -> assert false
+
 let collapse ?anchor (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer) :
     (Fold_state.t, string) result =
-  match collapse_runs ?anchor g es ~over ~stayer with
+  match collapse_all ?anchor g es ~over ~stayer with
   | Error e -> Error e
   | Ok [ one ] -> Ok one
   | Ok [] -> Error e_stayer_dead (* unreachable: an empty pool errors above *)
   | Ok many -> Error (e_ambig (List.length many))
-
-let collapse_all ?anchor (g : Fold_state.t) (es : elem list)
-    ~(over : (int * int) list) ~(stayer : stayer) :
-    (Fold_state.t list, string) result =
-  collapse_runs ?anchor g es ~over ~stayer
