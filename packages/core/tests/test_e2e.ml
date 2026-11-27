@@ -610,29 +610,6 @@ let test_inspect_enumerates_crease_segments () =
   Alcotest.(check bool) "boundary point .mid flap is null" true
     (mid |> member "flap" = `Null)
 
-(* #50: `at #(…)` selects one segment of a bent crease bundle. Two different
-   flaps pick two different segments, so the resulting [perp] axis differs:
-   the selection changes the result, so this test does not vacuously pass. *)
-let[@warning "-32"] test_at_selects_bent_segment () =
-  let prog sel =
-    Printf.sprintf
-      "paper square\n\
-       mark (through .a .c) as --b\n\
-       fold (map .c onto .b) as --v\n\
-       mark (perp --b & %s through .a) as --q\n"
-      sel
-  in
-  let q_axis src =
-    let open Yojson.Safe.Util in
-    match Beloch.fold_string ~filename:"t.bel" src with
-    | exception Error.Beloch_error (_, msg, _) ->
-        Alcotest.failf "at should resolve, got error: %s" msg
-    | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
-  in
-  Alcotest.(check bool)
-    "different flaps select different --q axes (at is load-bearing)" true
-    (q_axis (prog "#[.c .d]") <> q_axis (prog "#[.a .b]"))
-
 (* the new filter/diff operators must pick the same bent segment as `at`:
    `& #[.c .d]` keeps the upper segment; `\ #[.a .b]` drops the lower one,
    which leaves the same upper segment. Both must equal `at #(.c .d)`. *)
@@ -1010,24 +987,6 @@ let test_mark_draws_its_extent () =
     (List.exists (on_diagonal 0. 0.5) edges);
   Alcotest.(check bool) "no edge along the center to .c" false
     (List.exists (on_diagonal 0.5 1.) edges)
-
-(* fold the left half onto the right (valley crease x=1/2; .a/.d move, .b/.c
-   don't). --hm = map .b onto .c is the y=1/2 line built from the two
-   STATIONARY corners, so it still reads y=1/2 after the fold. Its `between`
-   extent from the left edge to the right edge spans across the now-folded
-   (V) crease at x=1/2 -- the left half's flap only carries paper x in
-   [0,1/2], so the extent leaves it partway across. *)
-let[@warning "-32"] test_mark_crosses_fold_errors () =
-  let src =
-    "paper square\n\
-     fold (map .a onto .b) (moving .a)\n\
-     mark (map .b onto .c) as --hm\n\
-     .p = --hm * --da\n\
-     .q = --hm * --bc\n\
-     mark (--hm) (between .p .q)\n"
-  in
-  expect_error "crosses a folded crease" (fun () ->
-      Beloch.fold_string ~filename:"t.bel" src)
 
 (* End to end: a `between` extent whose ends are both non-boundary but sit
    in different faces of the same (never-folded, still all-F) flap. ANY

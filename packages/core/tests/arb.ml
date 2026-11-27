@@ -288,9 +288,6 @@ let num_str (x : Num.t) =
   | Num.Rat r -> Q.to_string r
   | Num.Field _ | Num.Qq _ -> Printf.sprintf "~%.9g" (Num.to_float x)
 
-let point_str (p : Geom.point) =
-  Printf.sprintf "(%s, %s)" (num_str p.Geom.x) (num_str p.Geom.y)
-
 let line_str (l : Geom.line) =
   Printf.sprintf "%s x + %s y = %s" (num_str l.Geom.a) (num_str l.Geom.b)
     (num_str l.Geom.c)
@@ -423,5 +420,3 @@ let poly : poly G.t =
 let proper_poly (v : Geom.point array) =
   Array.length v >= 3 && Num.sign (Geom.signed_area v) > 0
 
-let polygon_str (v : Geom.point array) =
-  "[" ^ String.concat " " (Array.to_list (Array.map point_str v)) ^ "]"
