@@ -1576,8 +1576,9 @@ let test_fold_blocks_over_many_open_classes () =
 
 let reverse_two_layer inside =
   let g = two_layer () in
-  Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) g ~axis:vline_half ~move_side:(-1) ~tip:[| true; true |]
-    ~inside ~prov:None
+  Fold_state.reverse_of_attempts
+    (Reverse.attempts ~cid:(Fold_state.fresh_crease_id ()) g ~axis:vline_half ~move_side:(-1) ~tip:[| true; true |]
+       ~inside ~prov:None)
 
 (* [vline_half] (table x=1/2) runs parallel to the spine (table x=1): no part
    of the spine ever reaches beyond the line, so it is never a candidate and
@@ -1616,8 +1617,9 @@ let hinge_index_on (g : Fold_state.t) (line : Geom.line) (pred : int -> int -> b
 let diag : Geom.line = { Geom.a = q 1; b = q 1; c = three_halves }
 
 let reverse_diag inside =
-  Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) (two_layer ()) ~axis:diag ~move_side:1 ~tip:[| true; true |]
-    ~inside ~prov:None
+  Fold_state.reverse_of_attempts
+    (Reverse.attempts ~cid:(Fold_state.fresh_crease_id ()) (two_layer ()) ~axis:diag ~move_side:1 ~tip:[| true; true |]
+       ~inside ~prov:None)
 
 (* children by paper x-range: body-L [0,1], tip-L [1/2,1], tip-R [1,3/2],
    body-R [1,2] ([half] is defined above) *)
@@ -1683,8 +1685,9 @@ let test_reverse_spine_beyond_o () =
 let perp_axis : Geom.line = { Geom.a = q 0; b = q 1; c = half }
 
 let reverse_perp inside =
-  Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) (two_layer ()) ~axis:perp_axis ~move_side:1
-    ~tip:[| true; true |] ~inside ~prov:None
+  Fold_state.reverse_of_attempts
+    (Reverse.attempts ~cid:(Fold_state.fresh_crease_id ()) (two_layer ()) ~axis:perp_axis ~move_side:1
+       ~tip:[| true; true |] ~inside ~prov:None)
 
 let perp_children g' =
   let body_l = find_by_box g' (q 0) (q 1) (q 0) half in
@@ -1739,8 +1742,9 @@ let test_reverse_no_spine () =
   (* a single flat sheet has no folded hinge to cut *)
   let g = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   match
-    Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) g ~axis:vline_half ~move_side:(-1) ~tip:[| true |]
-      ~inside:true ~prov:None
+    Fold_state.reverse_of_attempts
+      (Reverse.attempts ~cid:(Fold_state.fresh_crease_id ()) g ~axis:vline_half ~move_side:(-1) ~tip:[| true |]
+         ~inside:true ~prov:None)
   with
   | Error Fold_state.No_spine -> ()
   | Error e -> Alcotest.failf "wrong failure %s" (Fold_state.reverse_failure_to_string e)

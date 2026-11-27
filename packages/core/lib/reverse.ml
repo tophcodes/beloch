@@ -19,7 +19,3 @@ let attempts ~(cid : int) (g : Fold_state.t) ~(axis : Geom.line)
     | Ok f -> Axis_fan.fold_opening f ~blocks
   in
   Fold_state.reverse_attempts g ~axis ~move_side ~tip ~inside ~fold
-
-let reverse ~(cid : int) g ~axis ~move_side ~tip ~inside ~prov =
-  Fold_state.reverse_of_attempts
-    (attempts ~cid g ~axis ~move_side ~tip ~inside ~prov)
