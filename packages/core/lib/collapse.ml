@@ -7,7 +7,7 @@
     "A fan moves each piece by the changing hinges on its paper path"),
     enumerates valid layer orders. *)
 
-type elem = { cid : int; ea : Geom.point; eb : Geom.point; valley : bool }
+type elem = { cid : int; ea : Geom.point; eb : Geom.point }
 
 (* --- error strings: spec §Errors table, verbatim ------------------------- *)
 let e_no_vertex = "no common interior vertex"
@@ -18,8 +18,6 @@ let e_maekawa = "Maekawa violated by the stated assignment"
 let e_selfint = "assignment forces self-intersection"
 let e_contra = "contradictory `over`"
 let e_dup_ray = "duplicate ray in collapse"
-let e_ambig k = Printf.sprintf "ambiguous stacking (%d orders)" k
-let e_stayer_collinear = "collinear leading creases don't pick a stayer"
 let e_stayer_dead = "no realization keeps the staying flap still"
 let e_unaligned = "collapse through unaligned layers"
 let e_anchor_stays =
@@ -51,25 +49,15 @@ let is_layer_error (m : string) : bool =
    "A rejected program is reported as a span, a message and an optional hint") *)
 let hint_of (m : string) : string option =
   if m = e_count then Some "use `fold` for n = 2"
-  else if m = e_stayer_collinear then Some "add (staying .p)"
   else if m = e_staying_several then
     Some "add a point inside the sector that stays"
   else None
 
-(* --- stayer: the material that does not move (design 2026-07-17) -----------
-   Anchors the fan labeling geometrically instead of at [sort_ccw]'s arbitrary
-   east origin. [Arc (pa, pb)] = the far tips of the two leading elements'
-   folded rays; the stayer region is the <π CCW arc between them. [Faces fs] =
-   the pre-collapse face indices carrying the stayed material. [Points ps] =
-   the table images of the points of `staying` (spec multifold,
+(* --- stayer: the material that does not move -----------------------------
+   [Points ps] = the table images of the points of `staying` (spec multifold,
    "staying names the part that holds every point"): the stayer is the one
    sector whose closed wedge holds all of them. *)
-type stayer =
-  | Arc of Geom.point * Geom.point
-  | Faces of int list
-  | Points of Geom.point list
-
-exception Stayer_collinear
+type stayer = Points of Geom.point list
 
 (* --- small exact helpers -------------------------------------------------- *)
 
@@ -180,37 +168,6 @@ let interior_vertex (g : Fold_state.t) (cids : int list) (o : Geom.point) :
    composed by hand, so there is no [folded]/[faces_for_anchor] analogue:
    re-anchoring is just a different (root, base) into the same [make]. -- *)
 
-(* Sector membership of a placed polygon. Interior representative = vertex
-   average (convex ⇒ interior), placed on the table via [iso2]. After closure
-   every sector angle < π, so p is in sector k iff (p−O) is strictly CCW of
-   ray k and strictly CW of ray k+1. Faces were subdivided along every ray,
-   so a representative is never exactly on a ray (asserted). *)
-let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
-    ((poly, iso2) : Geom.point array * Isometry.t) : int =
-  let n = Array.length rays in
-  let sumx = ref Num.zero and sumy = ref Num.zero in
-  Array.iter
-    (fun (p : Geom.point) ->
-      let tp = Isometry.apply_point iso2 p in
-      sumx := Num.add !sumx tp.Geom.x;
-      sumy := Num.add !sumy tp.Geom.y)
-    poly;
-  let m = Num.of_int (Array.length poly) in
-  let rep = { Geom.x = Num.div !sumx m; y = Num.div !sumy m } in
-  let ocoord = (o.Geom.x, o.Geom.y) in
-  let repc = (rep.Geom.x, rep.Geom.y) in
-  let found = ref (-1) in
-  for k = 0 to n - 1 do
-    let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
-    let c0 = cross ocoord (rk.Geom.x, rk.Geom.y) repc in
-    let c1 = cross ocoord (rk1.Geom.x, rk1.Geom.y) repc in
-    if Num.sign c0 > 0 && Num.sign c1 < 0 then found := k
-  done;
-  if !found < 0 then
-    invalid_arg
-      "Collapse.sector_of_poly: representative not strictly inside a sector";
-  !found
-
 (* The sector a placed polygon lies in, or -1 when a ray's half-line from O
    runs through it: a layer the fan crosses without its rays scored on it.
    A sector no wider than a half-turn is convex and holds the polygon iff it
@@ -284,68 +241,29 @@ let rotate_rays (rays : 'a array) (s0 : int) : 'a array =
   let n = Array.length rays in
   Array.init n (fun k -> rays.((k + s0) mod n))
 
-(* admissible ORIGINAL fan sectors carrying the stayer, on the un-rotated
-   [rays]. [Faces] -> the sectors of those pre-collapse faces; [Arc] -> the fan
-   sectors strictly inside the <π CCW arc between the two leading rays (one
-   normally; two when an emergent ray splits the arc). The endpoint-degeneracy
-   conjuncts drop the zero-width readings at the arc's own bounding rays. A
-   collinear arc cannot pick a side -> [Stayer_collinear]. *)
-let admissible_sectors ~(stayer : stayer) (o : Geom.point)
-    (rays : (Geom.point * 'a) array) (sec_orig : int array) (nf : int) :
-    int list =
-  match stayer with
-  | Faces fs ->
-      List.sort_uniq compare
-        (List.filter_map
-           (fun i ->
-             if i >= 0 && i < nf && sec_orig.(i) >= 0 then Some sec_orig.(i)
-             else None)
-           fs)
-  | Arc (pa, pb) ->
-      let oc = (o.Geom.x, o.Geom.y) in
-      let c = cross oc (pa.Geom.x, pa.Geom.y) (pb.Geom.x, pb.Geom.y) in
-      if Num.sign c = 0 then raise Stayer_collinear
-      else
-        let a, b = if Num.sign c > 0 then (pa, pb) else (pb, pa) in
-        let n = Array.length rays in
-        List.filter
-          (fun k ->
-            let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
-            let inc p =
-              Geom.point_equal p a || Geom.point_equal p b || in_ccw_arc o a b p
-            in
-            inc rk && inc rk1
-            && (not (Geom.point_equal rk b))
-            && not (Geom.point_equal rk1 a))
-          (List.init n Fun.id)
-  | Points ps ->
-      let n = Array.length rays in
-      List.filter
-        (fun k ->
-          let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
-          List.for_all (in_closed_sector o rk rk1) ps)
-        (List.init n Fun.id)
-
-(* the sectors a run of the pipeline takes as stayer: [admissible_sectors],
-   held to exactly one sector carrying material of the anchor under [Points]
-   (spec multifold, "staying names the part that holds every point") *)
+(* the sector a run of the pipeline takes as stayer, on the un-rotated
+   [rays]: the one sector whose closed wedge holds every point of the stayer,
+   and that carries material of the anchor (spec multifold,
+   "staying names the part that holds every point") *)
 let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
-    (rays : (Geom.point * 'a) array) (sec_orig : int array) (nf : int) :
+    (rays : (Geom.point * 'a) array) (sec_orig : int array) :
     (int list, string) result =
-  match admissible_sectors ~stayer o rays sec_orig nf with
-  | exception Stayer_collinear -> Error e_stayer_collinear
-  | sectors -> (
-      match (stayer, sectors) with
-      | Points _, [] -> Error e_staying_none
-      | Points _, [ s ] ->
-          if
-            Array.exists Fun.id
-              (Array.mapi (fun i a -> a && sec_orig.(i) = s) anchor)
-          then Ok sectors
-          else Error e_staying_off_anchor
-      | Points _, _ -> Error e_staying_several
-      | _, [] -> Error e_stayer_dead
-      | _ -> Ok sectors)
+  let (Points ps) = stayer in
+  let n = Array.length rays in
+  let sectors =
+    List.filter
+      (fun k ->
+        let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
+        List.for_all (in_closed_sector o rk rk1) ps)
+      (List.init n Fun.id)
+  in
+  match sectors with
+  | [] -> Error e_staying_none
+  | [ s ] ->
+      if Array.exists Fun.id (Array.mapi (fun i a -> a && sec_orig.(i) = s) anchor)
+      then Ok sectors
+      else Error e_staying_off_anchor
+  | _ -> Error e_staying_several
 
 (* The faces of the anchor flap (spec multifold, "A reverse or squash fan
    sits at a point of the projective table"). [Some polys]: the faces lying in
@@ -659,7 +577,7 @@ let fan_setup ?anchor (g : Fold_state.t) (es : elem list) ~(stayer : stayer) =
             sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
       in
       let anchor = anchor_faces g o anchor in
-      match stayer_sectors ~stayer ~anchor o rays sec_orig nf with
+      match stayer_sectors ~stayer ~anchor o rays sec_orig with
       | Error e -> Error e
       | Ok sectors -> Ok (o, rays, sur, faces, nf, anchor, sectors))
 
@@ -679,7 +597,7 @@ let runs_of_sector sgs ~(valley : bool array) ~(over : (int * int) list) =
 (* The many-pattern entry: solve a whole batch of patterns over ONE fixed
    vertex geometry, sharing the sector geometry (placements, overlap set)
    across every pattern instead of rebuilding it per pattern. [es] carries
-   the geometry (its own valley is ignored); [patterns.(p)] is the letter of
+   the geometry; [patterns.(p)] is the letter of
    each element, in [es] order. Returns one result per pattern,
    parallel to [patterns], not ranked by the outline: the caller ranks the
    states of all its patterns together. Maekawa's parity applies where the anchor
@@ -712,22 +630,3 @@ let collapse_all_patterns ?anchor ?sectors:only ?tip_rule (g : Fold_state.t)
             pool_of_runs
               (List.concat_map (runs_of_sector ~valley ~over) sgs))
         patterns
-
-let collapse_all ?anchor (g : Fold_state.t) (es : elem list)
-    ~(over : (int * int) list) ~(stayer : stayer) :
-    (Fold_state.t list, string) result =
-  match
-    collapse_all_patterns ?anchor g es ~over ~stayer
-      ~patterns:[ List.map (fun e -> e.valley) es ]
-  with
-  | [ r ] -> r
-  | _ -> assert false
-
-let collapse ?anchor (g : Fold_state.t) (es : elem list)
-    ~(over : (int * int) list) ~(stayer : stayer) :
-    (Fold_state.t, string) result =
-  match collapse_all ?anchor g es ~over ~stayer with
-  | Error e -> Error e
-  | Ok [ one ] -> Ok one
-  | Ok [] -> Error e_stayer_dead (* unreachable: an empty pool errors above *)
-  | Ok many -> Error (e_ambig (List.length many))

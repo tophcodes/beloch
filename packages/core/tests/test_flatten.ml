@@ -82,7 +82,7 @@ let test_flatten_unbound_still_parses () =
 (* ONE pipeline for both parities: an ODD ray
    count adds an emergent-ray candidate ([Flatten.candidates]); the solver
    enumerates Maekawa-consistent M/V patterns ([Flatten.mv_patterns]) through
-   [Collapse.collapse_all]; the items are conditions on the pooled
+   [Collapse.collapse_all_patterns]; the items are conditions on the pooled
    realizations, and one left is the result. *)
 
 (* `\` (Drop) must be accepted inside a flatten item exactly like `&` (Keep):
@@ -132,9 +132,9 @@ let test_flatten_derive_unit () =
   let fa = refl a and fb = refl b and fm = refl m in
   let es =
     [
-      { Collapse.cid = 0; ea = v; eb = fa; valley = true };
-      { Collapse.cid = 1; ea = v; eb = fb; valley = true };
-      { Collapse.cid = 2; ea = v; eb = fm; valley = true };
+      { Collapse.cid = 0; ea = v; eb = fa };
+      { Collapse.cid = 1; ea = v; eb = fb };
+      { Collapse.cid = 2; ea = v; eb = fm };
     ]
   in
   let fixed = Collapse.sort_ccw v es in
@@ -316,16 +316,16 @@ let test_flatten_emergent_beside_no_state () =
    [candidates] is a pure generator, so feasibility has no
    Flatten-module-level unit test; the evaluation-level fish-base
    test below covers it, where the two LineNew candidates fail via
-   `Collapse.collapse_all` returning `Error` for every pattern.) *)
+   `Collapse.collapse_all_patterns` returning `Error` for every pattern.) *)
 let test_flatten_derive_opposite_ray_unit () =
   let mk x y = { Geom.x; y } in
   let half = Num.of_q (Q.of_ints 1 2) in
   let o = mk half half in
   let es =
     [
-      { Collapse.cid = 0; ea = o; eb = mk Num.one half; valley = true };
-      { Collapse.cid = 1; ea = o; eb = mk half Num.one; valley = true };
-      { Collapse.cid = 2; ea = o; eb = mk half Num.zero; valley = true };
+      { Collapse.cid = 0; ea = o; eb = mk Num.one half };
+      { Collapse.cid = 1; ea = o; eb = mk half Num.one };
+      { Collapse.cid = 2; ea = o; eb = mk half Num.zero };
     ]
   in
   let fixed = Collapse.sort_ccw o es in
@@ -396,9 +396,9 @@ let test_flatten_candidates_fish_vertex () =
   and d = mk Num.zero Num.one in
   let es =
     [
-      { Collapse.cid = 0; ea = o; eb = b; valley = true };
-      { Collapse.cid = 1; ea = o; eb = d; valley = true };
-      { Collapse.cid = 2; ea = o; eb = a; valley = true };
+      { Collapse.cid = 0; ea = o; eb = b };
+      { Collapse.cid = 1; ea = o; eb = d };
+      { Collapse.cid = 2; ea = o; eb = a };
     ]
   in
   let fixed = Collapse.sort_ccw o es in

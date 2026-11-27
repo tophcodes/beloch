@@ -609,10 +609,7 @@ hint from the pattern each realization came from, the letter of every
 given ray: for up to four realizations an item per realization, a letter no
 other realization shares or two that together part it, and above four the
 ray whose letter splits them most evenly. A several-fan flatten builds the
-same hint. `Collapse` has a
-single-result contract of its own, `` ambiguous stacking (<k> orders) ``,
-which `flatten` never reaches: it calls `collapse_all` and pools every
-realization; the message survives in the module's own tests.
+same hint.
 
 ### Reverse
 

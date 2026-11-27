@@ -30,11 +30,26 @@ let precreased () =
     ((Fold_state.flat [| Sheet.square_corners Num.one |]), [])
     line_specs
 
-(* build elements for the 8 rays given a valley assignment ([bool] array length 8) *)
-let elems_of st_rays valleys =
-  List.mapi
-    (fun i (far, cid) -> { Collapse.cid; ea = o; eb = far; valley = valleys.(i) })
-    st_rays
+(* the elements of the rays, from O to each far tip *)
+let elems_of st_rays =
+  List.map (fun (far, cid) -> { Collapse.cid; ea = o; eb = far }) st_rays
+
+(* a point inside table polygon [i] of [st]: the average of its corners *)
+let in_face st i =
+  let poly = Fold_state.table_polygon st i in
+  let n = Num.of_int (Array.length poly) in
+  let mean f = Num.div (Array.fold_left (fun acc p -> Num.add acc (f p)) Num.zero poly) n in
+  pt (mean (fun p -> p.Geom.x)) (mean (fun p -> p.Geom.y))
+
+(* every state of the fan [es] on [st] with the letters [valleys] (in [es]
+   order), the part that holds the points [staying] kept still *)
+let collapse st es valleys ~over ~staying =
+  match
+    Collapse.collapse_all_patterns st es ~over ~stayer:(Collapse.Points staying)
+      ~patterns:[ Array.to_list valleys ]
+  with
+  | [ r ] -> r
+  | _ -> assert false
 
 let prefix pre s =
   let lp = String.length pre in
@@ -47,7 +62,7 @@ let all_rays () = snd (precreased ())
 (* closure product of the 8 symmetric rays is the identity (Kawasaki holds) *)
 let test_closure_holds () =
   let rays = all_rays () in
-  let es = elems_of rays (Array.make 8 true) in
+  let es = elems_of rays in
   let sorted = Array.of_list (Collapse.sort_ccw o es) in
   Alcotest.(check bool) "8-ray symmetric cross closes (Kawasaki)" true
     (Collapse.closure_ok o sorted)
@@ -55,9 +70,8 @@ let test_closure_holds () =
 (* odd element count is rejected outright *)
 let test_odd_count_rejected () =
   let st, rays = precreased () in
-  let es = elems_of rays (Array.make 8 true) in
-  let seven = List.filteri (fun i _ -> i < 7) es in
-  match Collapse.collapse st seven ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
+  let seven = List.filteri (fun i _ -> i < 7) (elems_of rays) in
+  match collapse st seven (Array.make 7 true) ~over:[] ~staying:[ in_face st 0 ] with
   | Ok _ -> Alcotest.fail "odd count must be rejected"
   | Error e -> Alcotest.(check bool) ("count error: " ^ e) true (prefix "count" e)
 
@@ -67,13 +81,15 @@ let test_no_common_vertex_rejected () =
   (* four elements with pairwise-distinct disjoint endpoints *)
   let es =
     [
-      { Collapse.cid = 0; ea = pt (q 0) (q 0); eb = pt (q 1) (q 0); valley = true };
-      { Collapse.cid = 1; ea = pt (q 1) (q 1); eb = pt (q 0) (q 1); valley = true };
-      { Collapse.cid = 2; ea = pt (q 0) (q 1); eb = pt (q 1) (q 1); valley = false };
-      { Collapse.cid = 3; ea = pt (q 1) (q 0); eb = pt (q 0) (q 0); valley = false };
+      { Collapse.cid = 0; ea = pt (q 0) (q 0); eb = pt (q 1) (q 0) };
+      { Collapse.cid = 1; ea = pt (q 1) (q 1); eb = pt (q 0) (q 1) };
+      { Collapse.cid = 2; ea = pt (q 0) (q 1); eb = pt (q 1) (q 1) };
+      { Collapse.cid = 3; ea = pt (q 1) (q 0); eb = pt (q 0) (q 0) };
     ]
   in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
+  match
+    collapse st es [| true; true; false; false |] ~over:[] ~staying:[ in_face st 0 ]
+  with
   | Ok _ -> Alcotest.fail "no common vertex must be rejected"
   | Error e ->
       Alcotest.(check bool) ("vertex error: " ^ e) true
@@ -92,7 +108,7 @@ let test_kawasaki_rejected () =
       (pt half (q 1), 3); (pt half (q 0), 3);
     ]
   in
-  let es = elems_of tilted (Array.make 8 true) in
+  let es = elems_of tilted in
   let sorted = Array.of_list (Collapse.sort_ccw o es) in
   Alcotest.(check bool) "tilted vertex fails closure" false
     (Collapse.closure_ok o sorted)
@@ -100,8 +116,9 @@ let test_kawasaki_rejected () =
 (* all-valley on the symmetric cross: |M-V| = 8 ≠ 2, Maekawa is violated *)
 let test_maekawa_rejected () =
   let st, rays = precreased () in
-  let es = elems_of rays (Array.make 8 true) in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
+  match
+    collapse st (elems_of rays) (Array.make 8 true) ~over:[] ~staying:[ in_face st 0 ]
+  with
   | Ok _ -> Alcotest.fail "all-valley must fail Maekawa"
   | Error e ->
       Alcotest.(check bool) ("Maekawa error: " ^ e) true (prefix "Maekawa" e)
@@ -120,7 +137,7 @@ let test_maekawa_rejected () =
    (see the kernel's exact enumeration) EVERY |M−V|=2 pattern on this vertex is
    flat-foldable: 0 self-intersections across all 56 of them; 16 fold to a
    unique layer order, 96 are ambiguous (need `over`). The 5-valley/3-mountain
-   contiguous pattern below is one of the unique-order ones: collapse returns [Ok].
+   contiguous pattern below is one of the unique-order ones: one state.
    NB: refs/hull2020.txt is not present in this worktree (refs/ is gitignored),
    so the |M−V|=2 relation is taken from the spec's citation, not re-derived from
    the source text; the realizability is proved by the kernel itself. *)
@@ -128,56 +145,51 @@ let waterbomb_valleys = [| true; true; true; true; true; false; false; false |]
 
 let test_waterbomb_assignment () =
   let st, rays = precreased () in
-  let es = elems_of rays waterbomb_valleys in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
-  | Ok s ->
+  match
+    collapse st (elems_of rays) waterbomb_valleys ~over:[] ~staying:[ in_face st 0 ]
+  with
+  | Ok (s :: _) ->
       (* the 8 sectors survive as 8 faces in the folded state *)
       Alcotest.(check int) "collapsed waterbomb has 8 faces" 8
         (Array.length (Fold_state.faces s))
-  | Error e ->
-      (* an ambiguous-stacking error would still mean the assignment is
-         flat-foldable (closure + Maekawa + a valid layer order all passed) *)
-      Alcotest.(check bool)
-        ("waterbomb assignment is realizable (Ok or ambiguous), got: " ^ e)
-        true (prefix "ambiguous stacking" e)
+  | Ok [] -> Alcotest.fail "waterbomb assignment is realizable, got no state"
+  | Error e -> Alcotest.fail ("waterbomb assignment is realizable, got: " ^ e)
 
 (* -- over resolves ambiguity ---------------------------------------------- *)
 
 (* The 8-ray cross, valley pattern [V;V;M;M;V;M;M;M]: |nm-nv| = |5-3| = 2
    (Maekawa holds) but the stacking is ambiguous without `over`; over=[(3,4)]
-   (face 3 above face 4) resolves it to a unique Ok. Both facts are pinned
+   (face 3 above face 4) resolves it to one state. Both facts are pinned
    here as literals, verified against an earlier certified kernel. *)
 let over_valleys = [| true; true; false; false; true; false; false; false |]
 
 (* The `over` pair (3,4) is pinned as face-index literals against the
    un-rotated [sort_ccw] labeling, where the anchor sits in fan sector 0. The
-   stayer-anchored kernel rotates the labeling to the stayer sector, so to
-   keep this pin's intent we anchor on the material in sector 0: the first
-   pre-collapse face there. [Collapse.Faces [f]] then rotates by 0 (a no-op),
-   reproducing the exact labeling the over-literals were calibrated for. *)
-let sector0_face st es =
-  let sorted = Array.of_list (Collapse.sort_ccw o es) in
-  let faces = Fold_state.faces st in
-  let sec =
-    Array.init (Array.length faces) (fun i ->
-        Collapse.sector_of_poly o sorted (faces.(i), Fold_state.face_iso2 st i))
-  in
-  let r = ref (-1) in
-  Array.iteri (fun i s -> if !r < 0 && s = 0 then r := i) sec;
-  !r
+   kernel rotates the labeling to the stayer sector, so to keep this pin's
+   intent the stayer is a point in sector 0: the midpoint of the far tips of
+   its two rays. The labeling then rotates by 0 (a no-op), reproducing the
+   exact labeling the over-literals were calibrated for. *)
+let sector0_point es =
+  match Collapse.sort_ccw o es with
+  | (a, _) :: (b, _) :: _ ->
+      pt (Num.div (Num.add a.Geom.x b.Geom.x) (q 2))
+        (Num.div (Num.add a.Geom.y b.Geom.y) (q 2))
+  | _ -> assert false
 
 let test_over_resolves_ambiguity () =
   let st, rays = precreased () in
-  let es = elems_of rays over_valleys in
-  let stay = Collapse.Faces [ sector0_face st es ] in
-  (match Collapse.collapse st es ~over:[] ~stayer:stay with
-  | Error e ->
-      Alcotest.(check bool) ("ambiguous without over: " ^ e) true
-        (prefix "ambiguous stacking" e)
-  | Ok _ -> Alcotest.fail "expected ambiguous stacking without `over`");
-  match Collapse.collapse st es ~over:[ (3, 4) ] ~stayer:stay with
-  | Error e -> Alcotest.fail ("expected Ok with over, got: " ^ e)
-  | Ok s ->
+  let es = elems_of rays in
+  let staying = [ sector0_point es ] in
+  (match collapse st es over_valleys ~over:[] ~staying with
+  | Ok (_ :: _ :: _) -> ()
+  | Ok _ -> Alcotest.fail "expected several states without `over`"
+  | Error e -> Alcotest.fail ("expected several states without `over`, got: " ^ e));
+  match collapse st es over_valleys ~over:[ (3, 4) ] ~staying with
+  | Error e -> Alcotest.fail ("expected one state with over, got: " ^ e)
+  | Ok l when List.length l <> 1 ->
+      Alcotest.failf "expected one state with over, got %d" (List.length l)
+  | Ok l ->
+      let s = List.hd l in
       Alcotest.(check int) "over-resolved collapse keeps 8 faces" 8
         (Array.length (Fold_state.faces s));
       let m, v =
@@ -196,64 +208,18 @@ let test_over_resolves_ambiguity () =
       Alcotest.(check int) "derived letters satisfy Maekawa (|M-V|=2)" 2
         (abs (m - v))
 
-(* -- [collapse_all]: enumerating entry point.
-   [collapse] is a wrapper over the same shared pipeline: single distinct
-   rank -> [Ok], multiple -> [e_ambig], error -> [passthrough]. [collapse_all]
-   instead anchors EVERY distinct rank independently and returns all that seat
-   in-bounds. Reuses the 8-ray cross + [over_valleys] fixture above, which
-   [test_over_resolves_ambiguity] already established is ambiguous (4 distinct
-   orders) without `over` and uniquely resolved by over=[(3,4)]. ------------ *)
+(* -- every state of an ambiguous fan.
+   Reuses the 8-ray cross + [over_valleys] fixture above, which
+   [test_over_resolves_ambiguity] already established is ambiguous without
+   `over`: the fan gives all 4 distinct orders. --------------------------- *)
 
-let test_collapse_all_ambiguous_returns_all () =
+let test_ambiguous_returns_all () =
   let st, rays = precreased () in
-  let es = elems_of rays over_valleys in
-  match Collapse.collapse_all st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
-  | Error e -> Alcotest.fail ("expected Ok list, got: " ^ e)
+  match collapse st (elems_of rays) over_valleys ~over:[] ~staying:[ in_face st 0 ] with
+  | Error e -> Alcotest.fail ("expected the states, got: " ^ e)
   | Ok sts ->
-      Alcotest.(check int)
-        "collapse_all returns the 4 distinct orders collapse's e_ambig names"
-        4 (List.length sts)
-
-let test_collapse_all_over_matches_collapse () =
-  let st, rays = precreased () in
-  let es = elems_of rays over_valleys in
-  let stay = Collapse.Faces [ sector0_face st es ] in
-  match
-    ( Collapse.collapse st es ~over:[ (3, 4) ] ~stayer:stay,
-      Collapse.collapse_all st es ~over:[ (3, 4) ] ~stayer:stay )
-  with
-  | Error e, _ -> Alcotest.fail ("expected collapse Ok, got: " ^ e)
-  | _, Error e -> Alcotest.fail ("expected collapse_all Ok, got: " ^ e)
-  | Ok _, Ok ([] | _ :: _ :: _) ->
-      Alcotest.fail "expected collapse_all with over to narrow to exactly one state"
-  | Ok single, Ok [ many ] ->
-      let mv_list s =
-        Array.to_list (Fold_state.hinges s) |> List.mapi (fun i _ -> Fold_state.mv s i)
-      in
-      Alcotest.(check int) "collapse_all (over-narrowed) keeps 8 faces" 8
-        (Array.length (Fold_state.faces many));
-      Alcotest.(check bool) "collapse_all matches collapse (per-hinge mv)" true
-        (mv_list single = mv_list many);
-      let pts_equal a b =
-        Array.length a = Array.length b && Array.for_all2 Geom.point_equal a b
-      in
-      Alcotest.(check bool) "collapse_all matches collapse (face 0 table position)"
-        true
-        (pts_equal
-           (Fold_state.table_polygon single 0)
-           (Fold_state.table_polygon many 0))
-
-let test_collapse_all_error_passthrough () =
-  let st, rays = precreased () in
-  let es = elems_of rays (Array.make 8 true) in
-  let seven = List.filteri (fun i _ -> i < 7) es in
-  match
-    ( Collapse.collapse st seven ~over:[] ~stayer:(Collapse.Faces [ 0 ]),
-      Collapse.collapse_all st seven ~over:[] ~stayer:(Collapse.Faces [ 0 ]) )
-  with
-  | Error e1, Error e2 ->
-      Alcotest.(check string) "collapse_all errors identically to collapse" e1 e2
-  | _ -> Alcotest.fail "expected both collapse and collapse_all to error on odd count"
+      Alcotest.(check int) "the fan gives the 4 distinct orders" 4
+        (List.length sts)
 
 (* -- [eassign] parity hand-verify ([fold_with_records] convention) ------------- *)
 
@@ -287,10 +253,14 @@ let precreased_plus () =
    carries one V (up) and one M (down). *)
 let test_eassign_parity () =
   let st, cidh, cidv, rays = precreased_plus () in
-  let es = elems_of rays [| false; true; false; false |] in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
-  | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
-  | Ok s ->
+  match
+    collapse st (elems_of rays) [| false; true; false; false |] ~over:[]
+      ~staying:[ in_face st 0 ]
+  with
+  | Error e -> Alcotest.fail ("expected one state, got: " ^ e)
+  | Ok l when List.length l <> 1 -> Alcotest.failf "expected one state, got %d" (List.length l)
+  | Ok l ->
+      let s = List.hd l in
       let hs = Fold_state.hinges s in
       let assigns cid =
         Array.to_list hs
@@ -320,10 +290,11 @@ let test_eassign_parity () =
 let test_derived_mv_matches_declared () =
   let st, _, _, rays = precreased_plus () in
   let valleys = [| false; true; false; false |] in
-  let es = elems_of rays valleys in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
-  | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
-  | Ok s ->
+  match collapse st (elems_of rays) valleys ~over:[] ~staying:[ in_face st 0 ] with
+  | Error e -> Alcotest.fail ("expected one state, got: " ^ e)
+  | Ok l when List.length l <> 1 -> Alcotest.failf "expected one state, got %d" (List.length l)
+  | Ok l ->
+      let s = List.hd l in
       let hs = Fold_state.hinges s in
       let ray_of i =
         let a, b = Fold_state.hinge_segment s i in
@@ -355,21 +326,20 @@ let test_derived_mv_matches_declared () =
 
 (* -- the stayer picks the physical world -------------------------------------
    The stayer is the material that does NOT move: identity, front-up, where it
-   lay. Two Arc stayers on adjacent sectors of the same "+" vertex both solve;
+   lay. Two stayers on adjacent sectors of the same "+" vertex both solve;
    their sectors have opposite fan parity, so anchoring the identity on each
    yields through-plane mirror stacks: a shared overlapping face pair reverses
    its layer relation. This is the claim the test checks: both worlds are reachable
    and differ (design 2026-07-17). *)
 let test_stayer_picks_world () =
   let st, _, _, rays = precreased_plus () in
-  let es = elems_of rays [| false; true; false; false |] in
-  let right = pt (q 1) half and up = pt half (q 1) in
-  let left = pt (q 0) half in
-  let arc_a = Collapse.Arc (right, up) (* stayer region = the NE sector (even parity) *)
-  and arc_b = Collapse.Arc (up, left) (* stayer region = the NW sector (odd parity) *) in
+  let es = elems_of rays and valleys = [| false; true; false; false |] in
+  let three_quarters = Num.of_q (Q.of_ints 3 4) and quarter = Num.of_q (Q.of_ints 1 4) in
+  let ne = [ pt three_quarters three_quarters ] (* the NE sector (even parity) *)
+  and nw = [ pt quarter three_quarters ] (* the NW sector (odd parity) *) in
   match
-    ( Collapse.collapse_all st es ~over:[] ~stayer:arc_a,
-      Collapse.collapse_all st es ~over:[] ~stayer:arc_b )
+    ( collapse st es valleys ~over:[] ~staying:ne,
+      collapse st es valleys ~over:[] ~staying:nw )
   with
   | Ok (a :: _), Ok (b :: _) ->
       let nf = Array.length (Fold_state.faces a) in
@@ -387,8 +357,8 @@ let test_stayer_picks_world () =
         "opposite-parity stayers give mirror stacks (a face pair flips)" true
         !flipped
   | Ok [], _ | _, Ok [] -> Alcotest.fail "a stayer world came out empty"
-  | Error e, _ -> Alcotest.fail ("arc_a stayer must solve: " ^ e)
-  | _, Error e -> Alcotest.fail ("arc_b stayer must solve: " ^ e)
+  | Error e, _ -> Alcotest.fail ("the NE stayer must solve: " ^ e)
+  | _, Error e -> Alcotest.fail ("the NW stayer must solve: " ^ e)
 
 (* -- duplicate ray (zero-width sector) ------------------------------------ *)
 
@@ -404,13 +374,15 @@ let test_duplicate_ray_rejected () =
      line's reflection would otherwise close: only the repeat is wrong. *)
   let es =
     [
-      { Collapse.cid = cidh; ea = o; eb = pt (q 1) half; valley = true };
-      { Collapse.cid = cidh; ea = o; eb = pt (q 1) half; valley = false };
-      { Collapse.cid = cidv; ea = o; eb = pt half (q 1); valley = true };
-      { Collapse.cid = cidv; ea = o; eb = pt half (q 0); valley = false };
+      { Collapse.cid = cidh; ea = o; eb = pt (q 1) half };
+      { Collapse.cid = cidh; ea = o; eb = pt (q 1) half };
+      { Collapse.cid = cidv; ea = o; eb = pt half (q 1) };
+      { Collapse.cid = cidv; ea = o; eb = pt half (q 0) };
     ]
   in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
+  match
+    collapse st es [| true; false; true; false |] ~over:[] ~staying:[ in_face st 0 ]
+  with
   | Ok _ -> Alcotest.fail "duplicate ray must be rejected"
   | Error e ->
       Alcotest.(check bool)
@@ -474,10 +446,12 @@ let c2_valleys = [| true; true; true; false; false; false; false; false |]
 
 let test_c2_declared_mountain_intrinsic () =
   let st, rays = precreased () in
-  let es = elems_of rays c2_valleys in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
-  | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
-  | Ok s ->
+  let es = elems_of rays in
+  match collapse st es c2_valleys ~over:[] ~staying:[ in_face st 0 ] with
+  | Error e -> Alcotest.fail ("expected one state, got: " ^ e)
+  | Ok l when List.length l <> 1 -> Alcotest.failf "expected one state, got %d" (List.length l)
+  | Ok l ->
+      let s = List.hd l in
       (* recover face→sector from the ORIGINAL flat faces (collapse preserves
          face index order), then pair each ray's two bounding sectors. *)
       let sorted = Array.of_list (Collapse.sort_ccw o es) in
@@ -485,7 +459,7 @@ let test_c2_declared_mountain_intrinsic () =
       let faces = Fold_state.faces st in
       let sec =
         Array.init (Array.length faces) (fun i ->
-            Collapse.sector_of_poly o sorted (faces.(i), Fold_state.face_iso2 st i))
+            Collapse.sector_of_poly_opt o sorted (faces.(i), Fold_state.face_iso2 st i))
       in
       let face_in sector =
         let r = ref (-1) in
@@ -494,11 +468,15 @@ let test_c2_declared_mountain_intrinsic () =
       in
       for j = 0 to n - 1 do
         let l = (j - 1 + n) mod n in
-        let _, e = sorted.(j) in
+        let far, _ = sorted.(j) in
+        let declared =
+          c2_valleys.(Option.get
+                        (List.find_index (fun (f, _) -> Geom.point_equal f far) rays))
+        in
         Alcotest.(check bool)
           (Printf.sprintf "ray %d declared=%s comes out intrinsically the same"
-             j (if e.Collapse.valley then "V" else "M"))
-          e.Collapse.valley
+             j (if declared then "V" else "M"))
+          declared
           (intrinsic_valley s (face_in l) (face_in j))
       done
 
@@ -507,10 +485,11 @@ let test_c2_declared_mountain_intrinsic () =
 let collapse_letters valleys ~flip =
   let st, _, _, rays = precreased_plus () in
   let st = if flip then Fold_state.flip st else st in
-  let es = elems_of rays valleys in
-  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
-  | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
-  | Ok s ->
+  match collapse st (elems_of rays) valleys ~over:[] ~staying:[ in_face st 0 ] with
+  | Error e -> Alcotest.fail ("expected one state, got: " ^ e)
+  | Ok l when List.length l <> 1 -> Alcotest.failf "expected one state, got %d" (List.length l)
+  | Ok l ->
+      let s = List.hd l in
       let hs = Fold_state.hinges s in
       Array.to_list hs
       |> List.mapi (fun i _ -> i)
@@ -657,14 +636,10 @@ let () =
           Alcotest.test_case "over resolves ambiguity" `Quick
             test_over_resolves_ambiguity;
         ] );
-      ( "collapse_all",
+      ( "states",
         [
           Alcotest.test_case "ambiguous case returns all 4 distinct orders"
-            `Quick test_collapse_all_ambiguous_returns_all;
-          Alcotest.test_case "over-narrowed case matches collapse's state"
-            `Quick test_collapse_all_over_matches_collapse;
-          Alcotest.test_case "error passthrough matches collapse" `Quick
-            test_collapse_all_error_passthrough;
+            `Quick test_ambiguous_returns_all;
           Alcotest.test_case "stayer picks the physical world (mirror stacks)"
             `Quick test_stayer_picks_world;
         ] );
