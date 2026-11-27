@@ -28,3 +28,217 @@ keywords:
   - real algebraic numbers
   - FOLD format
   - OCaml
+references:
+  - type: article
+    title: "Résolution par le pliage de l'équation du troisième degré et applications géométriques"
+    authors:
+      - family-names: "Justin"
+        given-names: "Jacques"
+    journal: "L'Ouvert"
+    issue: "42"
+    start: 9
+    end: 19
+    year: 1986
+  - type: book
+    title: "Origametry: Mathematical Methods in Paper Folding"
+    authors:
+      - family-names: "Hull"
+        given-names: "Thomas C."
+    publisher:
+      name: "Cambridge University Press"
+    year: 2021
+    doi: "10.1017/9781108778633"
+  - type: conference-paper
+    title: "One-, Two-, and Multi-Fold Origami Axioms"
+    authors:
+      - family-names: "Alperin"
+        given-names: "Roger C."
+      - family-names: "Lang"
+        given-names: "Robert J."
+    collection-title: "Origami 4"
+    editors:
+      - family-names: "Lang"
+        given-names: "Robert J."
+    publisher:
+      name: "A K Peters"
+    start: 371
+    end: 393
+    year: 2009
+    doi: "10.1201/b10653-38"
+  - type: book
+    title: "Geometric Folding Algorithms: Linkages, Origami, Polyhedra"
+    authors:
+      - family-names: "Demaine"
+        given-names: "Erik D."
+      - family-names: "O'Rourke"
+        given-names: "Joseph"
+    publisher:
+      name: "Cambridge University Press"
+    year: 2007
+    doi: "10.1017/CBO9780511735172"
+  - type: conference-paper
+    title: "Box Pleating is Hard"
+    authors:
+      - family-names: "Akitaya"
+        given-names: "Hugo A."
+      - family-names: "Cheung"
+        given-names: "Kenneth C."
+      - family-names: "Demaine"
+        given-names: "Erik D."
+      - family-names: "Horiyama"
+        given-names: "Takashi"
+      - family-names: "Hull"
+        given-names: "Thomas C."
+      - family-names: "Ku"
+        given-names: "Jason S."
+      - family-names: "Tachi"
+        given-names: "Tomohiro"
+      - family-names: "Uehara"
+        given-names: "Ryuhei"
+    collection-title: "Discrete and Computational Geometry and Graphs (JCDCGG 2015)"
+    editors:
+      - family-names: "Akiyama"
+        given-names: "Jin"
+      - family-names: "Ito"
+        given-names: "Hiro"
+      - family-names: "Sakai"
+        given-names: "Toshinori"
+      - family-names: "Uno"
+        given-names: "Yushi"
+    volume: 9943
+    publisher:
+      name: "Springer"
+    start: 167
+    end: 179
+    year: 2016
+    doi: "10.1007/978-3-319-48532-4_15"
+  - type: article
+    title: "Flat Origami is Turing Complete"
+    authors:
+      - family-names: "Hull"
+        given-names: "Thomas C."
+      - family-names: "Zakharevich"
+        given-names: "Inna"
+    year: 2023
+    url: "https://arxiv.org/abs/2309.07932"
+  - type: book
+    title: "Algorithms in Real Algebraic Geometry"
+    authors:
+      - family-names: "Basu"
+        given-names: "Saugata"
+      - family-names: "Pollack"
+        given-names: "Richard"
+      - family-names: "Roy"
+        given-names: "Marie-Françoise"
+    edition: "2"
+    publisher:
+      name: "Springer"
+    year: 2006
+    doi: "10.1007/3-540-33099-2"
+  - type: standard
+    title: "FOLD File Format Specification (version 1.2)"
+    authors:
+      - family-names: "Demaine"
+        given-names: "Erik D."
+      - family-names: "Ku"
+        given-names: "Jason S."
+      - family-names: "Lang"
+        given-names: "Robert J."
+    year: 2023
+    url: "https://github.com/edemaine/fold"
+  - type: conference-paper
+    title: "A New File Standard to Represent Folded Structures"
+    authors:
+      - family-names: "Demaine"
+        given-names: "Erik D."
+      - family-names: "Ku"
+        given-names: "Jason S."
+      - family-names: "Lang"
+        given-names: "Robert J."
+    collection-title: "Abstracts from the 26th Fall Workshop on Computational Geometry"
+    year: 2016
+    url: "https://erikdemaine.org/papers/FOLD_CGW2016/"
+  - type: book
+    title: "Origami Design Secrets: Mathematical Methods for an Ancient Art"
+    authors:
+      - family-names: "Lang"
+        given-names: "Robert J."
+    edition: "2"
+    publisher:
+      name: "CRC Press"
+    year: 2011
+    isbn: "9781568814360"
+  - type: article
+    title: "Origami Diagramming Conventions"
+    authors:
+      - family-names: "Lang"
+        given-names: "Robert J."
+    year: 2000
+    url: "https://langorigami.com/article/origami-diagramming-conventions/"
+  - type: book
+    title: "The Art of Origami: Paper Folding, Traditional and Modern"
+    authors:
+      - family-names: "Randlett"
+        given-names: "Samuel"
+    publisher:
+      name: "E. P. Dutton"
+    year: 1961
+  - type: conference-paper
+    title: "Facet Ordering and Crease Assignment in Uniaxial Bases"
+    authors:
+      - family-names: "Lang"
+        given-names: "Robert J."
+      - family-names: "Demaine"
+        given-names: "Erik D."
+    collection-title: "Origami 4"
+    editors:
+      - family-names: "Lang"
+        given-names: "Robert J."
+    publisher:
+      name: "A K Peters"
+    start: 189
+    end: 205
+    year: 2009
+    doi: "10.1201/b10653-22"
+  - type: conference-paper
+    title: "Modeling Origami for Computational Construction and Beyond"
+    authors:
+      - family-names: "Ida"
+        given-names: "Tetsuo"
+      - family-names: "Takahashi"
+        given-names: "Hidekazu"
+      - family-names: "Marin"
+        given-names: "Mircea"
+      - family-names: "Ghourabi"
+        given-names: "Fadoua"
+    collection-title: "Computational Science and Its Applications – ICCSA 2007"
+    editors:
+      - family-names: "Gervasi"
+        given-names: "Osvaldo"
+      - family-names: "Gavrilova"
+        given-names: "Marina L."
+    volume: 4706
+    publisher:
+      name: "Springer"
+    start: 653
+    end: 665
+    year: 2007
+    doi: "10.1007/978-3-540-74477-1_60"
+  - type: book
+    title: "An Introduction to Computational Origami"
+    authors:
+      - family-names: "Ida"
+        given-names: "Tetsuo"
+    publisher:
+      name: "Springer"
+    year: 2020
+    doi: "10.1007/978-3-319-59189-6"
+  - type: thesis
+    title: "Origami On Computer"
+    authors:
+      - family-names: "Fisher"
+        given-names: "David"
+    thesis-type: "Honours thesis"
+    institution:
+      name: "Basser Department of Computer Science, University of Sydney"
+    year: 1994

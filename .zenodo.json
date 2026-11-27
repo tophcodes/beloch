@@ -24,6 +24,89 @@
       "identifier": "https://belochlang.org",
       "relation": "isDocumentedBy",
       "resource_type": "other"
+    },
+    {
+      "identifier": "10.1017/9781108778633",
+      "relation": "references",
+      "resource_type": "publication-book"
+    },
+    {
+      "identifier": "10.1201/b10653-38",
+      "relation": "references",
+      "resource_type": "publication-section"
+    },
+    {
+      "identifier": "10.1017/CBO9780511735172",
+      "relation": "references",
+      "resource_type": "publication-book"
+    },
+    {
+      "identifier": "10.1007/978-3-319-48532-4_15",
+      "relation": "references",
+      "resource_type": "publication-conferencepaper"
+    },
+    {
+      "identifier": "arXiv:2309.07932",
+      "relation": "references",
+      "resource_type": "publication-preprint"
+    },
+    {
+      "identifier": "10.1007/3-540-33099-2",
+      "relation": "references",
+      "resource_type": "publication-book"
+    },
+    {
+      "identifier": "10.1201/b10653-22",
+      "relation": "references",
+      "resource_type": "publication-section"
+    },
+    {
+      "identifier": "10.1007/978-3-540-74477-1_60",
+      "relation": "references",
+      "resource_type": "publication-conferencepaper"
+    },
+    {
+      "identifier": "https://github.com/edemaine/fold",
+      "relation": "references",
+      "resource_type": "other"
+    },
+    {
+      "identifier": "https://erikdemaine.org/papers/FOLD_CGW2016/",
+      "relation": "references",
+      "resource_type": "publication-conferencepaper"
+    },
+    {
+      "identifier": "9781568814360",
+      "relation": "references",
+      "resource_type": "publication-book"
+    },
+    {
+      "identifier": "https://langorigami.com/article/origami-diagramming-conventions/",
+      "relation": "references",
+      "resource_type": "publication-other"
+    },
+    {
+      "identifier": "10.1007/978-3-319-59189-6",
+      "relation": "references",
+      "resource_type": "publication-book"
     }
+  ],
+  "references": [
+    "Justin, J. (1986). Résolution par le pliage de l'équation du troisième degré et applications géométriques. L'Ouvert, 42, 9–19.",
+    "Hull, T. C. (2021). Origametry: Mathematical Methods in Paper Folding. Cambridge University Press. https://doi.org/10.1017/9781108778633",
+    "Alperin, R. C., & Lang, R. J. (2009). One-, Two-, and Multi-Fold Origami Axioms. In R. J. Lang (Ed.), Origami 4 (pp. 371–393). A K Peters. https://doi.org/10.1201/b10653-38",
+    "Demaine, E. D., & O'Rourke, J. (2007). Geometric Folding Algorithms: Linkages, Origami, Polyhedra. Cambridge University Press. https://doi.org/10.1017/CBO9780511735172",
+    "Akitaya, H. A., Cheung, K. C., Demaine, E. D., Horiyama, T., Hull, T. C., Ku, J. S., Tachi, T., & Uehara, R. (2016). Box Pleating is Hard. In J. Akiyama, H. Ito, T. Sakai, & Y. Uno (Eds.), Discrete and Computational Geometry and Graphs (JCDCGG 2015), LNCS 9943 (pp. 167–179). Springer. https://doi.org/10.1007/978-3-319-48532-4_15",
+    "Hull, T. C., & Zakharevich, I. (2023). Flat Origami is Turing Complete. arXiv:2309.07932.",
+    "Basu, S., Pollack, R., & Roy, M.-F. (2006). Algorithms in Real Algebraic Geometry (2nd ed.). Springer. https://doi.org/10.1007/3-540-33099-2",
+    "Demaine, E. D., Ku, J. S., & Lang, R. J. (2023). FOLD File Format Specification (version 1.2). https://github.com/edemaine/fold",
+    "Demaine, E. D., Ku, J. S., & Lang, R. J. (2016). A New File Standard to Represent Folded Structures. Abstracts from the 26th Fall Workshop on Computational Geometry.",
+    "Lang, R. J. (2011). Origami Design Secrets: Mathematical Methods for an Ancient Art (2nd ed.). CRC Press. ISBN 9781568814360",
+    "Lang, R. J. (2000). Origami Diagramming Conventions. https://langorigami.com/article/origami-diagramming-conventions/",
+    "Randlett, S. (1961). The Art of Origami: Paper Folding, Traditional and Modern. E. P. Dutton.",
+    "Lang, R. J., & Demaine, E. D. (2009). Facet Ordering and Crease Assignment in Uniaxial Bases. In R. J. Lang (Ed.), Origami 4 (pp. 189–205). A K Peters. https://doi.org/10.1201/b10653-22",
+    "Ida, T., Takahashi, H., Marin, M., & Ghourabi, F. (2007). Modeling Origami for Computational Construction and Beyond. In O. Gervasi & M. L. Gavrilova (Eds.), Computational Science and Its Applications – ICCSA 2007, LNCS 4706 (pp. 653–665). Springer. https://doi.org/10.1007/978-3-540-74477-1_60",
+    "Ida, T. (2020). An Introduction to Computational Origami. Springer. https://doi.org/10.1007/978-3-319-59189-6",
+    "Fisher, D. (1994). Origami On Computer [Honours thesis, Basser Department of Computer Science, University of Sydney]."
   ]
 }
