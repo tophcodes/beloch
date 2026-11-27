@@ -86,9 +86,6 @@ type violation =
           lands on lies
           @see <https://belochlang.org/model/#rem-linear-extension>
             realizes the linear-extension remark *)
-  | Too_many_undecided of int
-      (** the block lands on more classes of faces whose side nothing
-          decides than the kernel searches *)
   | Layer_cycle
       (** three faces that share a region of the table lie in a cycle, or a
           placed block lies directly on two faces that put one face on both
@@ -415,7 +412,7 @@ val fold_blocks_all :
     are searched, and each combination that satisfies the non-crossing
     conditions is one stacking. The list is not empty. [Error v] is a
     [Taco_tortilla] or a [Layer_cycle] where the conditions put a face on
-    both sides, [Too_many_undecided], or the violation of the first
+    both sides, or the violation of the first
     combination tried when none passes. *)
 
 val fold_blocks :

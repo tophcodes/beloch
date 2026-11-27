@@ -1562,6 +1562,36 @@ let test_fold_blocks_bottom_pierces () =
   | Error v -> Alcotest.failf "Bottom: wrong violation %s" (Fold_state.violation_to_string v)
 
 
+(* A comb: the spine squares [k,k+1]x[0,1], k < 26, one tooth
+   [2i,2i+1]x[1,2] on every even square, folded down onto it, and one flap
+   [0,26]x[-1,0] under the spine. The flap folds up over the spine, placed
+   over the square [1,2]: one sheet carries that side to every square, and
+   nothing decides whether the flap goes over a tooth or into the pocket
+   between the tooth and its square. The 13 pockets are 13 open classes,
+   and every combination folds flat. *)
+let test_fold_blocks_over_many_open_classes () =
+  let teeth = 13 in
+  let len = 2 * teeth in
+  let spine = Array.init len (fun k -> sq (gp k 0) (gp (k + 1) 0) (gp (k + 1) 1) (gp k 1)) in
+  let tooth = Array.init teeth (fun i -> sq (gp (2 * i) 1) (gp ((2 * i) + 1) 1) (gp ((2 * i) + 1) 2) (gp (2 * i) 2)) in
+  let flap = sq (gp 0 (-1)) (gp len (-1)) (gp len 0) (gp 0 0) in
+  let faces = Array.concat [ spine; tooth; [| flap |] ] in
+  let flap_i = len + teeth in
+  let hinges =
+    Array.concat
+      [ Array.init (len - 1) (fun k -> mkh k (k + 1) (vline (k + 1)) (q 0));
+        Array.init teeth (fun i -> mkh (2 * i) (len + i) (hline 1) (q 1));
+        Array.init len (fun k -> mkh k flap_i (hline 0) (q 0)) ]
+  in
+  let g = mk ~faces ~hinges ~rank:(Array.init (flap_i + 1) Fun.id) () in
+  let mask = Array.init (flap_i + 1) (fun i -> i = flap_i) in
+  match
+    Fold_state.fold_blocks_all ~blocks:[ (mask, Fold_state.Over [ 1 ]) ] g
+      ~axis:(hline 0) ~move_side:(-1) ~prov:None
+  with
+  | Error v -> Alcotest.failf "comb: %s" (Fold_state.violation_to_string v)
+  | Ok gs -> Alcotest.(check int) "one state per choice of pockets" (1 lsl teeth) (List.length gs)
+
 (* ---- reverse ---- *)
 
 let reverse_two_layer inside =
@@ -2137,7 +2167,9 @@ let () =
           Alcotest.test_case "Two blocks same gap" `Quick
             test_fold_blocks_two_blocks_same_gap;
           Alcotest.test_case "Placement face without child" `Quick
-            test_fold_blocks_placement_face_without_child ] );
+            test_fold_blocks_placement_face_without_child;
+          Alcotest.test_case "Over many open classes" `Quick
+            test_fold_blocks_over_many_open_classes ] );
       ( "reverse",
         [ Alcotest.test_case "parallel axis: no spine" `Quick
             test_reverse_parallel_axis_no_spine;
