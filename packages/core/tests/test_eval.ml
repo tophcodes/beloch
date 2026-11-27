@@ -253,31 +253,6 @@ let test_fold_along_matches_restatement () =
   Alcotest.(check int) "no stale F" 0
     (count_assign Fold_state.F via_fold.Eval.state)
 
-(* crease all layers, @fold some: the unmoved layer keeps its flat F mark *)
-let[@warning "-32"] test_crease_all_fold_some () =
-  let scoped =
-    Eval.eval_folded
-      (Beloch.parse ~filename:"t.bel"
-         "paper square\n\
-          fold (map .d onto .a)\n\
-          mark (map .c onto .d) as --m\n\
-          fold (--m) (moving .c) (up to .c) into --m\n")
-  in
-  Alcotest.(check int) "unmoved layer keeps F" 1
-    (count_assign Fold_state.F scoped.Eval.state);
-  Alcotest.(check int) "4 faces" 4
-    (Array.length (Fold_state.faces scoped.Eval.state));
-  let all_layers =
-    Eval.eval_folded
-      (Beloch.parse ~filename:"t.bel"
-         "paper square\n\
-          fold (map .d onto .a)\n\
-          mark (map .c onto .d) as --m\n\
-          fold (--m) (moving .c) into --m\n")
-  in
-  Alcotest.(check int) "all-layers upgrades every F" 0
-    (count_assign Fold_state.F all_layers.Eval.state)
-
 let test_fold_along_needs_moving () =
   expect_error "needs `moving" (fun () ->
       ignore

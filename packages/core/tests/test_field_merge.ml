@@ -3,14 +3,6 @@ open Beloch
 let q = Q.of_string
 let qq s = Qqbar.of_q (q s)
 
-(* helper: evaluate a ℚ-poly at a qqbar point *)
-let[@warning "-32"] eval_at (c : Poly.t) (g : Qqbar.t) : Qqbar.t =
-  let acc = ref (qq "0") in
-  for i = Array.length c - 1 downto 0 do
-    acc := Qqbar.add (Qqbar.mul !acc g) (Qqbar.of_q c.(i))
-  done;
-  !acc
-
 let test_merge_single_generator () =
   (* coefficients all in Q(sqrt2): 1, sqrt2, 3+sqrt2 *)
   let s2 = Qqbar.sqrt (qq "2") in
