@@ -99,9 +99,12 @@ Four functions build the layer order of a state:
   corner faces lie in a cycle.
 - `Fold_state.orders` searches the pairs. The caller gives the side of the
   pairs it knows and the pairs it fixes, and gets every state whose other
-  pairs satisfy the conditions below. Every write that folds finds its
-  layer order with it: `flatten`, `squash` and `reverse` (Fan, below) and
-  `fold`.
+  pairs satisfy the conditions below. `Fold_state.unit_orders` states the
+  known sides by the units of a fan: two faces of one unit keep their side,
+  exchanged where the face turns over, and the caller gives the side of two
+  faces of different units where it knows it. Every write that folds finds
+  its layer order with it, through `Fan.stackings`: `flatten`, `squash`,
+  `reverse`, `fold` and `unfold` (Fan, below).
 
 ::: {.include api="Fold_state.with_rank"}
 :::
@@ -201,6 +204,28 @@ from carrying out the construction, `Axiom.select` fails with that place,
 hints `extend --x to (x, y)`.
 
 ## Fan
+
+`Fan` is the one fan of the kernel, and every verb that folds calls it.
+`Fan.make` takes a scored state, the tip, the face that stays and places the
+result, and per hinge its role: keep its angle, change, or try both. It
+moves each face by the reflections across the changing hinges on a path
+from a face that stays (spec `multifold`, "A fan moves each piece by the
+changing hinges on its paper path"), and returns one folded state per
+choice of the tried hinges whose paths close. `Fan.stackings` searches the
+layer order of one folded state over the units and conditions the verb
+gives (`Fold_state.unit_orders`; Layer order, above): `Fan.Letters` for
+`flatten` and `squash`, whose units are the pieces of one motion and whose
+letters fix the side at the hinges of each ray, and `Fan.Opening` for
+`fold`, `unfold` and `reverse`, whose units are the faces that stay and each
+block (Reverse, below).
+
+The vertex enters through what the verb hands `Fan.make`. For a vertex at
+the point at infinity of an axis, `Axis_fan.make` cuts the tip along the
+axis and makes the cut hinges and the hinges on the axis between the tip
+and a face that stays change. For a vertex on the table,
+`Collapse.mk_sector_geoms` (`flatten` of ray items and `squash`),
+`Squash.own_hinges` and `Flatten_fans.run` score the rays and give the
+roles below.
 
 `Flatten_solve.run` reads the rays of a `flatten` from material creases and
 hands them to `Flatten_solve.solve`, which folds them at a point of the
@@ -334,8 +359,8 @@ layer behind it, which the side edge joins to it, and the crease between
 the vertices in the front layer: the state that two reverse folds and a
 valley fold reach.
 
-`Collapse.geoms_of` takes the regions as its sectors and finds the motions
-and the layer orders as for one fan. The letters of a fan run through Maekawa's
+`Fan.make` and `Fan.stackings` take the regions as the parts of the tip and
+find the motions and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the layers of its bundles surround its vertex. More than
 one state left is an error. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
@@ -368,7 +393,7 @@ material, `Squash.own_hinges` folds the squash without the solver
 every piece of the two flaps at the spine, the
 hinges of the spine and of the axis change, each hinge on the target's
 line between the tip and a face outside it keeps or changes, and
-`Collapse.geoms_of` and `Collapse.pipeline_solve` give the states as for a
+`Fan.make` and `Collapse.pipeline_solve` give the states as for a
 fan. More than one state fails with `` squash is ambiguous: <n>
 realizations ``. Where the squash finds no single state and the flap of
 the lower face at the spine has material beyond the target's line, it
@@ -618,7 +643,7 @@ on the spine line, so a cut crossed by a flat hinge is none.
 The fan of a reverse fold is built once, for every opening, by
 `Axis_fan.make`. `Fold_state.reverse_fan` cuts each face of the tip that the axis crosses,
 with a flat hinge of the new crease between its two pieces, and
-`Collapse.geoms_of` moves the pieces beyond the axis by the creases on their
+`Fan.make` moves the pieces beyond the axis by the creases on their
 paper paths (spec `multifold`, "A fan moves each piece by the changing hinges on
 its paper path"). The cut hinges fold, a hinge that lies on the
 axis between the tip and a face that stays changes, and every other hinge
@@ -631,7 +656,8 @@ fan, with their moving set as the tip and one opening (spec `multifold`, "A
 fold is the fan at the point at infinity of its axis"). An `unfold` selects a
 tip the axis cuts nowhere, so its fan scores no crease.
 
-Each opening is a stacking of that state (`Fold_state.fold_opening`), with
+Each opening is a stacking of that state (`Fan.stackings` with
+`Fan.Opening`, which calls `Fold_state.fold_opening`), with
 the faces numbered as a fold of the two blocks numbers them: a block placed
 at the bottom, the faces that stay, the other block. The units of the layer
 search are the faces that stay and each of the two blocks (spec `layer-order`,
