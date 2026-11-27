@@ -219,10 +219,15 @@ letters fix the side at the hinges of each ray, and `Fan.Opening` for
 `fold`, `unfold` and `reverse`, whose units are the faces that stay and each
 block (Reverse, below).
 
-The vertex enters through what the verb hands `Fan.make`. For a vertex at
-the point at infinity of an axis, `Axis_fan.make` cuts the tip along the
-axis and makes the cut hinges and the hinges on the axis between the tip
-and a face that stays change. For a vertex on the table,
+The vertex enters through what the verb hands `Fan.make`. Every fan scores
+its rays with one cut, the one `Fold_state.subdivide_fan` makes: a face that
+holds the vertex in its interior is cut into the wedges between the rays,
+and every other face a ray crosses is cut along it. For a vertex at the
+point at infinity of an axis, the two rays are the two halves of the axis
+and together run along the whole of it, so the cut divides every face of
+the tip that the axis crosses; `Axis_fan.make` makes this cut and makes
+the cut hinges and the hinges on the axis between the tip and a face that
+stays change. For a vertex on the table,
 `Collapse.mk_sector_geoms` (`flatten` of ray items and `squash`),
 `Squash.own_hinges` and `Flatten_fans.run` score the rays and give the
 roles below.
@@ -642,7 +647,8 @@ on the spine line, so a cut crossed by a flat hinge is none.
 
 The fan of a reverse fold is built once, for every opening, by
 `Axis_fan.make`. `Fold_state.reverse_fan` cuts each face of the tip that the axis crosses,
-with a flat hinge of the new crease between its two pieces, and
+with a flat hinge of the new crease between its two pieces, by the cut of
+every fan from the point at infinity of the axis, and
 `Fan.make` moves the pieces beyond the axis by the creases on their
 paper paths (spec `multifold`, "A fan moves each piece by the changing hinges on
 its paper path"). The cut hinges fold, a hinge that lies on the
