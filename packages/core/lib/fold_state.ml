@@ -65,13 +65,6 @@ let fresh_crease_id () =
   incr next_id;
   id
 
-(* The most classes of undecided sides a placed fold searches; the search
-   validates 2^k stackings for k classes. Ceiling: a fold beyond it fails
-   with [Too_many_undecided]. The upgrade is to propagate the taco-taco
-   condition and the flat-hinge form of taco-tortilla before the search, as
-   the taco-tortilla condition is now, so that fewer classes stay open. *)
-let max_undecided = 12
-
 type violation =
   | Bad_index of string
   | Bad_rank
@@ -83,7 +76,6 @@ type violation =
   | Taco_tortilla of { tortilla : int; hinge : int }
   | Taco_taco of int * int
   | Several_stackings of int
-  | Too_many_undecided of int
   | Layer_cycle
   | Bad_order of int * int
 
@@ -116,11 +108,6 @@ let violation_to_string = function
          in the state decides on which side of them some layers they land on \
          lie"
         n
-  | Too_many_undecided k ->
-      Printf.sprintf
-        "layer ordering: the moved layers land on %d groups of layers whose \
-         side nothing decides; the kernel searches at most %d"
-        k max_undecided
   | Layer_cycle ->
       "layer ordering: three layers lie in a cycle where all three overlap"
   | Bad_order (i, j) ->
@@ -749,6 +736,17 @@ let orders ?(marks = [||]) (geo : geometry) ~(kept : int -> int -> bool option)
           in
           if start_ok then go 0;
           Ok (List.rev !found))
+
+(* [orders], and where it finds no state, the violation of the state
+   [witness ()] gives, one the search rejects. *)
+let orders_or_violation ?(marks = [||]) (geo : geometry) ~kept ~fixed
+    ~(witness : unit -> int -> int -> bool) : (t list, violation) result =
+  match orders ~marks geo ~kept ~fixed with
+  | Ok [] -> (
+      match build ~marks ~cycles:true geo ~side:(witness ()) with
+      | exception V v -> Error v
+      | _ -> Error Layer_cycle)
+  | r -> r
 
 (* [?base]/[?marks] are LEADING optional arguments with only labeled
    required arguments after them; OCaml can only erase omitted optional
@@ -1735,40 +1733,32 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
       | Error v -> Error v
       | Ok () ->
           let decided, free = Layer_sides.classes uf pairs in
-          let k = List.length free in
-          if k > max_undecided then Error (Too_many_undecided k)
-          else begin
-            (* every pair of the state, through the answers kept across
-               openings *)
-            for i = 0 to n - 1 do
-              for j = i + 1 to n - 1 do
-                ignore (overlap i j)
-              done
-            done;
-            let kept i j = if moved.(i) = moved.(j) then Some (kept_above i j) else None in
-            let fixed = List.map (fun ((s, m), up) -> if up then (s, m) else (m, s)) decided in
-            let found = orders ~marks:g.marks geo ~kept ~fixed in
-            exchange ();
-            match found with
-            | Error v -> Error v
-            | Ok (_ :: _ as gs) -> Ok gs
-            | Ok [] -> (
-                (* the violation of the combination with every open class
-                   turned one way, the first the search tries *)
-                let stat_above = Hashtbl.create ((2 * List.length pairs) + 1) in
-                List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr v) decided;
-                List.iter
-                  (List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr (not v)))
-                  free;
-                let side i j =
-                  if moved.(i) = moved.(j) then kept_above i j
-                  else if moved.(j) then Hashtbl.find stat_above (i, j)
-                  else not (Hashtbl.find stat_above (j, i))
-                in
-                match build ~marks:g.marks ~cycles:true geo ~side with
-                | exception V v -> Error v
-                | _ -> Error Layer_cycle)
-          end)
+          (* every pair of the state, through the answers kept across
+             openings *)
+          for i = 0 to n - 1 do
+            for j = i + 1 to n - 1 do
+              ignore (overlap i j)
+            done
+          done;
+          let kept i j = if moved.(i) = moved.(j) then Some (kept_above i j) else None in
+          let fixed = List.map (fun ((s, m), up) -> if up then (s, m) else (m, s)) decided in
+          (* where no state folds flat, the violation of the combination
+             with every open class turned one way, the first the search
+             tries *)
+          let witness () =
+            let stat_above = Hashtbl.create ((2 * List.length pairs) + 1) in
+            List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr v) decided;
+            List.iter
+              (List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr (not v)))
+              free;
+            fun i j ->
+              if moved.(i) = moved.(j) then kept_above i j
+              else if moved.(j) then Hashtbl.find stat_above (i, j)
+              else not (Hashtbl.find stat_above (j, i))
+          in
+          let found = orders_or_violation ~marks:g.marks geo ~kept ~fixed ~witness in
+          exchange ();
+          found)
 
 (* The faces of [g] cut by the TABLE-space [axis] for a fold of [nb] blocks.
    A parent in no block ([block_of_parent] gives -1) stays whole; a block
@@ -2015,7 +2005,10 @@ let fold_blocks_gen ?crease_id ~(shared : shared) ~(blocks : (bool array * place
   | Ok geo when not placed -> (
       seed_overlaps g geo ~parent ~moved ~uncut;
       let side = level_side g ~parent ~unit_of ~turned:moved ~places in
-      try Ok [ build ~marks:g.marks ~cycles:false geo ~side ] with V v -> Error v)
+      (* the levels fix every side, so the search checks the one state *)
+      orders_or_violation ~marks:g.marks geo
+        ~kept:(fun i j -> Some (side i j))
+        ~fixed:[] ~witness:(fun () -> side))
   | Ok geo ->
       seed_overlaps g geo ~parent ~moved ~uncut;
       placed_stackings ~shared ~g ~geo ~parent ~moved ~block_of:unit_of ~turned:moved

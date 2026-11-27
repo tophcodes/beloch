@@ -19,17 +19,6 @@ The kernel SHALL decide sides by three conditions, applied until no side changes
 - **WHEN** the crane's neck is reversed with `reverse (perp --n1 through .sr) (moving .b) (--n1 & .pn mountain) (--n3 & .pn3 mountain) as --neck`
 - **THEN** the three conditions decide the side of every layer the tip lands on, and the reverse fold yields one state
 
-### Requirement: A side no condition decides is the folder's choice
-The sides the three conditions leave open SHALL be searched: every combination that gives a flat state SHALL count. One state left SHALL be the result. Several states left SHALL be an error that states their number. More than 10 groups of layers whose side nothing decides SHALL fail the write with an error that says so.
-
-#### Scenario: Several stackings
-- **WHEN** a placed fold leaves 2 combinations of open sides that both fold flat
-- **THEN** evaluation fails with "layer ordering: the moved layers fold flat in 2 stackings; nothing in the state decides on which side of them some layers they land on lie"
-
-#### Scenario: Too many open groups
-- **WHEN** a placed fold lands on 11 groups of layers whose side nothing decides
-- **THEN** evaluation fails with "layer ordering: the moved layers land on 11 groups of layers whose side nothing decides; the kernel searches at most 10"
-
 ### Requirement: A placed block lies directly on every face of its target flap
 A fold placed `over` or `under` a flap SHALL lay the moved block directly on every face of that flap it lands on, above every such face for `over` and below every such face for `under`. The faces of one flap lie flat as one piece of paper, and the block SHALL lie on all of them alike.
 
@@ -46,11 +35,15 @@ Where a write finds several results, two results that order every overlapping pa
 - **THEN** the reverse fold returns that one state and reports no ambiguity
 
 ### Requirement: A verb gives the units of its fan's layer search
-The layer search of a fan SHALL order the units the verb gives. Two overlapping faces of one unit SHALL keep their side, exchanged where the unit turns over; the side of two faces of different units SHALL be open or fixed by a condition of the verb. `flatten` and `squash` SHALL give the pieces of one motion as units, the faces the fan leaves in place forming one piece.
+The layer search of a fan SHALL order the units the verb gives. Two overlapping faces of one unit SHALL keep their side, exchanged where the unit turns over; the side of two faces of different units SHALL be open or fixed by a condition of the verb. `flatten` and `squash` SHALL give the pieces of one motion as units, the faces the fan leaves in place forming one piece. `fold` SHALL give the faces that stay and each moved block as units, and a block placed on top of the model or under it SHALL fix its side against every face it lands on.
 
 #### Scenario: A flatten keeps a piece together
 - **WHEN** a `flatten` moves two overlapping faces by the same motion
 - **THEN** the two faces keep their side in the result, exchanged where the motion turns them over
+
+#### Scenario: A plain fold leaves the search nothing to decide
+- **WHEN** a square takes `fold (map .b onto .a)`
+- **THEN** the layer search gets the side of the moved half above the half that stays, and returns that one state
 
 ### Requirement: A reverse fold gives three units per opening
 A reverse fold SHALL give the layer search three units per opening: the faces that stay and each of its two blocks. Its conditions SHALL fix the side of the two blocks, the lower one below, and the sides that `inside` or `outside` gives each block against its body. The search SHALL decide the rest.
@@ -59,3 +52,14 @@ A reverse fold SHALL give the layer search three units per opening: the faces th
 - **WHEN** a square takes `fold (map .b onto .a) as --d`, `.m = free on --ab from .a at 3/8`, `.n = free on --cd from .d at 3/8`, `.t = free on --d from .[--d --ab] at 1/2` and `reverse (through .m .n) (moving .t) as --r`
 - **THEN** read from the bottom the state is the bottom layer, the lower layer of the strip, the upper layer of the strip, the top layer
 - **AND** `--d` takes the other letter
+
+### Requirement: The search decides every side no condition decides
+The sides the three conditions leave open SHALL be searched, however many groups of layers they form: every combination that gives a flat state SHALL count. One state left SHALL be the result. Several states left SHALL be an error that states their number.
+
+#### Scenario: Several stackings
+- **WHEN** a placed fold leaves 2 combinations of open sides that both fold flat
+- **THEN** evaluation fails with "layer ordering: the moved layers fold flat in 2 stackings; nothing in the state decides on which side of them some layers they land on lie"
+
+#### Scenario: Many open groups
+- **WHEN** a flap folds over a comb placed `over` one square of its spine, and 13 teeth folded onto the spine each leave a pocket the flap may go into
+- **THEN** the search finds 8192 states, one per choice of pockets
