@@ -16,7 +16,6 @@ external sqrt_unsafe : t -> t = "ml_qqbar_sqrt"
 external add : t -> t -> t = "ml_qqbar_add"
 external sub : t -> t -> t = "ml_qqbar_sub"
 external mul : t -> t -> t = "ml_qqbar_mul"
-external div_unsafe : t -> t -> t = "ml_qqbar_div"
 external equal : t -> t -> bool = "ml_qqbar_equal"
 external cmp_re : t -> t -> int = "ml_qqbar_cmp_re"
 external sign_re : t -> int = "ml_qqbar_sgn_re"
@@ -39,9 +38,6 @@ let to_q (x : t) : Q.t option =
 (* FLINT aborts the process on invalid input : guard here. *)
 let inv (x : t) : t =
   if is_zero x then invalid_arg "Qqbar.inv: zero" else inv_unsafe x
-
-let div (x : t) (y : t) : t =
-  if is_zero y then invalid_arg "Qqbar.div: zero divisor" else div_unsafe x y
 
 let sqrt (x : t) : t =
   if sign_re x < 0 then invalid_arg "Qqbar.sqrt: negative argument"

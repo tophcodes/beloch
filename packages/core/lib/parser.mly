@@ -54,7 +54,7 @@ let misplaced_trim (span : Error.span) : 'a =
    ends with its trim and holds no other, no annotation and no def. *)
 let shape_def ~(name : string) ~(name_span : Error.span)
     ~(params : (string * Error.span) list) ~(sheet : sheet)
-    ~(items : shape_item list) ~(close : Error.span) (span : Error.span) :
+    ~(items : shape_item list) ~(close : Error.span) :
     shape_def =
   let rec split acc = function
     | [] -> Error.fail close "a shape ends with `trim to`"
@@ -73,8 +73,7 @@ let shape_def ~(name : string) ~(name_span : Error.span)
              "a trimmed sheet starts with no names, so a trim shadows none; drop the !"))
     exports;
   { sd_name = name; sd_name_span = name_span; sd_params = params;
-    sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_exports = exports;
-    sd_span = span }
+    sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_exports = exports }
 
 (* `staying` names points (spec multifold,
    "staying names the part that holds every point"); a flap names no
@@ -137,7 +136,7 @@ shape_defs:
 shape_def:
   | SHAPE IDENT LPAREN shape_params RPAREN LBRACE PAPER sheet shape_items RBRACE
       { shape_def ~name:$2 ~name_span:$loc($2) ~params:$4 ~sheet:$8 ~items:$9
-          ~close:$loc($10) $loc }
+          ~close:$loc($10) }
 
 shape_params:
   | { [] }

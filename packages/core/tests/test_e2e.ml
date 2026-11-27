@@ -1082,7 +1082,9 @@ let test_mark_endpoint_on_vertex_is_incident () =
   in
   let st = (eval_bel src).Eval.state in
   let m = (Fold_state.marks st).(0) in
-  let p = Fold_state.mark_rep_point m in
+  let p =
+    match m.Fold_state.mgeom with Fold_state.MSeg (a, _) -> a | Fold_state.MPoint p -> p
+  in
   let is_vertex =
     Array.exists
       (fun (f : Fold_state.face) -> Array.exists (Geom.point_equal p) f)

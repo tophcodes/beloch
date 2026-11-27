@@ -70,7 +70,3 @@ let fold ?crease_id ?moving_parents (g : Fold_state.t) ~(axis : Geom.line)
   with
   | Ok g' -> g'
   | Error v -> Fold_state.fail_of_violation prov v
-
-let simple_fold (g : Fold_state.t) ~(axis : Geom.line) ~(move_side : int)
-    ~(valley : bool) : Fold_state.t =
-  fold g ~axis ~move_side ~valley ~prov:None

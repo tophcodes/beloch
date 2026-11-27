@@ -523,7 +523,7 @@ let test_fold_state_init () =
 let test_fold_state_half () =
   let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Axis_fan.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let st = Axis_fan.fold st ~axis ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "two faces after one fold" 2
     (Array.length (Fold_state.faces st));
   Alcotest.(check bool) ".b maps onto .a" true
@@ -548,7 +548,7 @@ let face_with_det (st : Fold_state.t) (d : int) : int =
 let test_layer_valley_moved_above () =
   let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Axis_fan.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let st = Axis_fan.fold st ~axis ~move_side:1 ~valley:true ~prov:None in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
   Alcotest.(check bool) "moved face is Above stationary" true
     (Fold_state.rel st mv stt = Fold_state.Above)
@@ -556,7 +556,7 @@ let test_layer_valley_moved_above () =
 let test_layer_mountain_moved_below () =
   let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Axis_fan.simple_fold st ~axis ~move_side:1 ~valley:false in
+  let st = Axis_fan.fold st ~axis ~move_side:1 ~valley:false ~prov:None in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
   Alcotest.(check bool) "moved face is Below stationary" true
     (Fold_state.rel st mv stt = Fold_state.Below)
@@ -571,7 +571,7 @@ let negate_rel = function
 let test_layer_antisymmetry () =
   let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Axis_fan.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let st = Axis_fan.fold st ~axis ~move_side:1 ~valley:true ~prov:None in
   let n = Array.length (Fold_state.faces st) in
   let ok = ref true in
   for i = 0 to n - 1 do
@@ -645,8 +645,8 @@ let count_assign_in (st : Fold_state.t) a (idxs : int list) =
 let test_fold_records_accordion () =
   let axis1 = { Geom.a = q 1; b = q 0; c = half } in
   let st1 =
-    Axis_fan.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:axis1 ~move_side:1
-      ~valley:true
+    Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:axis1 ~move_side:1
+      ~valley:true ~prov:None
   in
   let axis2 = { Geom.a = q 0; b = q 1; c = half } in
   let st2 =
@@ -666,8 +666,8 @@ let test_fold_paper_preimages () =
   Alcotest.(check int) "one preimage when flat" 1 (List.length flat);
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st =
-    Axis_fan.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
-      ~valley:true
+    Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
+      ~valley:true ~prov:None
   in
   let folded =
     Fold_state.paper_preimages st { Geom.x = Num.of_q (Q.of_ints 1 4); y = q 0 }
@@ -690,9 +690,9 @@ let test_fold_precrease_upgrade () =
 
 let test_fold_state_flip () =
   let st =
-    Axis_fan.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |])
+    Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |])
       ~axis:{ Geom.a = q 1; b = q 0; c = half }
-      ~move_side:1 ~valley:true
+      ~move_side:1 ~valley:true ~prov:None
   in
   let n = Array.length (Fold_state.faces st) in
   let det_before =
@@ -711,9 +711,9 @@ let test_fold_state_flip () =
 
 let test_fold_state_flip_involution () =
   let st =
-    Axis_fan.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |])
+    Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |])
       ~axis:{ Geom.a = q 1; b = q 0; c = half }
-      ~move_side:1 ~valley:true
+      ~move_side:1 ~valley:true ~prov:None
   in
   let twice = Fold_state.flip (Fold_state.flip st) in
   Alcotest.(check bool)
@@ -723,13 +723,13 @@ let test_fold_state_flip_involution () =
        (Fold_state.table_position twice (pt 0 0)))
 
 (* [Fold_state.t] is abstract and constructed only via [make], which enforces
-   every state invariant: [simple_fold] succeeding at all already IS the
+   every state invariant: [Axis_fan.fold] succeeding at all already IS the
    validity proof; there is no separate [validity_error] probe on the new
    core (see the 3c port plan's dictionary). *)
 let test_layer_valid_examples_ok () =
   let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let (_ : Fold_state.t) = Axis_fan.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let (_ : Fold_state.t) = Axis_fan.fold st ~axis ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check bool) "a simple valley fold is valid" true true
 
 let read_file path =

@@ -18,14 +18,3 @@ val attempts :
     by the creases on its paper path. Each opening is a stacking of that
     folded state, the stationary faces and the two blocks the units of the
     layer search. *)
-
-val reverse :
-  cid:int ->
-  Fold_state.t ->
-  axis:Geom.line ->
-  move_side:int ->
-  tip:bool array ->
-  inside:bool ->
-  prov:State.provenance option ->
-  (Fold_state.t, Fold_state.reverse_failure) result
-(** {!Fold_state.reverse_of_attempts} of {!attempts}. *)

@@ -124,8 +124,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Error.fail ~hint:Collapse.hint_staying_missing span
           (Collapse.e_staying_missing verb)
   in
-  let elem_of (fcid, fea, feb, valley) =
-    { Collapse.cid = fcid; ea = fea; eb = feb; valley }
+  let elem_of (fcid, fea, feb) = { Collapse.cid = fcid; ea = fea; eb = feb }
   in
   (* keep only the candidate segments that end at O; every
      element has >= 1 such by O's construction. *)
@@ -292,7 +291,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     in
     let local_err = ref [] in
     let elems_geom =
-      List.map (fun (a, b, c, _) -> elem_of (a, b, c, true)) combo
+      List.map (fun (a, b, c, _) -> elem_of (a, b, c)) combo
     in
     let given_fars = List.map (Collapse.far_of o) elems_geom in
     let given_rays =
@@ -307,10 +306,10 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       let patterns = Flatten.mv_patterns constraints in
       (* one call solves every Maekawa pattern over the fixed vertex
          geometry, sharing placements/overlaps across patterns instead of
-         refolding per pattern; [es_geom]'s valley is a placeholder (the
-         real per-ray valley rides in [patterns]). *)
+         refolding per pattern; the letter of each ray rides in
+         [patterns]. *)
       let es_geom =
-        List.map (fun (fcid, fea, feb, _) -> elem_of (fcid, fea, feb, true))
+        List.map (fun (fcid, fea, feb, _) -> elem_of (fcid, fea, feb))
           all_rays
       in
       (* the letters of the given rays: the pattern without the emergent ray,

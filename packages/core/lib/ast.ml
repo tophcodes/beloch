@@ -311,7 +311,7 @@ type stmt =
          "staying names the part that holds every point"). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
-         M/V pattern × stacking, via Collapse.collapse_all) is filtered by
+         M/V pattern × stacking, via Collapse.collapse_all_patterns) is filtered by
          the hard constraints, the `(emergent beside .p)` item (the
          [point_operand] option) among them: it keeps the states whose
          emergent ray lies in a wedge that holds .p. One state left is the
@@ -348,7 +348,6 @@ type shape_def = {
       (* `trim to … { … }`: the names that reach the trimmed sheet, every
          name on the flap when [None] (spec sheets,
          "A trim lists the names it exports") *)
-  sd_span : Error.span;
 }
 
 type program = {

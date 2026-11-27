@@ -157,15 +157,6 @@ function ml_qqbar_mul(a, b) {
   return qqbar_box(h);
 }
 
-//Provides: ml_qqbar_div
-//Requires: qqbar_wasm_module, qqbar_unbox, qqbar_box
-function ml_qqbar_div(a, b) {
-  var h = qqbar_wasm_module().ccall(
-    "wasm_qqbar_div", "number", ["number", "number"], [qqbar_unbox(a), qqbar_unbox(b)],
-  );
-  return qqbar_box(h);
-}
-
 //Provides: ml_qqbar_equal
 //Requires: qqbar_wasm_module, qqbar_unbox
 function ml_qqbar_equal(a, b) {

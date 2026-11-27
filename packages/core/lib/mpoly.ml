@@ -19,7 +19,6 @@ let mono_equal (a : mono) (b : mono) : bool =
       !ok)
 
 let zero : t = []
-let is_zero (p : t) : bool = p = []
 
 let const (nvars : int) (q : Q.t) : t =
   if Q.equal q Q.zero then [] else [ (Array.make nvars 0, q) ]
@@ -44,8 +43,6 @@ let add_term (p : t) (m : mono) (c : Q.t) : t =
     go p
 
 let add (p : t) (q : t) : t = List.fold_left (fun acc (m, c) -> add_term acc m c) p q
-let neg (p : t) : t = List.map (fun (m, c) -> (m, Q.neg c)) p
-let sub (p : t) (q : t) : t = add p (neg q)
 
 let mul (p : t) (q : t) : t =
   List.fold_left

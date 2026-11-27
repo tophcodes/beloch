@@ -77,7 +77,6 @@ type violation =
   | Taco_taco of int * int
   | Several_stackings of int
   | Layer_cycle
-  | Bad_order of int * int
 
 let violation_to_string = function
   | Bad_index s -> "fold graph: index out of range: " ^ s
@@ -110,11 +109,6 @@ let violation_to_string = function
         n
   | Layer_cycle ->
       "layer ordering: three layers lie in a cycle where all three overlap"
-  | Bad_order (i, j) ->
-      Printf.sprintf
-        "fold graph: the order of faces %d and %d is given twice, given though \
-         they do not overlap, or missing though they do"
-        i j
 
 (* 3D half-turn about a 2D line embedded in z = 0. *)
 let half_turn3_of_line (l : Geom.line) : I3.t =
@@ -558,35 +552,9 @@ let with_rank ?(marks = [||]) (geo : geometry) ~(rank : int array) :
     Ok (build ~marks ~cycles:false geo ~side:(fun i j -> rank.(i) > rank.(j)))
   with V v -> Error v
 
-let with_order ?(marks = [||]) (geo : geometry) ~(above : (int * int) list) :
-    (t, violation) result =
-  try
-    let n = Array.length geo.g_faces in
-    let given = Hashtbl.create 64 in
-    List.iter
-      (fun (i, j) ->
-        if i < 0 || i >= n || j < 0 || j >= n || i = j then
-          raise (V (Bad_index (Printf.sprintf "order (%d|%d)" i j)));
-        let key = if i < j then (i, j) else (j, i) in
-        if Hashtbl.mem given key then raise (V (Bad_order (fst key, snd key)));
-        Hashtbl.replace given key (i < j))
-      above;
-    (match geo.g_placed with
-    | Error v -> raise (V v)
-    | Ok p ->
-        Hashtbl.iter
-          (fun (i, j) _ -> if not (overlap_in p i j) then raise (V (Bad_order (i, j))))
-          given);
-    Ok
-      (build ~marks ~cycles:true geo ~side:(fun i j ->
-           match Hashtbl.find_opt given (i, j) with
-           | Some up -> up
-           | None -> raise (V (Bad_order (i, j)))))
-  with V v -> Error v
-
 (* Every layer order of [geo] that keeps the sides [kept] gives, puts [i]
-   above [j] for each [(i, j)] of [fixed], and satisfies the conditions of
-   [with_order]. [kept i j], asked for two overlapping faces [i] < [j], is
+   above [j] for each [(i, j)] of [fixed], and satisfies the taco-tortilla,
+   taco-taco and order conditions. [kept i j], asked for two overlapping faces [i] < [j], is
    [Some up] where the caller knows the side ([i] above [j] iff [up]) and
    [None] where the search decides it.
 
@@ -800,9 +768,7 @@ let order (g : t) : (int * int) list =
   !acc
 
 let same_order (a : t) (b : t) : bool = Bytes.equal a.order b.order
-let face_isos (g : t) : I3.t array = Array.copy g.isos
 let face_iso (g : t) (i : int) : I3.t = g.isos.(i)
-let base (g : t) : I3.t = g.base
 let marks (g : t) : mark array = Array.copy g.marks
 
 (* Does face [i]'s derived placement preserve in-plane orientation? The
@@ -2065,7 +2031,6 @@ and spine_outcome =
   | Reversed of t
 
 and spine_attempt = {
-  crease : int;
   hinge : int;
   turning : int list;
   halves : bool array * bool array;
@@ -2084,7 +2049,7 @@ let reverse_failure_to_string = function
        fold"
   | Invalid v -> violation_to_string v
 
-let reverse_attempts ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
+let reverse_attempts (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(tip : bool array) ~(inside : bool)
     ~(fold : (bool array * placement) list -> (t list, violation) result) :
     spine_attempt list =
@@ -2242,7 +2207,7 @@ let reverse_attempts ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
       List.filter (fun i -> half.(i) && has_stay_piece i) (List.init n Fun.id)
     in
     let tried bodies outcome =
-      { crease = cid; hinge = List.hd crossing; turning = crossing; halves = (lower, upper);
+      { hinge = List.hd crossing; turning = crossing; halves = (lower, upper);
         bodies; outcome }
     in
     let blo = body lower and bup = body upper in
@@ -2367,15 +2332,6 @@ let merge_crease (g : t) ~(from : int) ~(into : int) : t =
     marks = Array.map (fun m -> if m.mcrease_id = from then { m with mcrease_id = into } else m) g.marks }
 
 (* {1 Selectors} *)
-
-(* Face ids sharing a hinge with face [i]. *)
-let neighbors (g : t) (i : int) : int list =
-  Array.fold_left
-    (fun acc (h : hinge) ->
-      if h.fa = i then h.fb :: acc
-      else if h.fb = i then h.fa :: acc
-      else acc)
-    [] g.hinges
 
 (* The hinge incident to face [i] whose paper segment equals (pa,pb) in either
    order (old [edge_between], as an index). *)
@@ -2790,9 +2746,6 @@ let scoped_fold_hinge_closed (g : t) ~(axis : Geom.line) ~(move_side : int)
 (* Mark machinery. Faces are bare polygons and edges are hinges; the
    face and edge queries below work on that substrate. *)
 
-let mark_rep_point (m : mark) : Geom.point =
-  match m.mgeom with MSeg (a, _) -> a | MPoint p -> p
-
 (* Paper-space chords (segment endpoints) of every [MSeg] mark carrying [cid].
    Point marks ([MPoint]) contribute no chord. Used by the meet operator to test
    that a marked line physically reaches a crossing. *)
@@ -2871,19 +2824,6 @@ let mark_axis_current (g : t) (cid : int) :
         let tm = table_position g mid in
         let l = Geom.line_through ta tb in
         if Geom.side_of_line l tm = 0 then `Line l else `Bent
-
-(* the face whose PAPER polygon contains the mark's representative point; paper
-   coordinates partition the sheet, so this is unique in the interior (a point on
-   a shared boundary may match several: first match wins, callers disambiguate). *)
-let mark_face (g : t) (m : mark) : int option =
-  let p = mark_rep_point m in
-  let n = Array.length g.faces in
-  let rec go i =
-    if i >= n then None
-    else if Geom.in_convex_polygon g.faces.(i) p then Some i
-    else go (i + 1)
-  in
-  go 0
 
 (* A mark's paper-space extent, classified against the flap (coplanar cluster)
    it lives on: does it subdivide the flap (a FULL CHORD: both endpoints on

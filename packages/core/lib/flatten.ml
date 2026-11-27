@@ -9,9 +9,9 @@
 
     Choosing among them is [Flatten_solve]'s job: it enumerates every
     Maekawa-consistent M/V pattern ([mv_patterns], pure and unit-testable) over
-    each candidate's full ray set, tries each via [Collapse.collapse_all], pools
+    each candidate's full ray set, tries each via [Collapse.collapse_all_patterns], pools
     the results, and keeps the states the items leave. Feasibility-filtering
-    and the items belong there rather than here because they need [Collapse.collapse_all] and
+    and the items belong there rather than here because they need [Collapse.collapse_all_patterns] and
     [Ast.mv_constraint], neither of which this module should depend on beyond
     the generator's own geometry. *)
 

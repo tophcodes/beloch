@@ -92,11 +92,6 @@ type violation =
           of its sides
           @see <https://belochlang.org/model/#cond-order>
             realizes the order condition *)
-  | Bad_order of int * int
-      (** the pairs given to [with_order] name faces [i] and [j] twice, name
-          them though they do not overlap, or leave them out though they do
-          @see <https://belochlang.org/model/#def-flat-state>
-            realizes the domain of the layer order *)
 
 val violation_to_string : violation -> string
 
@@ -117,7 +112,7 @@ val make :
     order as a stacking: a permutation of 0..n-1 in which, of two faces that
     overlap, the one with the higher entry lies above. The state keeps the
     sides of the overlapping pairs and nothing else of [rank]; a state whose
-    layers lie in a cycle has no stacking and is built by [with_order].
+    layers lie in a cycle has no stacking and is built by [orders].
     [base] is the root face's placement:
     ONE whole-sheet rigid motion (default identity); needed because after a
     pleat (fold, then fold moving the previously-stationary side) no face
@@ -153,7 +148,7 @@ val geometry :
 (** The half of [make] that reads no layer order. Fails with the structure checks
     on indices, angle domain and line non-degeneracy; a failure of
     connectivity, hinge adjacency or cycle closure stays in the value, and
-    [with_rank] and [with_order] report it. Input arrays are copied. *)
+    [with_rank] and [orders] report it. Input arrays are copied. *)
 
 val with_rank :
   ?marks:mark array -> geometry -> rank:int array -> (t, violation) result
@@ -163,17 +158,6 @@ val with_rank :
     cycle, so the order condition needs no check. Returns what [make]
     returns on the same arguments. *)
 
-val with_order :
-  ?marks:mark array -> geometry -> above:(int * int) list -> (t, violation) result
-(** The state of a [geometry] with the layer order [above]: a pair [(i, j)]
-    says that face [i] lies above face [j]. [above] names every pair of
-    faces that overlap on the table once, in either direction, and no other
-    pair; [Bad_order] otherwise. Reports a violation the geometry holds,
-    then runs the taco-tortilla and taco-taco conditions and the order
-    condition: no three faces that share a region lie in a cycle.
-    @see <https://belochlang.org/model/#def-flat-state> realizes the layer order
-    @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
-
 val orders :
   ?marks:mark array ->
   geometry ->
@@ -182,7 +166,10 @@ val orders :
   (t list, violation) result
 (** Every state of a [geometry] whose layer order keeps the sides [kept]
     gives, puts [i] above [j] for each pair [(i, j)] of [fixed], and
-    satisfies the conditions [with_order] checks. [kept i j] is asked for two
+    satisfies the taco-tortilla and taco-taco conditions and the order
+    condition: no three faces that share a region lie in a cycle. It is the
+    one constructor of a state whose layers lie in a cycle. [kept i j] is
+    asked for two
     overlapping faces [i] < [j]: [Some up] says that [i] lies above [j] iff
     [up], [None] leaves the side to the search. A pair of [fixed] names two
     faces that overlap. The list is empty when no layer order satisfies all
@@ -220,8 +207,8 @@ val above : t -> int -> int -> bool
 
 val order : t -> (int * int) list
 (** The layer order: [(i, j)] for every two faces that overlap, [i] above
-    [j]. [with_order] on the state's geometry and this list gives the state
-    back.
+    [j]. [orders] on the state's geometry with this list fixed gives the
+    state back.
     @see <https://belochlang.org/model/#def-flat-state>
       realizes the layer order of the flat folded state *)
 
@@ -233,13 +220,7 @@ val hinge_motion : hinge -> Isometry3.t
 (** The 3D motion a hinge applies in the sheet frame: identity when flat,
     else a half-turn about its crease line embedded in z=0. *)
 
-val face_isos : t -> Isometry3.t array
-(** Derived 3D placements (index = face), memoized at construction. *)
-
 val face_iso : t -> int -> Isometry3.t
-
-val base : t -> Isometry3.t
-(** The stored root-face placement (see [make]'s [base] parameter). *)
 
 val marks : t -> mark array
 (** Copy of the paper-space marks carried on the state. *)
@@ -439,7 +420,6 @@ and spine_outcome =
   | Reversed of t
 
 and spine_attempt = {
-  crease : int;  (** the crease id of the new hinges on the axis *)
   hinge : int;  (** the first hinge across the opening, on the spine's line *)
   turning : int list;  (** every hinge across the opening *)
   halves : bool array * bool array;
@@ -507,7 +487,6 @@ val fold_opening :
     both orders are observable output. *)
 
 val reverse_attempts :
-  cid:int ->
   t ->
   axis:Geom.line ->
   move_side:int ->
@@ -558,10 +537,6 @@ val merge_crease : t -> from:int -> into:int -> t
     of its flap under an id of its own while the fan is solved. *)
 
 (** {1 Selectors} *)
-
-val neighbors : t -> int -> int list
-(** Face ids sharing a hinge with face [i]. List order is unspecified;
-    callers must not rely on it. *)
 
 val hinge_between : t -> int -> Geom.point -> Geom.point -> int option
 (** Index of the hinge incident to face [i] whose paper segment equals
@@ -707,10 +682,6 @@ val scoped_fold_hinge_closed :
 
 (** {1 Marks} *)
 
-val mark_rep_point : mark -> Geom.point
-(** The mark's representative paper-space point: an [MSeg]'s first endpoint,
-    or an [MPoint]'s point. *)
-
 val mark_chords : t -> int -> (Geom.point * Geom.point) list
 (** Paper-space chords (segment endpoints) of every [MSeg] mark carrying
     [cid]. [MPoint] marks contribute no chord. Used by the meet operator to
@@ -734,12 +705,6 @@ val mark_axis_current :
     it no longer names a line (distinct from [`Empty]: the mark exists, its
     current geometry is a point: falling back to its flat-paper birth line
     would be stale). *)
-
-val mark_face : t -> mark -> int option
-(** The face whose PAPER polygon contains the mark's representative point;
-    paper coordinates partition the sheet, so this is unique in the interior
-    (a point on a shared boundary may match several: first match wins,
-    callers disambiguate). *)
 
 val point_on_polygon_boundary : Geom.point array -> Geom.point -> bool
 (** True iff point [p] lies on some edge (endpoints included) of convex CCW

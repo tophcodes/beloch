@@ -97,7 +97,6 @@ UNOP(ml_qqbar_sqrt, qqbar_sqrt)
 BINOP(ml_qqbar_add, qqbar_add)
 BINOP(ml_qqbar_sub, qqbar_sub)
 BINOP(ml_qqbar_mul, qqbar_mul)
-BINOP(ml_qqbar_div, qqbar_div)
 
 CAMLprim value ml_qqbar_equal(value a, value b) {
   return Val_bool(qqbar_equal(Qqbar_val(a), Qqbar_val(b)));
