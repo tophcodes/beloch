@@ -100,7 +100,3 @@ val fold :
     a mover lies above every stationary face it lands on for a valley fold,
     below for a mountain fold. The
     root and [base] are a stationary child and its parent's placement. *)
-
-val simple_fold : Fold_state.t -> axis:Geom.line -> move_side:int -> valley:bool -> Fold_state.t
-(** [fold] with no [crease_id]/[moving_parents] override and no [provenance]. *)
-
