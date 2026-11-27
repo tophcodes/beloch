@@ -1,10 +1,9 @@
-(** Beloch: evaluator core.
-
-    The library is intentionally empty until the minimal core (v0.0) is
-    specified in [docs/reference/10-core-v0.md]: one square of paper, axiom 1 only, a
-    crease-line type, output to FOLD-extended. See (spec architecture,
-    "The kernel implements no rule the specification lacks") and
-    (spec architecture, "Beloch is an evaluator"). *)
+(** Beloch: the evaluator kernel. It parses a program, evaluates it into
+    the folded state after every step and writes them as one FOLD file, and
+    it re-exports the modules the command line, the browser evaluator and
+    the tests use. See (spec architecture, "Beloch is an evaluator") and
+    (spec architecture, "The kernel implements no rule the specification
+    lacks"). *)
 
 let version = Version.version
 
