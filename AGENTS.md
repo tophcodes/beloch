@@ -139,6 +139,13 @@ marks the pull request merged, and no merge commit repeats its title. A correcti
 yet folds into that commit (`jj squash --into <change>`) instead of following
 it as a new one; force-pushing that branch afterwards is fine.
 
+`CHANGELOG.md` holds the release notes, one section per version in prose by
+theme, with breaking changes first. A release is a pull request that writes
+its section and sets the version; after the merge, the tag `v<version>` on
+`main` starts `.github/workflows/release.yml`, which copies the section into
+the GitHub release. The release notes are written in `CHANGELOG.md` and never
+on GitHub.
+
 ## Web pages
 
 Development server: in `packages/www`, `bunx astro dev --host 127.0.0.1 --port <n>`. In
