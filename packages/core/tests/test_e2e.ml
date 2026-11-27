@@ -319,10 +319,10 @@ let test_faceorders_stable_fold_quarter () =
     `List
       [
         `List [ `Int 0; `Int 1; `Int 1 ];
-        `List [ `Int 0; `Int 2; `Int (-1) ];
-        `List [ `Int 0; `Int 3; `Int 1 ];
-        `List [ `Int 1; `Int 2; `Int (-1) ];
-        `List [ `Int 1; `Int 3; `Int 1 ];
+        `List [ `Int 0; `Int 2; `Int 1 ];
+        `List [ `Int 0; `Int 3; `Int (-1) ];
+        `List [ `Int 1; `Int 2; `Int 1 ];
+        `List [ `Int 1; `Int 3; `Int (-1) ];
         `List [ `Int 2; `Int 3; `Int 1 ];
       ]
   in

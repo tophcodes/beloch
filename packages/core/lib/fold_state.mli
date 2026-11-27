@@ -357,7 +357,9 @@ val subdivide_fan :
   rays:(int * Geom.line * Geom.point) list ->
   prov:State.provenance option ->
   t
-(** Score the rays of a fan from the TABLE point [o]: each ray is
+(** Score the rays of a fan from the TABLE point [o], the cut every fan
+    makes ({!reverse_fan} makes it from the point at infinity of an axis,
+    where a ray runs along its whole line): each ray is
     (crease id, its table line, the table point on it where it ends), and
     is scored into its own crease. A face that holds [o] in its interior is cut
     into the wedges between consecutive rays at once, when every wedge is
@@ -466,9 +468,10 @@ val reverse_fan :
   prov:State.provenance option ->
   (reverse_fan, violation) result
 (** The fan of a reverse fold of the material [tip] (a mask over PARENT
-    faces) across the TABLE-space [axis]: each face of the tip that the axis
-    crosses is cut, with a flat hinge of crease [cid] between its piece on
-    [-move_side] and its piece on [move_side]. *)
+    faces) across the TABLE-space [axis]: the cut of {!subdivide_fan} from
+    the point at infinity of the axis, whose two rays are the two halves of
+    the axis, cuts each face of the tip that the axis crosses, with a flat
+    hinge of crease [cid] between its two pieces. *)
 
 val reverse_scored : reverse_fan -> t
 (** The cut state the fan folds. *)
@@ -499,10 +502,9 @@ val fold_opening :
     {!reverse_scored}) says the fan turns it over, and the block listed
     first lies below the other. The faces of a state come in this order: the
     blocks placed [Bottom], the stationary faces, the other blocks, each in
-    the order of {!reverse_scored}. The hinges come along the axis first,
-    then the carried hinges by the hinge they carry and their faces. FOLD
-    output enumerates faces and hinges by index, so both orders are
-    observable output. *)
+    the order of {!reverse_scored}. The hinges come in the order of
+    {!reverse_scored}. FOLD output enumerates faces and hinges by index, so
+    both orders are observable output. *)
 
 val reverse_attempts :
   cid:int ->
