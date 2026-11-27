@@ -50,8 +50,7 @@ every operation builds a candidate and passes it through `make`: no value of
 type `Fold_state.t` exists that is not a legal state. `make` is two steps,
 `Fold_state.geometry` and `Fold_state.with_rank`; a caller that validates
 many layer orders of one set of faces and hinges takes the steps apart and
-derives the placements once. `Fold_state.with_order` is the second step for
-a layer order given as pairs (Layer order, below). `make` returns
+derives the placements once. `make` returns
 `Error violation` for anything outside the definition of the state and its
 non-crossing conditions ([[reference/model#def-noncrossing|def-noncrossing]]); the
 `violation` constructors and the conditions they check are listed under
@@ -86,20 +85,19 @@ overlap have no entry. `Fold_state.above` and `Fold_state.rel` read one
 pair, `Fold_state.order` lists every pair, and `Fold_state.same_order`
 compares two states pair by pair. No operation reads a height of a face.
 
-Four functions build the layer order of a state:
+Three functions build the layer order of a state:
 
 - `Fold_state.make` and `Fold_state.with_rank` take a stacking, a
   permutation of the faces from the bottom up, as the input form. They keep
   the side of every overlapping pair and nothing else of the stacking, so two
   stackings with the same restriction to overlapping pairs give the same
   state ([[reference/model#rem-linear-extension|rem-linear-extension]]).
-- `Fold_state.with_order` takes the pairs. It is the only way to build a
-  state whose layers lie in a cycle. A test builds the square twist with it:
-  9 faces, 12 folded hinges and 28 overlapping pairs, in which the four
-  corner faces lie in a cycle.
 - `Fold_state.orders` searches the pairs. The caller gives the side of the
   pairs it knows and the pairs it fixes, and gets every state whose other
-  pairs satisfy the conditions below. `Fold_state.unit_orders` states the
+  pairs satisfy the conditions below. It is the only way to build a state
+  whose layers lie in a cycle. A test builds the square twist with it: 9
+  faces, 12 folded hinges and 28 overlapping pairs, in which the four corner
+  faces lie in a cycle. `Fold_state.unit_orders` states the
   known sides by the units of a fan: two faces of one unit keep their side,
   exchanged where the face turns over, and the caller gives the side of two
   faces of different units where it knows it. Every write that folds finds
@@ -107,9 +105,6 @@ Four functions build the layer order of a state:
   `reverse`, `fold` and `unfold` (Fan, below).
 
 ::: {.include api="Fold_state.with_rank"}
-:::
-
-::: {.include api="Fold_state.with_order"}
 :::
 
 The checks on the pairs are three conditions of the model:
@@ -158,12 +153,6 @@ order as soon as the sides set so far break the order condition or a taco
 condition. One ceiling: the order condition and the taco-taco condition
 reject a partial order and set no side, so the work doubles with every class
 that none of them rejects.
-
-One more ceiling: `with_order` checks no condition at a hinge of angle 0. A
-list of pairs that puts a face above one face of such a hinge and below the
-other, across the hinge, passes. Every state an operation builds keeps its
-faces on one side of such a hinge. Tracked as
-[issue #284](https://github.com/tophcodes/beloch/issues/284).
 
 ## History
 
@@ -768,10 +757,10 @@ FOLD documents without `beloch:annotations` and `file_author`.
 ## Violations
 
 One constructor per check that `Fold_state.make`, `Fold_state.with_rank`
-and `Fold_state.with_order` run, each carrying the model statement it
+and `Fold_state.orders` run, each carrying the model statement it
 enforces. `Bad_index` and `Bad_line` reject a malformed representation and
 answer to no statement of the model. `Bad_rank` rejects a stacking given to
-`make` or `with_rank`, and `Bad_order` the pairs given to `with_order`.
+`make` or `with_rank`.
 `Layer_cycle` reports three faces that share a region and lie in a cycle.
 
 ::: {.include api="Fold_state.violation"}

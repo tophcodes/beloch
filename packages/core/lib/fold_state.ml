@@ -77,7 +77,6 @@ type violation =
   | Taco_taco of int * int
   | Several_stackings of int
   | Layer_cycle
-  | Bad_order of int * int
 
 let violation_to_string = function
   | Bad_index s -> "fold graph: index out of range: " ^ s
@@ -110,11 +109,6 @@ let violation_to_string = function
         n
   | Layer_cycle ->
       "layer ordering: three layers lie in a cycle where all three overlap"
-  | Bad_order (i, j) ->
-      Printf.sprintf
-        "fold graph: the order of faces %d and %d is given twice, given though \
-         they do not overlap, or missing though they do"
-        i j
 
 (* 3D half-turn about a 2D line embedded in z = 0. *)
 let half_turn3_of_line (l : Geom.line) : I3.t =
@@ -558,35 +552,9 @@ let with_rank ?(marks = [||]) (geo : geometry) ~(rank : int array) :
     Ok (build ~marks ~cycles:false geo ~side:(fun i j -> rank.(i) > rank.(j)))
   with V v -> Error v
 
-let with_order ?(marks = [||]) (geo : geometry) ~(above : (int * int) list) :
-    (t, violation) result =
-  try
-    let n = Array.length geo.g_faces in
-    let given = Hashtbl.create 64 in
-    List.iter
-      (fun (i, j) ->
-        if i < 0 || i >= n || j < 0 || j >= n || i = j then
-          raise (V (Bad_index (Printf.sprintf "order (%d|%d)" i j)));
-        let key = if i < j then (i, j) else (j, i) in
-        if Hashtbl.mem given key then raise (V (Bad_order (fst key, snd key)));
-        Hashtbl.replace given key (i < j))
-      above;
-    (match geo.g_placed with
-    | Error v -> raise (V v)
-    | Ok p ->
-        Hashtbl.iter
-          (fun (i, j) _ -> if not (overlap_in p i j) then raise (V (Bad_order (i, j))))
-          given);
-    Ok
-      (build ~marks ~cycles:true geo ~side:(fun i j ->
-           match Hashtbl.find_opt given (i, j) with
-           | Some up -> up
-           | None -> raise (V (Bad_order (i, j)))))
-  with V v -> Error v
-
 (* Every layer order of [geo] that keeps the sides [kept] gives, puts [i]
-   above [j] for each [(i, j)] of [fixed], and satisfies the conditions of
-   [with_order]. [kept i j], asked for two overlapping faces [i] < [j], is
+   above [j] for each [(i, j)] of [fixed], and satisfies the taco-tortilla,
+   taco-taco and order conditions. [kept i j], asked for two overlapping faces [i] < [j], is
    [Some up] where the caller knows the side ([i] above [j] iff [up]) and
    [None] where the search decides it.
 

@@ -1829,18 +1829,15 @@ let geometry_of ?(root = 0) ~faces ~hinges () =
   | Ok geo -> geo
   | Error v -> Alcotest.failf "geometry: %s" (Fold_state.violation_to_string v)
 
-let expect_order_error label pred geo above =
-  match Fold_state.with_order geo ~above with
-  | Ok _ -> Alcotest.fail (label ^ ": expected a violation, got Ok")
-  | Error v ->
-      Alcotest.(check bool)
-        (label ^ ": " ^ Fold_state.violation_to_string v)
-        true (pred v)
+(* The states [Fold_state.orders] finds on [geo] with every pair of [above]
+   fixed and no side kept *)
+let fixed_orders geo above =
+  Fold_state.orders geo ~kept:(fun _ _ -> None) ~fixed:above
 
 (* The waterbomb base stacks its eight faces over one sector, so every two of
-   them overlap. Its layer order given back to [with_order] builds the same
-   state. *)
-let test_with_order_round_trip () =
+   them overlap. Its layer order fixed in [Fold_state.orders] gives the same
+   state back. *)
+let test_order_round_trip () =
   let g =
     mk ~faces:(wb_faces ()) ~hinges:(wb_hinges ())
       ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |] ()
@@ -1848,40 +1845,29 @@ let test_with_order_round_trip () =
   let geo = geometry_of ~faces:(wb_faces ()) ~hinges:(wb_hinges ()) () in
   Alcotest.(check int) "28 overlapping pairs" 28
     (List.length (Fold_state.order g));
-  match Fold_state.with_order geo ~above:(Fold_state.order g) with
+  match fixed_orders geo (Fold_state.order g) with
   | Error v -> Alcotest.failf "round trip: %s" (Fold_state.violation_to_string v)
-  | Ok g' -> Alcotest.(check bool) "same layer order" true (Fold_state.same_order g g')
-
-let test_with_order_bad_order () =
-  let folded =
-    geometry_of ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ()) ()
-  in
-  (* the two squares side by side: they touch along x=1 and do not overlap *)
-  let flat =
-    geometry_of ~faces:(single_fold_faces ())
-      ~hinges:[| mkh 0 1 (vline 1) (q 0) |] ()
-  in
-  let pair_01 = function Fold_state.Bad_order (0, 1) -> true | _ -> false in
-  expect_order_error "a pair given twice" pair_01 folded [ (1, 0); (0, 1) ];
-  expect_order_error "a pair that does not overlap" pair_01 flat [ (1, 0) ];
-  expect_order_error "an overlapping pair left out" pair_01 folded []
+  | Ok [ g' ] -> Alcotest.(check bool) "same layer order" true (Fold_state.same_order g g')
+  | Ok l -> Alcotest.failf "round trip: %d states" (List.length l)
 
 (* The accordion stacks its three faces over table [0,1]x[0,1]. Stacked 0, 1,
    2 from the bottom they fold flat; 1 over 0, 2 over 1 and 0 over 2 is a
    cycle over that square. *)
-let test_with_order_layer_cycle () =
+let test_order_layer_cycle () =
   let geo =
     geometry_of
       ~faces:[| strip_face 0 1; strip_face 1 1; strip_face 2 1 |]
       ~hinges:[| mkh 0 1 (vline 1) (q 1); mkh 1 2 (vline 2) (q 1) |]
       ()
   in
-  (match Fold_state.with_order geo ~above:[ (1, 0); (2, 1); (2, 0) ] with
-  | Ok _ -> ()
+  (match fixed_orders geo [ (1, 0); (2, 1); (2, 0) ] with
+  | Ok [ _ ] -> ()
+  | Ok l -> Alcotest.failf "stacked: %d states" (List.length l)
   | Error v -> Alcotest.failf "stacked: %s" (Fold_state.violation_to_string v));
-  expect_order_error "cycle"
-    (function Fold_state.Layer_cycle -> true | _ -> false)
-    geo [ (1, 0); (2, 1); (0, 2) ]
+  match fixed_orders geo [ (1, 0); (2, 1); (0, 2) ] with
+  | Ok [] -> ()
+  | Ok l -> Alcotest.failf "cycle: %d states" (List.length l)
+  | Error v -> Alcotest.failf "cycle: %s" (Fold_state.violation_to_string v)
 
 (* a point given in halves: [tw 13 0] is (13/2, 0) *)
 let tw x y : Geom.point =
@@ -1894,7 +1880,8 @@ let tw x y : Geom.point =
    to f4 of the figure. With the square's sides folded as valleys, every
    corner face overlaps its two neighbors and lies over one and under the
    other, around the square: a cycle. No stacking of the faces gives that
-   order, and [with_order] builds the state [hull2020, §6.5, Fig. 6.12]. *)
+   order, and [Fold_state.orders] builds the state from the pairs
+   [hull2020, §6.5, Fig. 6.12]. *)
 let twist_geometry () =
   let faces =
     [| [| tw 6 6; tw 10 6; tw 10 10; tw 6 10 |];
@@ -1924,7 +1911,7 @@ let twist_geometry () =
   in
   geometry_of ~faces ~hinges ()
 
-let test_with_order_square_twist () =
+let test_order_square_twist () =
   let geo = twist_geometry () in
   (* the 28 overlapping pairs; the four corner faces 5 to 8 overlap their
      neighbors, and 5 and 7, 6 and 8 lie apart *)
@@ -1936,9 +1923,12 @@ let test_with_order_square_twist () =
       (6, 1); (7, 2); (8, 3); (5, 4);
       (6, 5); (7, 6); (8, 7); (5, 8) ]
   in
-  match Fold_state.with_order geo ~above with
+  match fixed_orders geo above with
   | Error v -> Alcotest.failf "square twist: %s" (Fold_state.violation_to_string v)
-  | Ok g ->
+  | Ok l when List.length l <> 1 ->
+      Alcotest.failf "square twist: %d states" (List.length l)
+  | Ok l ->
+      let g = List.hd l in
       List.iter
         (fun i ->
           Alcotest.(check bool)
@@ -2044,11 +2034,10 @@ let () =
             test_waterbomb_bad_wrap_rejected;
           Alcotest.test_case "7-of-8 folded tears" `Quick
             test_waterbomb_tear_rejected ] );
-      ( "with-order",
-        [ Alcotest.test_case "round trip" `Quick test_with_order_round_trip;
-          Alcotest.test_case "bad order" `Quick test_with_order_bad_order;
-          Alcotest.test_case "layer cycle" `Quick test_with_order_layer_cycle;
-          Alcotest.test_case "square twist" `Quick test_with_order_square_twist;
+      ( "orders",
+        [ Alcotest.test_case "round trip" `Quick test_order_round_trip;
+          Alcotest.test_case "layer cycle" `Quick test_order_layer_cycle;
+          Alcotest.test_case "square twist" `Quick test_order_square_twist;
           Alcotest.test_case "the search finds the square twist" `Quick
             test_orders_square_twist ] );
       ( "task1-metadata",

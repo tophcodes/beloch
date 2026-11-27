@@ -92,11 +92,6 @@ type violation =
           of its sides
           @see <https://belochlang.org/model/#cond-order>
             realizes the order condition *)
-  | Bad_order of int * int
-      (** the pairs given to [with_order] name faces [i] and [j] twice, name
-          them though they do not overlap, or leave them out though they do
-          @see <https://belochlang.org/model/#def-flat-state>
-            realizes the domain of the layer order *)
 
 val violation_to_string : violation -> string
 
@@ -117,7 +112,7 @@ val make :
     order as a stacking: a permutation of 0..n-1 in which, of two faces that
     overlap, the one with the higher entry lies above. The state keeps the
     sides of the overlapping pairs and nothing else of [rank]; a state whose
-    layers lie in a cycle has no stacking and is built by [with_order].
+    layers lie in a cycle has no stacking and is built by [orders].
     [base] is the root face's placement:
     ONE whole-sheet rigid motion (default identity); needed because after a
     pleat (fold, then fold moving the previously-stationary side) no face
@@ -153,7 +148,7 @@ val geometry :
 (** The half of [make] that reads no layer order. Fails with the structure checks
     on indices, angle domain and line non-degeneracy; a failure of
     connectivity, hinge adjacency or cycle closure stays in the value, and
-    [with_rank] and [with_order] report it. Input arrays are copied. *)
+    [with_rank] and [orders] report it. Input arrays are copied. *)
 
 val with_rank :
   ?marks:mark array -> geometry -> rank:int array -> (t, violation) result
@@ -163,17 +158,6 @@ val with_rank :
     cycle, so the order condition needs no check. Returns what [make]
     returns on the same arguments. *)
 
-val with_order :
-  ?marks:mark array -> geometry -> above:(int * int) list -> (t, violation) result
-(** The state of a [geometry] with the layer order [above]: a pair [(i, j)]
-    says that face [i] lies above face [j]. [above] names every pair of
-    faces that overlap on the table once, in either direction, and no other
-    pair; [Bad_order] otherwise. Reports a violation the geometry holds,
-    then runs the taco-tortilla and taco-taco conditions and the order
-    condition: no three faces that share a region lie in a cycle.
-    @see <https://belochlang.org/model/#def-flat-state> realizes the layer order
-    @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
-
 val orders :
   ?marks:mark array ->
   geometry ->
@@ -182,7 +166,10 @@ val orders :
   (t list, violation) result
 (** Every state of a [geometry] whose layer order keeps the sides [kept]
     gives, puts [i] above [j] for each pair [(i, j)] of [fixed], and
-    satisfies the conditions [with_order] checks. [kept i j] is asked for two
+    satisfies the taco-tortilla and taco-taco conditions and the order
+    condition: no three faces that share a region lie in a cycle. It is the
+    one constructor of a state whose layers lie in a cycle. [kept i j] is
+    asked for two
     overlapping faces [i] < [j]: [Some up] says that [i] lies above [j] iff
     [up], [None] leaves the side to the search. A pair of [fixed] names two
     faces that overlap. The list is empty when no layer order satisfies all
@@ -220,8 +207,8 @@ val above : t -> int -> int -> bool
 
 val order : t -> (int * int) list
 (** The layer order: [(i, j)] for every two faces that overlap, [i] above
-    [j]. [with_order] on the state's geometry and this list gives the state
-    back.
+    [j]. [orders] on the state's geometry with this list fixed gives the
+    state back.
     @see <https://belochlang.org/model/#def-flat-state>
       realizes the layer order of the flat folded state *)
 
