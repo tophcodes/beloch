@@ -233,13 +233,7 @@ val hinge_motion : hinge -> Isometry3.t
 (** The 3D motion a hinge applies in the sheet frame: identity when flat,
     else a half-turn about its crease line embedded in z=0. *)
 
-val face_isos : t -> Isometry3.t array
-(** Derived 3D placements (index = face), memoized at construction. *)
-
 val face_iso : t -> int -> Isometry3.t
-
-val base : t -> Isometry3.t
-(** The stored root-face placement (see [make]'s [base] parameter). *)
 
 val marks : t -> mark array
 (** Copy of the paper-space marks carried on the state. *)
@@ -557,10 +551,6 @@ val merge_crease : t -> from:int -> into:int -> t
 
 (** {1 Selectors} *)
 
-val neighbors : t -> int -> int list
-(** Face ids sharing a hinge with face [i]. List order is unspecified;
-    callers must not rely on it. *)
-
 val hinge_between : t -> int -> Geom.point -> Geom.point -> int option
 (** Index of the hinge incident to face [i] whose paper segment equals
     (pa,pb) in either order (old [edge_between], returning an index so
@@ -704,10 +694,6 @@ val scoped_fold_hinge_closed :
     construction. *)
 
 (** {1 Marks} *)
-
-val mark_rep_point : mark -> Geom.point
-(** The mark's representative paper-space point: an [MSeg]'s first endpoint,
-    or an [MPoint]'s point. *)
 
 val mark_chords : t -> int -> (Geom.point * Geom.point) list
 (** Paper-space chords (segment endpoints) of every [MSeg] mark carrying

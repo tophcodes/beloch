@@ -800,9 +800,7 @@ let order (g : t) : (int * int) list =
   !acc
 
 let same_order (a : t) (b : t) : bool = Bytes.equal a.order b.order
-let face_isos (g : t) : I3.t array = Array.copy g.isos
 let face_iso (g : t) (i : int) : I3.t = g.isos.(i)
-let base (g : t) : I3.t = g.base
 let marks (g : t) : mark array = Array.copy g.marks
 
 (* Does face [i]'s derived placement preserve in-plane orientation? The
@@ -2367,15 +2365,6 @@ let merge_crease (g : t) ~(from : int) ~(into : int) : t =
 
 (* {1 Selectors} *)
 
-(* Face ids sharing a hinge with face [i]. *)
-let neighbors (g : t) (i : int) : int list =
-  Array.fold_left
-    (fun acc (h : hinge) ->
-      if h.fa = i then h.fb :: acc
-      else if h.fb = i then h.fa :: acc
-      else acc)
-    [] g.hinges
-
 (* The hinge incident to face [i] whose paper segment equals (pa,pb) in either
    order (old [edge_between], as an index). *)
 let hinge_between (g : t) (i : int) (pa : Geom.point) (pb : Geom.point) :
@@ -2788,9 +2777,6 @@ let scoped_fold_hinge_closed (g : t) ~(axis : Geom.line) ~(move_side : int)
 
 (* Mark machinery. Faces are bare polygons and edges are hinges; the
    face and edge queries below work on that substrate. *)
-
-let mark_rep_point (m : mark) : Geom.point =
-  match m.mgeom with MSeg (a, _) -> a | MPoint p -> p
 
 (* Paper-space chords (segment endpoints) of every [MSeg] mark carrying [cid].
    Point marks ([MPoint]) contribute no chord. Used by the meet operator to test

@@ -47,7 +47,7 @@ let test_single_fold () =
     mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
       ~rank:[| 0; 1 |] ()
   in
-  let isos = Fold_state.face_isos g in
+  let isos = Array.init (Array.length (Fold_state.faces g)) (Fold_state.face_iso g) in
   Alcotest.(check bool) "root at identity" true
     (i3eq (Isometry3.apply_point isos.(0) (p3 3 5 0)) (p3 3 5 0));
   Alcotest.(check bool) "face1 reflects across x=1" true
@@ -60,7 +60,7 @@ let test_accordion () =
   let faces = [| strip_face 0 1; strip_face 1 1; strip_face 2 1 |] in
   let hinges = [| mkh 0 1 (vline 1) (q 1); mkh 1 2 (vline 2) (q 1) |] in
   let g = mk ~faces ~hinges ~rank:[| 0; 1; 2 |] () in
-  let isos = Fold_state.face_isos g in
+  let isos = Array.init (Array.length (Fold_state.faces g)) (Fold_state.face_iso g) in
   let half = Num.of_q (Q.of_ints 1 2) in
   Alcotest.(check bool) "face2 folds back to x=1/2" true
     (i3eq
@@ -173,7 +173,7 @@ let test_cycle_closes_fold_in_quarters () =
     mk ~faces:(quadrant_faces ()) ~hinges:(quadrant_hinges ~last_angle:(q 1))
       ~rank:[| 0; 1; 2; 3 |] ()
   in
-  let isos = Fold_state.face_isos g in
+  let isos = Array.init (Array.length (Fold_state.faces g)) (Fold_state.face_iso g) in
   Alcotest.(check bool) "far corner (2,2) lands on (0,0)" true
     (i3eq (Isometry3.apply_point isos.(2) (p3 2 2 0)) (p3 0 0 0))
 
@@ -367,7 +367,7 @@ let test_waterbomb_constructs () =
   in
   (* every face lands on sector 0: p3=(0,1), three hinges from the root,
      must land on p1=(1,1). Trace: R(x+y=1)→(0,1); R(x=½)→(1,1); R(y=x)→(1,1) *)
-  let isos = Fold_state.face_isos g in
+  let isos = Array.init (Array.length (Fold_state.faces g)) (Fold_state.face_iso g) in
   Alcotest.(check bool) "p3 lands on (1,1)" true
     (i3eq
        (Isometry3.apply_point isos.(3)
@@ -451,8 +451,8 @@ let test_base_shifts_placements () =
   match Fold_state.make ~base:tr ~faces ~hinges ~root:0 ~rank:[| 0; 1 |] () with
   | Error v -> Alcotest.failf "base: %s" (Fold_state.violation_to_string v)
   | Ok g ->
-      Alcotest.(check bool) "base stored" true
-        (Isometry3.equal (Fold_state.base g) tr);
+      Alcotest.(check bool) "base places the root" true
+        (Isometry3.equal (Fold_state.face_iso g 0) tr);
       let p = Isometry3.apply_point (Fold_state.face_iso g 0) (p3 0 0 0) in
       Alcotest.(check bool) "root shifted" true (i3eq p (p3 3 0 0))
 
@@ -1103,15 +1103,12 @@ let test_boundary_segments_parity () =
         (Num.sign s.Fold_state.ta.Geom.y = 0 && Num.sign s.Fold_state.tb.Geom.y = 0))
     segs
 
-let test_neighbors_hinge_between () =
+let test_hinge_between () =
   let g = pair_precrease_fold () in
   let n = Array.length (Fold_state.faces g) in
-  (* every hinge appears in both endpoints' neighbor lists, and
-     [hinge_between] finds it from its segment *)
+  (* [hinge_between] finds every hinge from its segment *)
   Array.iteri
     (fun i (h : Fold_state.hinge) ->
-      Alcotest.(check bool) (Printf.sprintf "nb fa %d" i) true
-        (List.mem h.Fold_state.fb (Fold_state.neighbors g h.Fold_state.fa));
       let a, b = Fold_state.hinge_segment g i in
       match Fold_state.hinge_between g h.Fold_state.fa a b with
       | Some j -> Alcotest.(check int) (Printf.sprintf "hb %d" i) i j
@@ -2114,8 +2111,8 @@ let () =
             test_crease_axes_parity;
           Alcotest.test_case "boundary segments parity" `Quick
             test_boundary_segments_parity;
-          Alcotest.test_case "neighbors and hinge_between" `Quick
-            test_neighbors_hinge_between ] );
+          Alcotest.test_case "hinge_between" `Quick
+            test_hinge_between ] );
       ( "plan3b-task2-clusters",
         [ Alcotest.test_case "coplanar clusters parity" `Quick
             test_clusters_parity;

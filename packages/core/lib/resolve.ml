@@ -792,8 +792,8 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
    coordinate, so the on-axis check goes through `table_of` to compare like
    spaces. `Full` needs nothing further (today's subdivide-the-whole-axis
    behavior, unchanged). A partial extent also returns its PAPER-space
-   representative point ([mark_rep_point]'s convention: the first point of a
-   segment, or the point itself) and the PAPER-space line it lies on:
+   representative point (the first point of a segment, or the point
+   itself) and the PAPER-space line it lies on:
    Fold_state.classify_mark_extent and the resulting mark's [mline] both
    need paper space, which need not equal [table_axis] once the carrying
    flap has moved (see Fold_state.classify_mark_extent's doc). *)
