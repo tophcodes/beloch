@@ -1860,10 +1860,6 @@ let block_hinges (g : t) ~(axis : Geom.line) ~(cid : int)
   in
   along @ carried
 
-(* A hinge the fold changes: a flat one folds, a folded one opens. *)
-let turn_hinge (h : hinge) : hinge =
-  { h with angle = (if Num.sign h.angle = 0 then Num.one else Num.zero) }
-
 (* Two uncut children that both moved or both stayed overlap iff their
    parents did. *)
 let seed_overlaps (g : t) (geo : geometry) ~(parent : int array)
@@ -1910,7 +1906,7 @@ let placed_only (places : placement list) : bool =
   let placed = not (List.exists outside places) in
   if (not placed) && not (List.for_all outside places) then
     invalid_arg
-      "Fold_state.fold_blocks: one fold places blocks outside the stack and \
+      "Fold_state.fold_opening: one fold places blocks outside the stack and \
        blocks on a face";
   placed
 
@@ -1926,7 +1922,7 @@ let block_anchors ~(parent : int array) ~(moved : bool array)
     if !found < 0 then
       invalid_arg
         (Printf.sprintf
-           "Fold_state.fold_blocks: placement face %d has no stationary child" p);
+           "Fold_state.fold_opening: placement face %d has no stationary child" p);
     !found
   in
   Array.of_list
@@ -1958,88 +1954,6 @@ let block_root (g : t) ~(parent : int array) ~(moved : bool array) : int option 
     Array.iteri (fun k m -> if (not m) && !first < 0 then first := k) moved;
     if !first >= 0 then Some !first else None
   end
-
-let fold_blocks_gen ?crease_id ~(shared : shared) ~(blocks : (bool array * placement) list) (g : t)
-    ~(axis : Geom.line) ~(move_side : int) ~(prov : State.provenance option) :
-    (t list, violation) result =
-  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
-  let nb = List.length blocks in
-  let places = List.map snd blocks in
-  let block_of_parent = block_index blocks in
-  let stationary, movs, chords, uncut =
-    cut_blocks g ~axis ~move_side ~nb ~block_of_parent
-  in
-  let placed_bottom b = List.nth places b = Bottom in
-  let bottom_blocks =
-    List.concat (List.init nb (fun b -> if placed_bottom b then movs.(b) else []))
-  in
-  let other_blocks =
-    List.concat (List.init nb (fun b -> if placed_bottom b then [] else movs.(b)))
-  in
-  let arr = Array.of_list (bottom_blocks @ stationary @ other_blocks) in
-  let faces' = Array.map fst arr in
-  let parent = Array.map snd arr in
-  let n' = Array.length arr in
-  (* a child is moved iff its parent is in a block AND it is that parent's
-     move-side piece; stationary pieces of block parents sit in [stationary] *)
-  let n_bottom = List.length bottom_blocks and n_stay = List.length stationary in
-  let moved = Array.init n' (fun k -> k < n_bottom || k >= n_bottom + n_stay) in
-  let unit_of = Array.init n' (fun k -> if moved.(k) then block_of_parent parent.(k) else -1) in
-  let hinges' =
-    List.map
-      (fun (h, _, changes) -> if changes then turn_hinge h else h)
-      (block_hinges g ~axis ~cid ~prov ~faces' ~parent ~moved ~chords)
-  in
-  (* root + base: a stationary child keeps its parent's placement; if
-     everything moved, reflect the base across the axis *)
-  let root', base' =
-    match block_root g ~parent ~moved with
-    | Some r -> (r, g.isos.(parent.(r)))
-    | None -> (0, I3.compose (half_turn3_of_line axis) g.isos.(parent.(0)))
-  in
-  let placed = placed_only places in
-  match
-    geometry ~base:base' ~faces:faces' ~hinges:(Array.of_list hinges') ~root:root' ()
-  with
-  | Error v -> Error v
-  | Ok geo when not placed -> (
-      seed_overlaps g geo ~parent ~moved ~uncut;
-      let side = level_side g ~parent ~unit_of ~turned:moved ~places in
-      (* the levels fix every side, so the search checks the one state *)
-      orders_or_violation ~marks:g.marks geo
-        ~kept:(fun i j -> Some (side i j))
-        ~fixed:[] ~witness:(fun () -> side))
-  | Ok geo ->
-      seed_overlaps g geo ~parent ~moved ~uncut;
-      placed_stackings ~shared ~g ~geo ~parent ~moved ~block_of:unit_of ~turned:moved
-        ~anchors:(block_anchors ~parent ~moved places)
-
-let fold_blocks_all ?crease_id ~blocks g ~axis ~move_side ~prov =
-  fold_blocks_gen ?crease_id ~shared:(new_shared ()) ~blocks g ~axis ~move_side ~prov
-
-let fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov =
-  match fold_blocks_all ?crease_id ~blocks g ~axis ~move_side ~prov with
-  | Ok [ g' ] -> Ok g'
-  | Ok gs -> Error (Several_stackings (List.length gs))
-  | Error v -> Error v
-
-let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
-    ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t =
-  let mask =
-    match moving_parents with
-    | Some m -> m
-    | None -> Array.make (Array.length g.faces) true
-  in
-  match
-    fold_blocks ?crease_id ~blocks:[ (mask, if valley then Top else Bottom) ] g
-      ~axis ~move_side ~prov
-  with
-  | Ok g' -> g'
-  | Error v -> fail_of_violation prov v
-
-let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
-    ~(valley : bool) : t =
-  fold g ~axis ~move_side ~valley ~prov:None
 
 (* A reverse fold as a fan (spec layer-order,
    "A reverse fold gives three units per opening"). [rf_scored] is

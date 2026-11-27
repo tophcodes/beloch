@@ -131,7 +131,8 @@ one table line whose face pairs open to opposite sides of the line share no
 region, and no condition relates them
 [@hullzakharevich2023, §2.1, "Taco-Taco Property"; @akitaya2016, §2].
 
-A fold computes the pairs of the new state (`Fold_state.fold_blocks`). Two
+A fold computes the pairs of the new state (`Axis_fan.fold_blocks`, the fan
+at the point at infinity of its axis; Fan, below). Two
 staying faces keep their side, and two faces of one moved block exchange
 sides. A block placed `Top` lies above every staying face it lands on, and
 a block placed `Bottom` below them; these sides fix every pair, and
@@ -614,8 +615,8 @@ hinge of the tip crosses from it to the rest, and one of the hinges that
 cross reaches beyond the axis. Every hinge that crosses is folded and lies
 on the spine line, so a cut crossed by a flat hinge is none.
 
-The fan of a reverse fold is built once, for every opening.
-`Fold_state.reverse_fan` cuts each face of the tip that the axis crosses,
+The fan of a reverse fold is built once, for every opening, by
+`Axis_fan.make`. `Fold_state.reverse_fan` cuts each face of the tip that the axis crosses,
 with a flat hinge of the new crease between its two pieces, and
 `Collapse.geoms_of` moves the pieces beyond the axis by the creases on their
 paper paths (spec `multifold`, "A fan moves each piece by the changing hinges on
@@ -625,7 +626,10 @@ keeps its angle, the hinges on the spine's line included. Every piece beyond
 the axis moves by the reflection across it, so one folded state serves
 every opening. The vertex of the fan, where the axis meets the spine's
 line, plays no part in this, and a reverse fold whose axis runs parallel to
-its spine folds the same way.
+its spine folds the same way. `fold` and `unfold` fold through the same
+fan, with their moving set as the tip and one opening (spec `multifold`, "A
+fold is the fan at the point at infinity of its axis"). An `unfold` selects a
+tip the axis cuts nowhere, so its fan scores no crease.
 
 Each opening is a stacking of that state (`Fold_state.fold_opening`), with
 the faces numbered as a fold of the two blocks numbers them: a block placed
@@ -682,7 +686,7 @@ with `up to` uses, from the flap `up to` names or else the flap `moving`
 names. With `toward` alone, `select_scope` runs from the flap of the
 `toward` point in the other direction, and the moving set is every face with
 material on the moving side outside its result. The block is reflected with
-`Fold_state.fold_blocks`, placed `Top`, or `Bottom` with `(moving … down)`; it cuts
+`Axis_fan.fold_blocks`, placed `Top`, or `Bottom` with `(moving … down)`; it cuts
 no face, so the write adds no hinge, and each hinge on the axis between a
 moving and a staying face goes to angle $0$.
 

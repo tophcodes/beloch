@@ -70,7 +70,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     | Some k -> k (fun fi -> moving_parents.(fi))
     | None -> ());
     ctx.state :=
-      Fold_state.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
+      Axis_fan.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
         ~crease_id ~prov
   in
   match (fs.Ast.place, fs.Ast.up_to) with
@@ -94,7 +94,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       | Error t -> tear_error span t);
       (match check with Some k -> k (fun fi -> block.(fi)) | None -> ());
       (match
-         Fold_state.fold_blocks ~crease_id ~blocks:[ (block, placement) ]
+         Axis_fan.fold_blocks ~crease_id ~blocks:[ (block, placement) ]
            !(ctx.state) ~axis ~move_side ~prov
        with
       | Ok st -> ctx.state := st
@@ -825,7 +825,7 @@ let eval_unfold (ctx : Ctx.ctx) (lo : Ast.line_operand) (fs : Ast.fold_spec)
   let placement = if valley then Fold_state.Top else Fold_state.Bottom in
   Ctx.record_write ctx (Trace.fold_terms st ~axis ~move_side ~moving placement) [];
   (match
-     Fold_state.fold_blocks ~blocks:[ (moving, placement) ] st ~axis ~move_side
+     Axis_fan.fold_blocks ~blocks:[ (moving, placement) ] st ~axis ~move_side
        ~prov:None
    with
   | Ok st' -> ctx.state := st'

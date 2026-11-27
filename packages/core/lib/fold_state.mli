@@ -100,6 +100,10 @@ type violation =
 
 val violation_to_string : violation -> string
 
+val fail_of_violation : State.provenance option -> violation -> 'a
+(** Raises {!Error.fail} with [violation_to_string v], at the span of the
+    provenance where one is given. *)
+
 val make :
   ?base:Isometry3.t ->
   ?marks:mark array ->
@@ -396,81 +400,6 @@ type placement =
     non-block parent, or a block parent the axis cuts). One fold places
     every block outside the stack or every block on faces. *)
 
-val fold_blocks_all :
-  ?crease_id:int ->
-  blocks:(bool array * placement) list ->
-  t ->
-  axis:Geom.line ->
-  move_side:int ->
-  prov:State.provenance option ->
-  (t list, violation) result
-(** [fold_blocks] with every stacking the fold has. When every block lies
-    [Over] or [Under] a face, the fold decides on which side of the block
-    each stationary face it lands on lies: from the placement, from the
-    anchor where the face, the anchor and the block share a region, and
-    from the faces over the creases of either. The sides nothing decides
-    are searched, and each combination that satisfies the non-crossing
-    conditions is one stacking. The list is not empty. [Error v] is a
-    [Taco_tortilla] or a [Layer_cycle] where the conditions put a face on
-    both sides, or the violation of the first
-    combination tried when none passes. *)
-
-val fold_blocks :
-  ?crease_id:int ->
-  blocks:(bool array * placement) list ->
-  t ->
-  axis:Geom.line ->
-  move_side:int ->
-  prov:State.provenance option ->
-  (t, violation) result
-(** The general simple fold: every block's parents are cut by the TABLE-space
-    [axis] and their [move_side] pieces reflected across it, in one graph
-    transformation (one new angle-1 hinge per cut parent, carried hinges
-    re-attached, on-axis hinges with exactly one moving side toggled). Layer
-    order: two stationary faces that overlap lie as their parents did, and
-    two faces of one block the other way round, since a half-turn reverses
-    a stack. A block placed [Top] lies above every stationary face it lands
-    on and every block listed before it, a block placed [Bottom] below
-    them; where every block lies [Over] or [Under] faces, the stacking is
-    the one {!fold_blocks_all} finds. A block
-    mask marks PARENT faces; a parent in no block is stationary even where
-    it crosses the axis. Block masks must be disjoint: a parent claimed by
-    several blocks goes to the first. [Error v] is the resulting state's invariant
-    violation ([Taco_taco]/[Taco_tortilla] reject an impossible insertion),
-    or [Several_stackings] where {!fold_blocks_all} finds several.
-    [Invalid_argument] if an [Over]/[Under] face has no stationary child
-    (a block parent lying entirely on the moving side), or if the fold
-    places one block outside the stack and another on faces. A block parent cut
-    by the axis keeps its stationary remainder as that child, so a flap can
-    be tucked under its own hinge layer. *)
-
-val fold :
-  ?crease_id:int ->
-  ?moving_parents:bool array ->
-  t ->
-  axis:Geom.line ->
-  move_side:int ->
-  valley:bool ->
-  prov:State.provenance option ->
-  t
-(** [fold_blocks] with one block: [moving_parents] (default every face)
-    placed [Top] for a valley fold, [Bottom] for a mountain fold; raises
-    {!Error.fail} at [prov]'s span on a violation. Faces on [move_side] of
-    the TABLE-space [axis] (restricted to [moving_parents]) are cut and
-    hinged to their stationary counterpart with a new angle-1 hinge; any
-    old hinge lying entirely on [axis] with exactly one moving side toggles
-    (a flat precrease upgrades to folded and keeps its [crease_id]; a folded
-    hinge with no cut counterpart on the axis physically unfolds back to
-    angle 0). Stationary faces keep their order, movers reverse theirs, and
-    a mover lies above every stationary face it lands on for a valley fold,
-    below for a mountain fold. The
-    root and [base] are chosen from a stationary child where one exists (its
-    parent's placement is unchanged); only when every face moves is the base
-    itself reflected across [axis]. *)
-
-val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
-(** [fold] with no [crease_id]/[moving_parents] override and no [provenance]. *)
-
 type reverse_failure =
   | No_spine  (** no place between the tip's layers opens along a spine *)
   | Several_openings of spine_attempt list
@@ -545,13 +474,16 @@ val fold_opening :
   blocks:(bool array * placement) list ->
   (t list, violation) result
 (** The stackings of one opening on [geometry], the folded state of the fan,
-    with [blocks] placed as {!fold_blocks_all} places them. The units of the
-    layer search are the stationary faces and each block: a face keeps its
-    side against a face of its own unit, exchanged where [turned] (per face
-    of {!reverse_scored}) says the fan turns it over, and the block listed
-    first lies below the other. The states have their faces and hinges in
-    the order {!fold_blocks_all} gives the same fold, and so does the
-    violation. *)
+    with [blocks] placed as {!placement} says. The units of the layer search
+    are the stationary faces and each block: a face keeps its side against a
+    face of its own unit, exchanged where [turned] (per face of
+    {!reverse_scored}) says the fan turns it over, and the block listed
+    first lies below the other. The faces of a state come in this order: the
+    blocks placed [Bottom], the stationary faces, the other blocks, each in
+    the order of {!reverse_scored}. The hinges come along the axis first,
+    then the carried hinges by the hinge they carry and their faces. FOLD
+    output enumerates faces and hinges by index, so both orders are
+    observable output. *)
 
 val reverse_attempts :
   cid:int ->

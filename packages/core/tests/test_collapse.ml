@@ -436,7 +436,7 @@ let test_intrinsic_convention_pin () =
   List.iter
     (fun valley ->
       let s =
-        Fold_state.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
+        Axis_fan.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
           ~valley
       in
       let hs = Fold_state.hinges s in

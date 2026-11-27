@@ -639,10 +639,10 @@ let test_subdivide_keep_side () =
 
 (* --- fold ---------------------------------------------------------------- *)
 
-let vfold_new g ax = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None
+let vfold_new g ax = Axis_fan.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None
 
 (* The following fold tests assert concrete face/hinge facts computed
-   straight from [Fold_state.fold] itself (pinned from a scratch run),
+   straight from [Axis_fan.fold] itself (pinned from a scratch run),
    instead of re-deriving them by hand. *)
 
 let test_fold_parity_single () =
@@ -657,7 +657,7 @@ let test_fold_parity_single () =
 let test_fold_parity_mountain () =
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
+  let g = Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:false ~prov:None in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces g));
   Alcotest.(check bool) "hinge 0 is M" true (Fold_state.mv g 0 = Fold_state.M)
@@ -724,7 +724,7 @@ let test_fold_scoped_parity () =
   with
   | Error (e, _) -> Alcotest.fail e
   | Ok moving ->
-      let g = Fold_state.fold g1 ~axis:ax2 ~move_side:(-1) ~valley:true
+      let g = Axis_fan.fold g1 ~axis:ax2 ~move_side:(-1) ~valley:true
           ~moving_parents:moving ~prov:None in
       Alcotest.(check int) "3 faces" 3 (Array.length (Fold_state.faces g));
       Alcotest.(check int) "moving = 1 face" 1
@@ -750,7 +750,7 @@ let test_fold_unfold_toggle () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  let g1 = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
+  let g1 = Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:true ~prov:None in
   (* find the folded hinge and its moved-side face (the face that is Above) *)
   let hs = Fold_state.hinges g1 in
@@ -762,7 +762,7 @@ let test_fold_unfold_toggle () =
   let moving = Array.make (Array.length (Fold_state.faces g1)) false in
   moving.(top) <- true;
   (* the top layer's material lies on side -1 of the axis; folding it back *)
-  let g2 = Fold_state.fold g1 ~axis:ax ~move_side:(-1) ~valley:true
+  let g2 = Axis_fan.fold g1 ~axis:ax ~move_side:(-1) ~valley:true
       ~moving_parents:moving ~prov:None in
   let hs2 = Fold_state.hinges g2 in
   Alcotest.(check int) "still one hinge" 1 (Array.length hs2);
@@ -785,12 +785,12 @@ let test_fold_derived_letters () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  let gv = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
+  let gv = Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:true ~prov:None in
   Alcotest.(check bool) "valley derives V" true
     (Fold_state.mv gv 0 = Fold_state.V);
   Fold_state.reset_ids ();
-  let gm = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
+  let gm = Axis_fan.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:false ~prov:None in
   Alcotest.(check bool) "mountain derives M" true
     (Fold_state.mv gm 0 = Fold_state.M)
@@ -809,21 +809,24 @@ let test_fold_root_moves_parity () =
     if s <> 0 then s
     else Geom.side_of_line ax (Fold_state.faces g0).(root).(2)
   in
-  let g = Fold_state.fold g0 ~axis:ax ~move_side:mv_side ~valley:true
+  let g = Axis_fan.fold g0 ~axis:ax ~move_side:mv_side ~valley:true
       ~moving_parents:moving ~prov:None in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces g));
   Alcotest.(check bool) "the fold's single hinge is V" true (Fold_state.mv g 0 = Fold_state.V)
 
-let test_fold_nothing_stationary_parity () =
-  (* whole-sheet fold across a boundary line: every face moves (branch 3) *)
+let test_fold_nothing_stationary () =
+  (* a fold across the right edge moves every face: the fan has no face
+     that stays, so no motion of the tip exists *)
   Fold_state.reset_ids ();
-  let ax = { Geom.a = q 1; b = q 0; c = q 1 } in  (* x = 1, right edge *)
-  let g = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:(-1)
-      ~valley:true ~prov:None in
-  Alcotest.(check int) "1 face (whole sheet moved, no stationary child)" 1
-    (Array.length (Fold_state.faces g));
-  Alcotest.(check bool) "reflected across x=1" true
-    (Geom.point_equal (Fold_state.table_polygon g 0).(0) (gp 2 0))
+  let ax = { Geom.a = q 1; b = q 0; c = q 1 } in
+  match
+    Axis_fan.fold_blocks
+      ~blocks:[ ([| true |], Fold_state.Top) ]
+      (Fold_state.flat [| Sheet.square_corners Num.one |])
+      ~axis:ax ~move_side:(-1) ~prov:None
+  with
+  | Ok _ -> Alcotest.fail "a fold with no stationary face folded"
+  | Error _ -> ()
 
 (* --- flip + [add_mark] --------------------------------------------------- *)
 
@@ -868,7 +871,7 @@ let test_flip_nontrivial_base_parity () =
   let ax1 = { Geom.a = q 1; b = q 0; c = half } in
   let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
   let g = Fold_state.flip
-      (Fold_state.fold
+      (Axis_fan.fold
          (Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1))
          ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None) in
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
@@ -883,7 +886,7 @@ let test_flip_nontrivial_base_parity () =
      that makes this test order-sensitive; if this ever fails the test has
      silently degenerated to the order-insensitive case *)
   let pre =
-    Fold_state.fold (Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1))
+    Axis_fan.fold (Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1))
       ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None
   in
   Alcotest.(check bool) "pre-flip root placement non-identity" false
@@ -906,8 +909,8 @@ let replay ops =
       match op with
       | OSub l -> Fold_state.subdivide g l ~prov:None
       | OSubPaper l -> Fold_state.subdivide_paper g l ~prov:None
-      | OFoldV (l, s) -> Fold_state.fold g ~axis:l ~move_side:s ~valley:true ~prov:None
-      | OFoldM (l, s) -> Fold_state.fold g ~axis:l ~move_side:s ~valley:false ~prov:None
+      | OFoldV (l, s) -> Axis_fan.fold g ~axis:l ~move_side:s ~valley:true ~prov:None
+      | OFoldM (l, s) -> Axis_fan.fold g ~axis:l ~move_side:s ~valley:false ~prov:None
       | OFlip -> Fold_state.flip g)
     (Fold_state.flat [| Sheet.square_corners Num.one |])
     ops
@@ -981,7 +984,7 @@ let test_battery_mark_then_fold () =
   in
   let ops = [ OFoldV (battery_vl half, 1) ] in
   let g = Fold_state.add_mark (replay ops) mnew in
-  let g = Fold_state.fold g ~axis:(battery_hl half) ~move_side:1 ~valley:true ~prov:None in
+  let g = Axis_fan.fold g ~axis:(battery_hl half) ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
   let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" | `Collapsed -> "collapsed" in
   Alcotest.(check string) "mark axis class" "line" (str (Fold_state.mark_axis_current g 99));
@@ -1005,7 +1008,7 @@ let test_add_mark () =
   Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks g));
   (* marks ride through a fold *)
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g' = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None in
+  let g' = Axis_fan.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "mark carried" 1 (Array.length (Fold_state.marks g'))
 
 (* [mark_graduates]: a corner-to-corner segment mark graduates immediately (both
@@ -1043,7 +1046,7 @@ let pair_precrease_fold () =
   let half = Num.div Num.one (Num.of_int 2) in
   let vhalf = { Geom.a = q 1; b = q 0; c = half } in
   let hhalf = { Geom.a = q 0; b = q 1; c = half } in
-  Fold_state.fold
+  Axis_fan.fold
     (Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) hhalf ~prov:None)
     ~axis:vhalf ~move_side:1 ~valley:true ~prov:None
 
@@ -1181,7 +1184,7 @@ let test_select_scope_parity () =
   let vl c = { Geom.a = Num.one; b = Num.zero; c } in
   (* book fold then fold the packet edge back: 3 overlapping layers on part
      of the sheet *)
-  let g = Fold_state.fold
+  let g = Axis_fan.fold
       (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)))
       ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
   (* the top face over x in (1/4,1/2): this construction leaves all 4 faces
@@ -1238,7 +1241,7 @@ let test_select_scope_target_hinged_parity () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
   let vl c = { Geom.a = Num.one; b = Num.zero; c } in
-  let g = Fold_state.fold
+  let g = Axis_fan.fold
       (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)))
       ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
   let top =
@@ -1300,29 +1303,6 @@ let test_scoped_hinge_closed_parity () =
   let bad = Fold_state.scoped_fold_hinge_closed g ~axis:(vl (frac 1 4))
       ~move_side:1 ~moving_parents:moving in
   Alcotest.(check bool) "tear" true (Result.is_error bad)
-
-(* On-axis hinge with BOTH sides moving must NOT toggle (D8); [eassign]
-   stays as it is here. Uses a book-fold construction, since a 4-face sketch
-   does not reach both-sides-moving. *)
-let test_both_sides_moving_no_toggle () =
-  Fold_state.reset_ids ();
-  let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
-  let vl c = { Geom.a = Num.one; b = Num.zero; c } in
-  let g1 = vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)) in
-  let movers = Array.make (Array.length (Fold_state.faces g1)) true in
-  let g = Fold_state.fold g1 ~axis:(vl (frac 1 2)) ~move_side:(-1)
-      ~valley:true ~moving_parents:movers ~prov:None in
-  let hs = Fold_state.hinges g in
-  Alcotest.(check int) "one hinge" 1 (Array.length hs);
-  Alcotest.(check bool) "still folded (no toggle)" true
-    (Num.sign hs.(0).Fold_state.angle <> 0);
-  Array.iteri
-    (fun i _ ->
-      Alcotest.(check bool) (Printf.sprintf "face %d at x>=1/2" i) true
-        (Array.for_all
-           (fun (p : Geom.point) -> Num.compare p.Geom.x (frac 1 2) >= 0)
-           (Fold_state.table_polygon g i)))
-    (Fold_state.faces g)
 
 (* --- marks --------------------------------------------------------------- *)
 
@@ -1447,7 +1427,7 @@ let test_fold_blocks_top_bottom_match_old_fold () =
       expected
   in
   (match
-     Fold_state.fold_blocks ~blocks:[ (mask, Fold_state.Top) ] g
+     Axis_fan.fold_blocks ~blocks:[ (mask, Fold_state.Top) ] g
        ~axis:vline_half ~move_side:(-1) ~prov:None
    with
   | Error v -> Alcotest.failf "Top: %s" (Fold_state.violation_to_string v)
@@ -1460,7 +1440,7 @@ let test_fold_blocks_top_bottom_match_old_fold () =
         "Top: 1 over 0, 2 over 0, 2 over 1" [ (1, 0); (2, 0); (2, 1) ]
         (Fold_state.order g'));
   match
-    Fold_state.fold_blocks ~blocks:[ (mask, Fold_state.Bottom) ] g
+    Axis_fan.fold_blocks ~blocks:[ (mask, Fold_state.Bottom) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Ok _ -> Alcotest.fail "Bottom: expected a violation"
@@ -1470,7 +1450,7 @@ let test_fold_blocks_top_bottom_match_old_fold () =
 let test_fold_blocks_over_tucks () =
   let g = two_layer () in
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 0 ]) ] g
+    Axis_fan.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 0 ]) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "Over 0: %s" (Fold_state.violation_to_string v)
@@ -1486,7 +1466,7 @@ let test_fold_blocks_over_tucks () =
 let test_fold_blocks_under_own_hinge () =
   let g = two_layer () in
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Under [ 1 ]) ] g
+    Axis_fan.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Under [ 1 ]) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "Under 1: %s" (Fold_state.violation_to_string v)
@@ -1501,7 +1481,7 @@ let test_fold_blocks_two_blocks_same_gap () =
   let g = two_layer () in
   let half = Num.of_q (Q.of_ints 1 2) in
   match
-    Fold_state.fold_blocks
+    Axis_fan.fold_blocks
       ~blocks:
         [ ([| true; false |], Fold_state.Over [ 0 ]);
           ([| false; true |], Fold_state.Under [ 1 ]) ]
@@ -1521,13 +1501,13 @@ let test_fold_blocks_two_blocks_same_gap () =
 let test_fold_blocks_placement_face_without_child () =
   let g = two_layer () in
   (match
-     Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 1 ]) ] g
+     Axis_fan.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 1 ]) ] g
        ~axis:vline_half ~move_side:(-1) ~prov:None
    with
   | Ok _ -> ()
   | Error v -> Alcotest.failf "Over 1 (self, cut): %s" (Fold_state.violation_to_string v));
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 7 ]) ] g
+    Axis_fan.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over [ 7 ]) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | exception Invalid_argument _ -> ()
@@ -1539,7 +1519,7 @@ let test_fold_blocks_placement_face_without_child () =
 let test_fold_blocks_top_lands_outside () =
   let g = two_layer () in
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Top) ] g
+    Axis_fan.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Top) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "Top: %s" (Fold_state.violation_to_string v)
@@ -1554,7 +1534,7 @@ let test_fold_blocks_bottom_pierces () =
      through it: the base is a tortilla crossing the new taco's crease *)
   let g = two_layer () in
   match
-    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Bottom) ] g
+    Axis_fan.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Bottom) ] g
       ~axis:vline_half ~move_side:(-1) ~prov:None
   with
   | Ok _ -> Alcotest.fail "Bottom: expected a violation"
@@ -1586,7 +1566,7 @@ let test_fold_blocks_over_many_open_classes () =
   let g = mk ~faces ~hinges ~rank:(Array.init (flap_i + 1) Fun.id) () in
   let mask = Array.init (flap_i + 1) (fun i -> i = flap_i) in
   match
-    Fold_state.fold_blocks_all ~blocks:[ (mask, Fold_state.Over [ 1 ]) ] g
+    Axis_fan.fold_blocks_all ~blocks:[ (mask, Fold_state.Over [ 1 ]) ] g
       ~axis:(hline 0) ~move_side:(-1) ~prov:None
   with
   | Error v -> Alcotest.failf "comb: %s" (Fold_state.violation_to_string v)
@@ -2109,8 +2089,8 @@ let () =
           Alcotest.test_case "derived letters" `Quick test_fold_derived_letters;
           Alcotest.test_case "root moves parity" `Quick
             test_fold_root_moves_parity;
-          Alcotest.test_case "nothing stationary parity" `Quick
-            test_fold_nothing_stationary_parity ] );
+          Alcotest.test_case "nothing stationary is refused" `Quick
+            test_fold_nothing_stationary ] );
       ( "task5-flip",
         [ Alcotest.test_case "flip parity" `Quick test_flip_parity;
           Alcotest.test_case "fold after flip parity" `Quick
@@ -2146,8 +2126,6 @@ let () =
             test_select_scope_parity;
           Alcotest.test_case "scoped hinge closed parity" `Quick
             test_scoped_hinge_closed_parity;
-          Alcotest.test_case "both sides moving no toggle" `Quick
-            test_both_sides_moving_no_toggle;
           Alcotest.test_case "default_scope" `Quick test_default_scope ] );
       ( "plan3b-task4-marks",
         [ Alcotest.test_case "classify_mark_extent parity" `Quick
