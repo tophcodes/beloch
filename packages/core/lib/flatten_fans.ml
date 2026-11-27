@@ -812,9 +812,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
       overs
   in
-  (* every realization of every pattern; the outline of the state before
-     the flatten ranks them below (spec multifold,
-     "The outline ranks the states of every fan") *)
+  (* every realization of every pattern *)
   let results =
     List.map
       (fun pat ->
@@ -890,7 +888,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          (fun pat res -> match res with Ok sts -> List.map (fun s -> (s, pat)) sts | Error _ -> [])
          patterns results)
   in
-  let states = Collapse.rank_by_outline st ~state:Fun.id all in
+  let states = all in
   let errors = List.filter_map (function Error e -> Some e | Ok _ -> None) results in
   let segs =
     Array.to_list (Array.map (fun (r : ray) -> (verts.(r.fan), r.far)) rays)

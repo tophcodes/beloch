@@ -167,7 +167,6 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
             | Ok states -> states
             | Error _ -> [])
           sgs
-        |> Collapse.rank_by_outline st ~state:Fun.id
   in
   let far_on_target =
     let ta, tb =

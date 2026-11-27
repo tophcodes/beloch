@@ -485,19 +485,6 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           (combo, r, e))
       combos
   in
-  (* the outline ranks the states of the statement, those of every
-     combination together, before any other stage sees them (spec multifold,
-     "The outline ranks the states of every fan") *)
-  let combo_runs =
-    let ranked =
-      Collapse.rank_by_outline pre_st
-        ~state:(fun (st, _, _, _) -> st)
-        (List.concat_map (fun (_, r, _) -> r) combo_runs)
-    in
-    List.map
-      (fun (combo, r, e) -> (combo, List.filter (fun x -> List.memq x ranked) r, e))
-      combo_runs
-  in
   (* `(emergent beside .p)`: the states whose emergent ray lies in a wedge of
      the given rays whose closure holds .p, a condition on the set
      (spec multifold, "emergent beside names the wedge of the emergent ray") *)

@@ -41,10 +41,7 @@ boundary is more than one loop has a hole and is refused.
 Three operations read the sheet and nothing else of its shape. Clipping a line
 to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
-the outline. A fan keeps the states whose faces lie on the table inside
-the convex hull of every table polygon of the state before it, where there
-are any, and every state where there are none (spec `multifold`, "The outline
-ranks the states of every fan").
+the outline.
 
 ## State
 
@@ -338,11 +335,8 @@ valley fold reach.
 
 `Collapse.geoms_of` takes the regions as its sectors and finds the motions
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
-parity only where the layers of its bundles surround its vertex. Of the states, those
-inside the convex hull of the state before the flatten are kept where
-there are any (`Collapse.rank_by_outline`, spec `multifold`, "The outline ranks
-the states of every fan"); more than one
-state left is an error. One ceiling remains: a statement derives a crease between
+parity only where the layers of its bundles surround its vertex. More than
+one state left is an error. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
 
@@ -530,9 +524,7 @@ the stayer (Sectors, below).
    leading pair's arc and dies here; only the near segment remains. A
    single-combination statement has no alternative to fall back on, so a
    mis-ordered leading pair there is *not* caught this way; it runs the
-   full pipeline and folds the states its stayer admits, past the outline
-   of the sheet where none stays inside (spec `multifold`, "The outline ranks
-   the states of every fan"). In
+   full pipeline and folds the states its stayer admits. In
    `packages/core/tests/cases/collapse/flatten-order-load-bearing.bel` two
    combinations fold such states, and the statement fails with check 14.
    For each surviving combination, at each admissible stayer sector
@@ -559,10 +551,6 @@ the stayer (Sectors, below).
    place and stack every face identically count once). If literally nothing
    survives across every combination and every admissible sector, that is
    check 13, `` no realization keeps the staying flap still ``.
-   The outline then ranks the realizations of all combinations together
-   (`Collapse.rank_by_outline`): those inside the convex hull of the state
-   before the flatten where there are any, else all of them
-   (spec `multifold`, "The outline ranks the states of every fan").
 3. **Segment-choice ambiguity** (check 14). If **more than one** segment
    combination independently produced a non-empty realization pool, the
    statement stops here: `` <name> is ambiguous at the vertex; select a

@@ -5,8 +5,8 @@ several vertices, the pool of a single valley collapse, and the squash. Each
 filters the candidate states by whether their faces lie inside the convex
 hull of the state before the write and falls back to all of them when none
 does. With the ranking switched off, every program in `examples/` folds as
-before; five kernel tests change, all at the fish-base vertex or the rabbit
-ear without conditions.
+before, and the only test that changes is the rabbit ear without
+conditions in the reference, whose error message changes.
 
 ## Decisions
 
@@ -37,9 +37,6 @@ Rejected alternatives:
 
 ## Risks / Trade-offs
 
-- [The kernel holds two states that export to the same FOLD at the fish-base
-  vertex, one with a face more] → find which stage leaves the extra face
-  before changing the face counts the tests assert.
 - [A `staying` point added to a program that relied on a default may name a
   different part than the default held still] → compare the FOLD output of
   every changed program before and after the change.

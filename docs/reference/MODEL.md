@@ -1565,10 +1565,7 @@ a reverse fold does ([#def-reverse]). Such a hinge *stays* when it keeps
 its angle and its letter, *turns* when it keeps its angle and takes the
 other letter, and *opens* when it changes, as the spine of a squash does.
 
-Of all candidate states of all candidate fans, those whose faces lie on
-the table inside the convex hull of the state before the write are kept
-where there are any, and all of them where there are none
-(spec `multifold`, "The outline ranks the states of every fan"). The constraints
+The candidate states of all candidate fans form one set. The constraints
 are conditions on that set: the letters,
 the `over` pairs, and for an odd $k$ a point $p$: the wedge of the table
 between two consecutive given rays that holds $f(p)$, edges included, holds

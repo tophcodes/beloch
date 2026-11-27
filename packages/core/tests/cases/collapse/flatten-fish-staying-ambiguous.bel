@@ -1,0 +1,17 @@
+@author "Claude (Anthropic)"
+
+; The fish-base vertex, the incenter of the triangle .a .b .d, with bare
+; lines. (staying .c) keeps the two states that take the halves of --l1,
+; --l2 and --ray toward .b, .d and .a; they are mirror images and the
+; statement stays ambiguous (spec multifold, "Every item of a flatten is a
+; condition on its states").
+
+paper square
+
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
+flatten (--l1 valley) (--l2) (--ray mountain) (staying .c)
+
+; expect error "flatten is ambiguous: 2 realizations"

@@ -841,45 +841,6 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
           | [] -> Error e_contra
           | l -> Ok l))
 
-(* The convex hull of every table polygon of [g]: the outline that ranks the
-   states a fan folds [g] to (spec multifold,
-   "The outline ranks the states of every fan"). The last hull is kept, since
-   every state of one fan is tested against the same [g]. *)
-let hull_cache : (Fold_state.t * Geom.point array) option ref = ref None
-
-let table_hull (g : Fold_state.t) : Geom.point array =
-  match !hull_cache with
-  | Some (g', h) when g' == g -> h
-  | _ ->
-      let pts =
-        List.concat
-          (List.init (Array.length (Fold_state.faces g)) (fun i ->
-               Array.to_list (Fold_state.table_polygon g i)))
-      in
-      let h = Geom.convex_hull pts in
-      hull_cache := Some (g, h);
-      h
-
-let in_bounds (hull : Geom.point array) (gg : Fold_state.t) : bool =
-  let nfg = Array.length (Fold_state.faces gg) in
-  let ok = ref true in
-  for i = 0 to nfg - 1 do
-    if not (Array.for_all (Geom.in_convex_polygon hull) (Fold_state.table_polygon gg i))
-    then ok := false
-  done;
-  !ok
-
-(* The outline ranks the states a fan folds [g] to and removes none
-   (spec multifold, "The outline ranks the states of every fan"): those whose
-   faces lie inside the outline of [g] where there
-   are any, else all of them. [state] reads the state out of an element. *)
-let rank_by_outline (g : Fold_state.t) ~(state : 'a -> Fold_state.t)
-    (rs : 'a list) : 'a list =
-  let hull = table_hull g in
-  match List.filter (fun r -> in_bounds hull (state r)) rs with
-  | [] -> rs
-  | inside -> inside
-
 (* pool the per-sector runs: every state of every run ([Ok] pool); an empty
    pool surfaces [e_contra] > [e_unaligned] > [e_anchor_stays] >
    [e_stayer_dead], below the layer error of a [tip_rule].
@@ -936,8 +897,8 @@ let runs_of_sector sgs ~(valley : bool array) ~(over : (int * int) list) =
         sgs
 
 (* run the pipeline once per admissible stayer sector (rotating that sector to
-   0) and each way the fan folds there, pooling every anchored realization
-   and ranking the pool by the outline of [g]. Runs are not deduplicated against each other, since two
+   0) and each way the fan folds there, pooling every anchored realization.
+   Runs are not deduplicated against each other, since two
    admissible sectors are two different stayers and so two physically
    different folds; the layer orders of one run differ in the side of at
    least one pair. *)
@@ -952,15 +913,13 @@ let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
       else
         let es = Array.of_list es in
         let valley = Array.map (fun e -> e.valley) es in
-        Result.map
-          (rank_by_outline g ~state:Fun.id)
-          (pool_of_runs
-             (List.concat_map
-                (fun s0 ->
-                  runs_of_sector ~valley ~over
-                    (mk_sector_geoms g ~o ~rays:(rotate_rays rays s0) ~es
-                       ~faces ~nf ~anchor))
-                sectors))
+        pool_of_runs
+          (List.concat_map
+             (fun s0 ->
+               runs_of_sector ~valley ~over
+                 (mk_sector_geoms g ~o ~rays:(rotate_rays rays s0) ~es
+                    ~faces ~nf ~anchor))
+             sectors)
 
 (* The many-pattern entry: solve a whole batch of patterns over ONE fixed
    vertex geometry, sharing the sector geometry (placements, overlap set)

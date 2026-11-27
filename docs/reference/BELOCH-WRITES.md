@@ -560,7 +560,7 @@ flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--ea) (--ec) (--eb)
+flatten (--ea) (--ec) (--eb) (staying .d)
 
 ; expect error "flatten is ambiguous"
 ```
@@ -622,17 +622,12 @@ an error (`` a crease between two vertices is a ray of both fans ``). A
 part of the paper moves when no path on the paper joins it to the part
 that stays without crossing a ray; a path crosses creases and never runs
 through a single point. Without `staying`, the part of largest area on the
-paper stays. `staying` fixes where the result lies on the table and which
-state the outline ranks first; where the faces lie relative to each other
-does not depend on it. A statement whose moving part would drag along a
+paper stays. `staying` fixes where the result lies on the table; where the
+faces lie relative to each other does not depend on it. A statement whose moving part would drag along a
 layer that no ray reaches fails, and the error names that layer. Each ray
 is scored on the layers its pieces cross.
 
-Of the states the fans fold to, those that keep the paper inside the
-outline it started from are kept where there are any; a petal reaches
-past the outline of the base it is folded from, so the outline does not
-remove its states (spec `multifold`, "The outline ranks the states of every
-fan"). More than one state left is an error
+More than one state the fans fold to is an error
 (`` flatten is ambiguous: <n> realizations ``), with the hint of a flatten
 of one fan.
 
