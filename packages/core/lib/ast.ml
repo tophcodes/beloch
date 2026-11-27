@@ -348,7 +348,6 @@ type shape_def = {
       (* `trim to … { … }`: the names that reach the trimmed sheet, every
          name on the flap when [None] (spec sheets,
          "A trim lists the names it exports") *)
-  sd_span : Error.span;
 }
 
 type program = {

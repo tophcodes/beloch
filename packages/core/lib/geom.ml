@@ -567,31 +567,3 @@ let line_cuts_polygon (l : line) (poly : point array) : bool =
   match clip_line_to_convex l poly with
   | None -> false
   | Some (p, r) -> midpoint_strictly_inside poly p r
-
-(* [line_cuts_polygon] restricted to the span of segment [a, b]: clip the
-   segment's line to [poly], clamp the clip to the segment, then the same
-   strict-midpoint test. Touching only at an endpoint or grazing an edge is
-   not a cut. *)
-let segment_cuts_polygon ((a, b) : segment) (poly : point array) : bool =
-  let l = line_through a b in
-  match clip_line_to_convex l poly with
-  | None -> false
-  | Some (p, r) ->
-      (* clamp by the (unnormalized) parameter q ↦ (q - a) · (b - a) *)
-      let dx = Num.sub b.x a.x and dy = Num.sub b.y a.y in
-      let t (q : point) =
-        Num.add (Num.mul (Num.sub q.x a.x) dx) (Num.mul (Num.sub q.y a.y) dy)
-      in
-      let tp = t p and tr = t r in
-      let lo, hi = if Num.compare tp tr <= 0 then (tp, tr) else (tr, tp) in
-      let lo = if Num.sign lo < 0 then Num.zero else lo in
-      let seg_hi = t b in
-      let hi = if Num.compare hi seg_hi > 0 then seg_hi else hi in
-      if Num.compare lo hi >= 0 then false
-      else
-        let d2 = seg_hi in
-        let at tq =
-          { x = Num.add a.x (Num.mul (Num.div tq d2) dx);
-            y = Num.add a.y (Num.mul (Num.div tq d2) dy) }
-        in
-        midpoint_strictly_inside poly (at lo) (at hi)

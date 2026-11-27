@@ -439,7 +439,6 @@ and spine_outcome =
   | Reversed of t
 
 and spine_attempt = {
-  crease : int;  (** the crease id of the new hinges on the axis *)
   hinge : int;  (** the first hinge across the opening, on the spine's line *)
   turning : int list;  (** every hinge across the opening *)
   halves : bool array * bool array;
@@ -507,7 +506,6 @@ val fold_opening :
     both orders are observable output. *)
 
 val reverse_attempts :
-  cid:int ->
   t ->
   axis:Geom.line ->
   move_side:int ->
@@ -734,12 +732,6 @@ val mark_axis_current :
     it no longer names a line (distinct from [`Empty]: the mark exists, its
     current geometry is a point: falling back to its flat-paper birth line
     would be stale). *)
-
-val mark_face : t -> mark -> int option
-(** The face whose PAPER polygon contains the mark's representative point;
-    paper coordinates partition the sheet, so this is unique in the interior
-    (a point on a shared boundary may match several: first match wins,
-    callers disambiguate). *)
 
 val point_on_polygon_boundary : Geom.point array -> Geom.point -> bool
 (** True iff point [p] lies on some edge (endpoints included) of convex CCW

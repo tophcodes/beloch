@@ -19,7 +19,6 @@ let mono_equal (a : mono) (b : mono) : bool =
       !ok)
 
 let zero : t = []
-let is_zero (p : t) : bool = p = []
 
 let const (nvars : int) (q : Q.t) : t =
   if Q.equal q Q.zero then [] else [ (Array.make nvars 0, q) ]

@@ -2065,7 +2065,6 @@ and spine_outcome =
   | Reversed of t
 
 and spine_attempt = {
-  crease : int;
   hinge : int;
   turning : int list;
   halves : bool array * bool array;
@@ -2084,7 +2083,7 @@ let reverse_failure_to_string = function
        fold"
   | Invalid v -> violation_to_string v
 
-let reverse_attempts ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
+let reverse_attempts (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(tip : bool array) ~(inside : bool)
     ~(fold : (bool array * placement) list -> (t list, violation) result) :
     spine_attempt list =
@@ -2242,7 +2241,7 @@ let reverse_attempts ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
       List.filter (fun i -> half.(i) && has_stay_piece i) (List.init n Fun.id)
     in
     let tried bodies outcome =
-      { crease = cid; hinge = List.hd crossing; turning = crossing; halves = (lower, upper);
+      { hinge = List.hd crossing; turning = crossing; halves = (lower, upper);
         bodies; outcome }
     in
     let blo = body lower and bup = body upper in
@@ -2871,19 +2870,6 @@ let mark_axis_current (g : t) (cid : int) :
         let tm = table_position g mid in
         let l = Geom.line_through ta tb in
         if Geom.side_of_line l tm = 0 then `Line l else `Bent
-
-(* the face whose PAPER polygon contains the mark's representative point; paper
-   coordinates partition the sheet, so this is unique in the interior (a point on
-   a shared boundary may match several: first match wins, callers disambiguate). *)
-let mark_face (g : t) (m : mark) : int option =
-  let p = mark_rep_point m in
-  let n = Array.length g.faces in
-  let rec go i =
-    if i >= n then None
-    else if Geom.in_convex_polygon g.faces.(i) p then Some i
-    else go (i + 1)
-  in
-  go 0
 
 (* A mark's paper-space extent, classified against the flap (coplanar cluster)
    it lives on: does it subdivide the flap (a FULL CHORD: both endpoints on
